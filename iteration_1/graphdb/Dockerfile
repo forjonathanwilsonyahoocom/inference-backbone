@@ -1,5 +1,6 @@
 # Use the official GraphDB image as base
-FROM ontotext/graphdb:7.3.4
+FROM  ontotext/graphdb:11.5.0
+
 
 # Optional: copy custom configuration if you need to tweak GraphDB settings
 # COPY graphdb.conf /opt/graphdb/conf/graphdb.conf
