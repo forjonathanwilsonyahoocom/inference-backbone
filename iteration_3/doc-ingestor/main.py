@@ -41,29 +41,29 @@ def parse_markdown(md_path: Path) -> Tuple[Optional[Dict], List[str]]:
         txt = md_path.read_text(encoding='utf-8')
     except Exception as exc:
         log(f"⚠️ Cannot read {md_path}: {exc}", level='WARN')
-        return None, []
+        return None, [], None
 
     parts = txt.split('---', 2)
     if len(parts) < 3 or not parts[0].strip() == '':
         # no YAML front‑matter block
-        return None, []
+        return None, [], txt
 
     try:
         meta = yaml.safe_load(parts[1]) or {}
     except Exception as exc:
         log(f"⚠️ YAML parse error in {md_path}: {exc}", level='WARN')
-        return None, []
+        return None, [], txt
 
     if not isinstance(meta, dict):
         log(f"⚠️ YAML not a dict in {md_path}", level='WARN')
-        return None, []
+        return None, [], txt
 
     body = parts[2]
     sections = [s.strip() for s in body.split('\n') if s.startswith('## ')]
-    return meta, sections
+    return meta, sections, txt
 
 # ---------- Turtle builder ----------
-def build_turtle(meta: Dict, sections: List[str], doc_id: str) -> str:
+def build_turtle(meta: Dict, sections: List[str], doc_id: str, body="") -> str:
     """
     Return a *complete* Turtle document that starts with prefix declarations.
     """
@@ -80,10 +80,14 @@ def build_turtle(meta: Dict, sections: List[str], doc_id: str) -> str:
     title = meta["title"].replace('"', r'\"')  # escape double quotes
     lines = [
         f"<{BASE_IRI}Document{doc_id}> a ex:Document ;",
-        f"  ex:hasTitle \"{title}\" ;",
-        f"  ex:hasCategory \"{meta.get('category', '')}\" ;",
-        f"  ex:hasStatus  \"{meta.get('status', '')}\" ;",
+        f"  ex:hasTitle \"{meta['title'].replace('\"', r'\\\"')}\" ;",
+        f"  ex:hasCategory \"{meta.get('category','').replace('\"', r'\\\"')}\" ;",
+        f"  ex:hasStatus  \"{meta.get('status','Draft').replace('\"', r'\\\"')}\" ;",
+        f"  ex:hasKeywords \"{', '.join(meta.get('keywords',[]))}\" ;",
+        f"  ex:hasRelated  \"{', '.join(meta.get('related',[]))}\" ;",
+        f"  ex:hasContent \"{json.dumps(body)[1:-1] }\" ;",
     ]
+
 
     for kw in meta.get('keywords', []):
         lines.append(f"  ex:hasKeyword \"{kw}\" ;")
@@ -179,6 +183,8 @@ if the value is empty.
 **Important:**
 - Do **not** add any other keys.
 - Do **not** wrap the JSON in code fences or add explanatory text.
+- if you find an alternate meta system in the content, infer the mapping to the requested keys from the values you discover
+- any subset of the required keys is acceptable if some of them are not reachable 
 - If a value cannot be inferred, use an empty string for a string field or an empty array for a list field.
 - The JSON must be **valid** (no trailing commas, no comments).
 
@@ -206,25 +212,30 @@ def main() -> None:
     
     
     for md_path in REPO_DIR.rglob("*.md"):
-        meta, sections = parse_markdown(md_path)
-    
+        meta, sections, raw_content = parse_markdown(md_path)
+        
         # If the file lacks a proper front‑matter block
         if meta is None:
             print(f"[INFO] Trying LLM extraction for {md_path}")
-            raw_content = md_path.read_text(encoding="utf-8")
             meta = extract_metadata_from_llm(raw_content)
     
             if meta is None:
                 log(f"⚠️ Skipping {md_path} – LLM extraction failed", level='WARN')
                 continue
+            
+        # Validate the meta – skip if mandatory title is empty
+        if not meta.get("title"):
+            print(f"[WARN] Skipping {md_path} – title missing")
+            print(meta)
+            continue
     
         try:
             doc_id = sha1(md_path.as_posix())
-            turtle = build_turtle(meta, sections, doc_id)
+            turtle = build_turtle(meta, sections, doc_id, body=raw_content)
         except Exception as exc:
             log(f"⚠️ Skipping {md_path} – {exc}", level='WARN')
             continue
-    
+            
         post_to_graphdb(turtle, md_path)
 
 
