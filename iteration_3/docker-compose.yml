@@ -27,3 +27,14 @@ services:
       - "8000:8000"
     depends_on:
       - graphdb
+
+  doc-ingestor:
+    build: ./doc-ingestor
+    environment:
+      REPO_URL: "git@github.com:forjonathanwilsonyahoocom/cae.git"
+      CLONE_DIR: "/data/docs"
+      GRAPHDB_URL: "http://graphdb:7200/repositories/inference-backbone"
+      ONTOLOGY_PREFIX: "http://www.mindbodyengineer.com/"
+    volumes:
+      - /ssd2/codebase/cae:/data/docs:ro   # optional, if you want to keep the repo locally
+
