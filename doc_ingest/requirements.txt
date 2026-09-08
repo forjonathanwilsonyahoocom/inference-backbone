@@ -1,0 +1,4 @@
+# requirements.txt for doc-ingestor
+gitpython
+pyyaml
+requests
