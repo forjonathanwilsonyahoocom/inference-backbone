@@ -173,6 +173,8 @@ You are a semantic‑web assistant.
 Given the following Markdown document, extract the metadata fields shown below and return **exactly** a JSON object that contains *all* of them – even 
 if the value is empty.
 
+any subset of the required keys is acceptable if some of them are not reachable 
+
 **Required keys (always present, never `null`):**
 - `title`        – string, the first `##` line (or empty if missing)
 - `category`     – string from the `category:` line in the YAML header, or empty
@@ -184,7 +186,6 @@ if the value is empty.
 - Do **not** add any other keys.
 - Do **not** wrap the JSON in code fences or add explanatory text.
 - if you find an alternate meta system in the content, infer the mapping to the requested keys from the values you discover
-- any subset of the required keys is acceptable if some of them are not reachable 
 - If a value cannot be inferred, use an empty string for a string field or an empty array for a list field.
 - The JSON must be **valid** (no trailing commas, no comments).
 
