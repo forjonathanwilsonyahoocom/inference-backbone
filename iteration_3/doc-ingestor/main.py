@@ -17,6 +17,9 @@ import requests
 import git
 from pathlib import Path
 
+# RDFLib imports for Turtle generation
+from build_turtle import build_turtle
+
 from typing import Dict, List, Tuple, Optional
 
 # ---------- configuration ----------
@@ -61,51 +64,6 @@ def parse_markdown(md_path: Path) -> Tuple[Optional[Dict], List[str]]:
     body = parts[2]
     sections = [s.strip() for s in body.split('\n') if s.startswith('## ')]
     return meta, sections, txt
-
-# ---------- Turtle builder ----------
-def build_turtle(meta: Dict, sections: List[str], doc_id: str, body="") -> str:
-    """
-    Return a *complete* Turtle document that starts with prefix declarations.
-    """
-    # ---- PREFIX BLOCK ----
-    prefixes = [
-        "@prefix ex:  <http://example.org/> .",
-        "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .",
-        "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .",
-        "@prefix owl: <http://www.w3.org/2002/07/owl#> .",
-        "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .",
-    ]
-
-    # ---- METADATA TRIPLES ----
-    title = meta["title"].replace('"', r'\"')  # escape double quotes
-    lines = [
-        f"<{BASE_IRI}Document{doc_id}> a ex:Document ;",
-        f"  ex:hasTitle \"{meta['title'].replace('\"', r'\\\"')}\" ;",
-        f"  ex:hasCategory \"{meta.get('category','').replace('\"', r'\\\"')}\" ;",
-        f"  ex:hasStatus  \"{meta.get('status','Draft').replace('\"', r'\\\"')}\" ;",
-        f"  ex:hasKeywords \"{', '.join(meta.get('keywords',[]))}\" ;",
-        f"  ex:hasRelated  \"{', '.join(meta.get('related',[]))}\" ;",
-        f"  ex:hasContent \"{json.dumps(body)[1:-1] }\" ;",
-    ]
-
-
-    for kw in meta.get('keywords', []):
-        lines.append(f"  ex:hasKeyword \"{kw}\" ;")
-
-    # ---- SECTION TRIPLES ----
-    for sec in sections:
-        sec_id = sha1(sec)
-        lines.append(f"  ex:hasSection <{BASE_IRI}Section_{sec_id}> ;")
-
-    # ---- RELATED ARTIFACT TRIPLES ----
-    for rel in meta.get('related', []):
-        lines.append(f"  ex:hasRelatedArtifact <{BASE_IRI}Document{rel}> ;")
-
-    # ---- TERMINATE ----
-    lines[-1] = lines[-1].rstrip(" ;") + " ."
-
-    # Combine everything
-    return "\n".join(prefixes + [""] + lines)
 
 
 # ---------- POST to GraphDB ----------
