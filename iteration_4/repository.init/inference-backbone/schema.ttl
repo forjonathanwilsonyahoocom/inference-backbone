@@ -1,0 +1,173 @@
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:   <http://example.org/> .
+
+
+########################################
+# 1️⃣  Core Person vocabulary
+########################################
+
+ex:Person a owl:Class .
+ex:Developer a owl:Class ;
+    rdfs:subClassOf ex:Person .
+
+ex:hasProject a owl:ObjectProperty ;
+    rdfs:domain ex:Developer ;
+    rdfs:range ex:Project .
+
+ex:Project a owl:Class .
+
+# Inference rule: if a Developer has a Project, then that Project is a “Work”
+ex:hasProject o ex:isWork .
+
+
+
+########################################
+# 1️⃣  Core event vocabulary
+########################################
+
+ex:Event
+    a rdfs:Class ;
+    rdfs:label "Event" ;
+    rdfs:subClassOf rdfs:Resource .
+
+ex:CompletedEvent
+    a rdfs:Class ;
+    rdfs:label "Completed Event" ;
+    rdfs:subClassOf ex:Event .
+
+ex:hasResult
+    a rdf:Property ;
+    rdfs:domain ex:Event ;
+    rdfs:range ex:Result ;
+    rdfs:label "has result" .
+
+########################################
+# 2️⃣  Projects & experiments
+########################################
+
+ex:Project
+    a rdfs:Class ;
+    rdfs:label "Project" ;
+    rdfs:subClassOf ex:Event .
+
+ex:hasExperiment
+    a rdf:Property ;
+    rdfs:domain ex:Project ;
+    rdfs:range ex:Experiment ;
+    rdfs:label "has experiment" .
+
+ex:Experiment
+    a rdfs:Class ;
+    rdfs:label "Experiment" ;
+    rdfs:subClassOf ex:Event .
+
+########################################
+# 3️⃣  Results
+########################################
+
+ex:Result
+    a rdfs:Class ;
+    rdfs:label "Result" .
+
+ex:resultValue
+    a rdf:Property ;
+    rdfs:domain ex:Result ;
+    rdfs:range xsd:float ;
+    rdfs:label "result value" .
+
+########################################
+# 4️⃣  OWL restrictions & property chains
+########################################
+
+# Every Experiment that has *exactly one* Result is a CompletedEvent
+ex:Experiment
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty ex:hasResult ;
+        owl:cardinality 1 ;
+    ] .
+
+# Projects “inherit” outcomes from experiments
+ex:hasOutcome
+    a rdf:Property ;
+    rdfs:label "has outcome" ;
+    rdfs:subPropertyOf ex:hasResult .
+
+# Property chain: if a Project hasExperiment X, and X hasResult Y → Project hasOutcome Y
+[
+    a owl:ObjectProperty ;
+    owl:propertyChainAxiom ( ex:hasExperiment ex:hasResult ) ;
+    rdfs:subPropertyOf ex:hasOutcome ;
+] .
+
+########################################
+# 1️⃣  Hypothesis & status vocabulary
+########################################
+
+ex:Hypothesis
+    a rdfs:Class ;
+    rdfs:label "Hypothesis" ;
+    rdfs:subClassOf ex:Event .
+
+# 1.1  Status enumeration
+ex:HypothesisStatus
+    a rdfs:Class ;
+    rdfs:label "Hypothesis Status" .
+
+ex:Current
+    a ex:HypothesisStatus ;
+    rdfs:label "Current" .
+
+ex:Falsified
+    a ex:HypothesisStatus ;
+    rdfs:label "Falsified" .
+
+ex:Accepted
+    a ex:HypothesisStatus ;
+    rdfs:label "Accepted" .
+
+# 1.2  Status property
+ex:hasStatus
+    a rdf:Property ;
+    rdfs:domain ex:Hypothesis ;
+    rdfs:range ex:HypothesisStatus ;
+    rdfs:label "has hypothesis status" .
+
+########################################
+# 2️⃣  Linking to experiments
+########################################
+
+# A hypothesis can be tested by many experiments
+ex:hasExperiment
+    a rdf:Property ;
+    rdfs:domain ex:Hypothesis ;
+    rdfs:range ex:Experiment ;
+    rdfs:label "has experiment" .
+
+# Property chain: if a hypothesis hasExperiment X and X hasResult Y → hypothesis hasResult Y
+[
+    a owl:ObjectProperty ;
+    owl:propertyChainAxiom ( ex:hasExperiment ex:hasResult ) ;
+    rdfs:subPropertyOf ex:hasResult ;
+] .
+
+
+
+########################################
+# 1️⃣  Core Document vocabulary
+########################################
+ex:Document a owl:Class ;
+   rdfs:label "Document" ;
+   rdfs:subClassOf ex:Event .   # optional
+ex:hasFilePath a owl:DatatypeProperty ;
+   rdfs:domain ex:Document ;
+   rdfs:range xsd:string .
+ex:hasTitle a owl:DatatypeProperty ;
+   rdfs:domain ex:Document ;
+   rdfs:range xsd:string .
+ex:hasTag a owl:DatatypeProperty ;
+   rdfs:domain ex:Document ;
+   rdfs:range xsd:string .

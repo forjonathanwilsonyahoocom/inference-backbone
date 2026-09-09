@@ -1,0 +1,7 @@
+# .dockerignore for doc-ingestor
+# Exclude Git history and large files
+.git
+.gitignore
+*.pyc
+__pycache__
+*.log

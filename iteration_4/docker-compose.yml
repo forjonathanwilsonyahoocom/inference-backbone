@@ -1,0 +1,40 @@
+services:
+  graphdb:
+    image: khaller/graphdb-free:10.6.2
+    container_name: graphdb
+    restart: unless-stopped
+
+    ports:
+      - "7200:7200"          # SPARQL endpoint + UI
+
+    environment:
+      GDB_HEAP_SIZE: 2G      # adjust for your RAM
+
+    volumes:
+      - ./data:/opt/graphdb/home
+      - ./repository.init:/repository.init
+
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:7200/rest/monitor/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  fastapi:
+    build: ./fastapi
+    container_name: sparql_api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - graphdb
+
+  doc-ingestor:
+    build: ./doc-ingestor
+    environment:
+      REPO_URL: "git@github.com:forjonathanwilsonyahoocom/cae.git"
+      CLONE_DIR: "/data/docs"
+      GRAPHDB_URL: "http://graphdb:7200/repositories/inference-backbone"
+      ONTOLOGY_PREFIX: "http://www.mindbodyengineer.com/"
+    volumes:
+      - /ssd2/codebase/cae:/data/docs:ro   # optional, if you want to keep the repo locally
+
