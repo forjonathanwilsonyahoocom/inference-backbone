@@ -2,3 +2,5 @@ fastapi
 requests
 uvicorn
 httpx
+pyyaml
+rdflib
