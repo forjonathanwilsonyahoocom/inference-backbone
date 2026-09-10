@@ -27,3 +27,17 @@ services:
       - "8000:8000"
     depends_on:
       - graphdb
+
+  worker-agent:
+    build: ./worker-agent
+    container_name: worker_agent
+    ports:
+      - "8001:8000"
+    shm_size: '2gb'
+    environment:
+      OLLAMA_URL: http://10.42.0.192:11434
+      GEN_MODEL: gpt-oss:20b
+      WORKSPACE: /app
+    volumes:
+      - ./worker-agent:/app
+    restart: unless-stopped

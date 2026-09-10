@@ -1,9 +1,6 @@
 # FastAPI app for document ingestion and SPARQL proxy
 #
-# This file contains duplicated logic from the doc‑ingestor package so that the
-# FastAPI container can ingest a single markdown document via HTTP without
-# needing the full batch script.  The duplicated blocks are marked with a
-# banner so they can be extracted into a shared library later.
+# FastAPI container can ingest a single markdown document via HTTP
 
 from fastapi import FastAPI, Query, Request
 import httpx
@@ -36,7 +33,7 @@ def log(msg: str, level: str = 'INFO') -> None:
     print(f"[{level}] {msg}")
 
 # ---------------------------------------------------------------------------
-# # duplicated from doc‑ingestor — parse_markdown
+# # — parse_markdown
 # ---------------------------------------------------------------------------
 
 def parse_markdown(md_text: str) -> Tuple[Optional[Dict], List[str], str]:
@@ -70,7 +67,7 @@ def parse_markdown(md_text: str) -> Tuple[Optional[Dict], List[str], str]:
     return meta, sections, md_text
 
 # ---------------------------------------------------------------------------
-# # duplicated from doc‑ingestor — extract_metadata_from_llm
+# — extract_metadata_from_llm
 # ---------------------------------------------------------------------------
 
 def ask(query: str) -> str:
@@ -126,7 +123,7 @@ Respond with the JSON only.
         return None
 
 # ---------------------------------------------------------------------------
-# # duplicated from doc‑ingestor — build_turtle
+#  — build_turtle
 # ---------------------------------------------------------------------------
 from rdflib import Graph, Namespace, Literal, URIRef, RDF
 from rdflib.namespace import XSD
@@ -167,7 +164,7 @@ def build_turtle(meta: Dict, sections: List[str], doc_id: str, body: str = "") -
     return g.serialize(format="turtle")
 
 # ---------------------------------------------------------------------------
-# # duplicated from doc‑ingestor — post_to_graphdb
+# — post_to_graphdb
 # ---------------------------------------------------------------------------
 
 def post_to_graphdb(turtle: str) -> Tuple[int, str]:
