@@ -18,6 +18,7 @@ RUN pip install -Ur requirements.txt
 
 # --- Stage 2: Final Runtime ---
 FROM python:3.12-slim as runner
+ENV PYTHONUNBUFFERED=1
 WORKDIR /app/
 
 RUN apt-get update && apt-get install -y tree && rm -rf /var/lib/apt/lists/*

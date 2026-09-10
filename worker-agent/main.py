@@ -735,7 +735,6 @@ def run_agent(
                 ToolEvent(
                     iteration=iteration + 1,
                     event_type="parse_error",
-                    tool=None,
                     args={},
                     result=str(e)
                 )
@@ -755,7 +754,7 @@ def run_agent(
         events.append(
             ToolEvent(
                 iteration=iteration + 1,
-                tool="response",
+                event_type="agent_response",
                 args={},
                 result=str(response)
             )
