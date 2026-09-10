@@ -23,6 +23,7 @@ WORKDIR /app/
 RUN apt-get update && apt-get install -y tree && rm -rf /var/lib/apt/lists/*
 
 COPY --from=compiler /opt/venv /opt/venv
+COPY --from=compiler /opt/ms-playwright /opt/ms-playwright
 ENV PATH="/opt/venv/bin:$PATH"
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 

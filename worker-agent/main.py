@@ -65,10 +65,11 @@ class ToolEvent:
 response = llm.invoke("Reply with exactly: Ollama connection works")
 print(response.content)
 
-WORKSPACE = os.getenv(
+WORKSPACE_PATH = os.getenv(
     "WORKSPACE",
     "/agentworkspace",
 )
+WORKSPACE = Path(WORKSPACE_PATH)
 
 WORKSPACE.mkdir(parents=True, exist_ok=True)
 
