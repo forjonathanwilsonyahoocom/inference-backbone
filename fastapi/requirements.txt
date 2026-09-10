@@ -4,3 +4,4 @@ uvicorn
 httpx
 pyyaml
 rdflib
+weaviate-client==4.23.1
