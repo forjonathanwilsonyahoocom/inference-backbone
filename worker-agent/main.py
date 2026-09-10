@@ -228,12 +228,12 @@ def web_fetch(url: str) -> str:
 @tool
 def search_file(path: str, query: str) -> str:
     """
-    Search a local file for an **exact** text match.
+    Search a local file or all files under a directory for an **exact** text match.
 
     Parameters
     ----------
     path : str
-        Path to the file to search (relative to the workspace or absolute).
+        Path to the file or directory to search (relative to the workspace or absolute).
     query : str
         The exact text to look for (case‑sensitive).
 
@@ -241,54 +241,62 @@ def search_file(path: str, query: str) -> str:
     -------
     str
         JSON array of objects, each with:
+            * `file` – relative file path (empty string for single‑file mode)
             * `line` – 1‑based line number
             * `text` – the line content (trimmed of trailing newline)
 
-        If the file is not found or is not a regular file,
-        a short error message is returned instead of JSON.
+        If the path does not exist or is not a file/directory, a short error message is returned instead of JSON.
         When no matches are found an empty JSON array (`[]`) is returned.
 
     Notes
     -----
-    * The file is read with UTF‑8 encoding; if decoding fails,
+    * The file(s) are read with UTF‑8 encoding; if decoding fails,
       the fallback encoding `latin‑1` is used.
     * To keep the agent’s context small, the search stops after
-      `max_hits` matches (default 10).
+      `max_hits` matches per file (default 10).
     * Very large files (over `max_chars` bytes) are truncated before
       searching; the truncated text ends with `"\n...[truncated]"`.
     """
 
     # Resolve path safely
-    file_path = safe_path(path)
+    target_path = safe_path(path)
 
-    # Basic file checks
-    if not file_path.exists():
-        return f"File does not exist: {path}"
-    if not file_path.is_file():
-        return f"Not a file: {path}"
+    # Basic existence check
+    if not target_path.exists():
+        return f"Path does not exist: {path}"
 
-    # Read the file (UTF‑8, fallback to latin‑1)
-    try:
-        content = file_path.read_text(encoding="utf-8")
-    except UnicodeDecodeError:
-        content = file_path.read_text(encoding="latin-1")
+    # Helper to search a single file and return matches
+    def _search_single(file: Path) -> List[Dict[str, str]]:
+        try:
+            content = file.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            content = file.read_text(encoding="latin-1")
 
-    # Avoid flooding the model with huge inputs
-    max_chars = 30_000
-    if len(content) > max_chars:
-        content = content[:max_chars] + "\n...[truncated]"
+        max_chars = 30_000
+        if len(content) > max_chars:
+            content = content[:max_chars] + "\n...[truncated]"
 
-    # Search for the exact query
-    matches: List[Dict[str, str]] = []
-    max_hits = 10
-    for i, line in enumerate(content.splitlines(), start=1):
-        if query in line:
-            matches.append({"line": i, "text": line.strip()})
-            if len(matches) >= max_hits:
-                break
+        matches: List[Dict[str, str]] = []
+        max_hits = 10
+        for i, line in enumerate(content.splitlines(), start=1):
+            if query in line:
+                matches.append({"file": str(file.relative_to(WORKSPACE)), "line": i, "text": line.strip()})
+                if len(matches) >= max_hits:
+                    break
+        return matches
 
-    # Return JSON (empty array if no matches)
-    return json.dumps(matches, ensure_ascii=False, indent=2)
+    results: List[Dict[str, str]] = []
+
+    if target_path.is_file():
+        results.extend(_search_single(target_path))
+    else:
+        # Directory: iterate recursively over all files
+        for file in target_path.rglob("*"):
+            if file.is_file():
+                results.extend(_search_single(file))
+                # Optional: stop early if a global limit is desired
+
+    return json.dumps(results, ensure_ascii=False, indent=2)
 
 
 
