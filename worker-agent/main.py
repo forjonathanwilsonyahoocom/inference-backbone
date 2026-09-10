@@ -3,6 +3,7 @@ import os
 import subprocess
 from pathlib import Path
 from typing import Any, overload, Mapping, List, Dict, Iterable, Optional
+from pydantic import BaseModel, Field
 from dataclasses import dataclass
 from ollama import ResponseError 
 from langchain_core.messages import (
@@ -55,12 +56,13 @@ llm = ChatOllama(
 
 print(f"Using {MODEL_NAME} at {OLLAMA_BASE_URL}")
 
-@dataclass
-class ToolEvent:
+
+class ToolEvent(BaseModel):
     iteration: int
-    tool: str
-    args: dict
-    result: str
+    event_type: str
+    tool: Optional[str] = None
+    args: Dict[str, Any] = Field(default_factory=dict)
+    result: Any = None
 
 response = llm.invoke("Reply with exactly: Ollama connection works")
 print(response.content)
@@ -732,7 +734,8 @@ def run_agent(
             events.append(
                 ToolEvent(
                     iteration=iteration + 1,
-                    tool="error_response",
+                    event_type="parse_error",
+                    tool=None,
                     args={},
                     result=str(e)
                 )
@@ -796,9 +799,10 @@ def run_agent(
             events.append(
                 ToolEvent(
                     iteration=iteration + 1,
+                    event_type="tool_call",
                     tool=tool_name,
                     args=tool_args,
-                    result=str(tool_result)
+                    result=tool_result
                 )
             )
 
@@ -872,7 +876,6 @@ def run_agent(
 # TOOLS_BY_NAME, run_agent() — unchanged, stays above this ...
 
 from fastapi import FastAPI
-from pydantic import BaseModel
 
 app = FastAPI()
 
