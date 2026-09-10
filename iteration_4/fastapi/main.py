@@ -32,6 +32,9 @@ def sha1(txt: str) -> str:
     """
     return hashlib.sha1(txt.encode("utf-8")).hexdigest()
 
+def log(msg: str, level: str = 'INFO') -> None:
+    print(f"[{level}] {msg}")
+
 # ---------------------------------------------------------------------------
 # # duplicated from doc‑ingestor — parse_markdown
 # ---------------------------------------------------------------------------
@@ -153,7 +156,7 @@ def build_turtle(meta: Dict, sections: List[str], doc_id: str, body: str = "") -
         g.add((doc_uri, Namespace(ONTOLOGY_PREFIX).hasKeyword, Literal(kw)))
 
     for sec in sections:
-        sec_hash = sha1(sec.encode("utf-8").decode("utf-8")) if isinstance(sec, bytes) else sha1(sec)
+        sec_hash = sha1(sec)
         sec_uri = URIRef(f"{ONTOLOGY_PREFIX}Section_{doc_id}_{sec_hash}")
         g.add((doc_uri, Namespace(ONTOLOGY_PREFIX).hasSection, sec_uri))
 
@@ -177,10 +180,13 @@ def post_to_graphdb(turtle: str) -> Tuple[int, str]:
     try:
         r = requests.post(url, data=turtle.encode("utf-8"), headers=headers, timeout=30)
         r.raise_for_status()
+        log(f"✅ POSTed {url}")
         return r.status_code, r.text
     except requests.HTTPError as exc:
+        log(f"❌ POST failed for {path}: {exc.response.status_code} {exc.response.text}", level='ERROR')
         return exc.response.status_code, exc.response.text
     except requests.RequestException as exc:
+        log(f"❌ Network error for {path}: {exc}", level='ERROR')
         return 0, str(exc)
 
 # ---------------------------------------------------------------------------
