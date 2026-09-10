@@ -14,8 +14,8 @@
        sr:sailImpl [
            sail:sailType "graphdb:Sail" ;
 
-           owlim:base-URL "http://example.org/" ;
-           owlim:defaultNS "http://example.org/" ;
+           owlim:base-URL "http://mindbodyengineer.com/" ;
+           owlim:defaultNS "http://mindbodyengineer.com/" ;
 
            owlim:repository-type "file-repository" ;
            owlim:ruleset "rdfsplus-optimized" ;   # RDFS inference (use “rdfplus” or “owlplus” for OWL DL)

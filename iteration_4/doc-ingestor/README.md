@@ -27,7 +27,7 @@ The container will:
 | `REPO_URL` | `git@github.com:forjonathanwilsonyahoocom/cae.git` | SSH URL of the docs repo. |
 | `CLONE_DIR` | `/data/docs` | Where the repo is cloned inside the container. |
 | `GRAPHDB_URL` | `http://graphdb:7200/repositories/inference-backbone` | Endpoint to POST Turtle statements. |
-| `ONTOLOGY_PREFIX` | `http://example.org/` | Base namespace for the `ex:` prefix. |
+| `ONTOLOGY_PREFIX` | `http://mindbodyengineer.com/` | Base namespace for the `ex:` prefix. |
 
 ### Example Docker‑Compose snippet
 
@@ -39,7 +39,7 @@ services:
       REPO_URL: "git@github.com:forjonathanwilsonyahoocom/cae.git"
       CLONE_DIR: "/data/docs"
       GRAPHDB_URL: "http://graphdb:7200/repositories/inference-backbone"
-      ONTOLOGY_PREFIX: "http://example.org/"
+      ONTOLOGY_PREFIX: "http://mindbodyengineer.com/"
     volumes:
       - ./cae:/data/docs:ro   # optional, if you want to keep the repo locally
 ```

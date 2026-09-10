@@ -23,7 +23,7 @@ from build_turtle import build_turtle
 from typing import Dict, List, Tuple, Optional
 
 # ---------- configuration ----------
-BASE_IRI     = os.getenv('ONTOLOGY_PREFIX', 'http://example.org/')
+BASE_IRI     = os.getenv('ONTOLOGY_PREFIX', 'http://mindbodyengineer.com/')
 GRAPHDB_URL  = os.getenv('GRAPHDB_URL', 'http://graphdb:7200/repositories/inference-backbone')
 REPO_DIR     = Path(os.getenv('CLONE_DIR', '/data/docs'))
 REPO_URL     = os.getenv('REPO_URL', 'git@github.com:forjonathanwilsonyahoocom/cae.git')

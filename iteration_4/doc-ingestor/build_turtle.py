@@ -2,8 +2,8 @@ from rdflib import Graph, Namespace, Literal, URIRef, RDF
 from rdflib.namespace import XSD
 from hashlib import sha1
 
-BASE_IRI = "http://example.org/"
-EX = Namespace("http://example.org/")
+BASE_IRI = "http://mindbodyengineer.com/"
+EX = Namespace("http://mindbodyengineer.com/")
 
 def build_turtle(meta: dict, sections: list[str], doc_id: str, body: str = "") -> str:
     """Build a Turtle document using rdflib.

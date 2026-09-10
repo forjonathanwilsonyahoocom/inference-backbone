@@ -18,7 +18,7 @@ from typing import Optional, Tuple, List, Dict
 # Configuration
 # ---------------------------------------------------------------------------
 GRAPHDB_URL = os.getenv("GRAPHDB_URL", "http://graphdb:7200/repositories/inference-backbone")
-ONTOLOGY_PREFIX = os.getenv("ONTOLOGY_PREFIX", "http://example.org/")
+ONTOLOGY_PREFIX = os.getenv("ONTOLOGY_PREFIX", "http://mindbodyengineer.com/")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://10.42.0.192:11434")
 
 app = FastAPI()
