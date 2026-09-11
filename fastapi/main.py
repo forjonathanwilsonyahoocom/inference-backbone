@@ -22,8 +22,8 @@ GEN_MODEL = os.getenv("GEN_MODEL", "gpt-oss:20b")
 app = FastAPI()
 
 # Include routers for memory ingestion and search
-from memory_ingest import router as memory_ingest_router
-from memory_search import router as memory_search_router
+from inference_backbone.fastapi.memory_ingest import router as memory_ingest_router
+from inference_backbone.fastapi.memory_search import router as memory_search_router
 
 app.include_router(memory_ingest_router)
 app.include_router(memory_search_router)

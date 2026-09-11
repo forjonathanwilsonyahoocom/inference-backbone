@@ -25,9 +25,9 @@ from typing import Dict, List
 
 from fastapi import APIRouter, HTTPException
 
-from .chunker import chunk_text
-from .embedding_provider import OllamaEmbeddingProvider
-from .memory import ensure_memory_collection, _get_client
+from inference_backbone.fastapi.chunker import chunk_text
+from inference_backbone.fastapi.embedding_provider import OllamaEmbeddingProvider
+from inference_backbone.fastapi.memory import ensure_memory_collection, _get_client
 
 router = APIRouter()
 
