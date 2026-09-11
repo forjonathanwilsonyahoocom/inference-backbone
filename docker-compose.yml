@@ -27,7 +27,7 @@ services:
       GDB_HEAP_SIZE: 2G      # adjust for your RAM
 
     volumes:
-      - ./datasets/graphdb:/opt/graphdb
+      - ./datasets/graphdb:/opt/graphdb/data
       - ./repository.init:/repository.init
 
     healthcheck:
@@ -54,8 +54,8 @@ services:
     shm_size: '2gb'
     environment:
       OLLAMA_URL: http://10.42.0.192:11434
-      GEN_MODEL: ornith:9b 
-      DISTILL_GEN_MODEL: granite4.1:8b 
+      GEN_MODEL: gpt-oss:20b 
+      DISTILL_GEN_MODEL: gpt-oss:20b 
       WORKSPACE: /agentworkspace
     volumes:
       - ./worker-agent:/app
