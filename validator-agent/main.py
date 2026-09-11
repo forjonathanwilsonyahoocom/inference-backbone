@@ -10,7 +10,7 @@ OLLAMA_URL = os.getenv("OLLAMA_URL", "http://10.42.0.192:11434")
 GEN_MODEL = os.getenv("GEN_MODEL", "gpt-oss:20b")
 
 print(f"Using {GEN_MODEL} at {OLLAMA_URL}/")
-llm = ChatOllama(base_url=OLLAMA_URL, model=GEN_MODEL, temperature=0)
+llm = ChatOllama(base_url=OLLAMA_URL, model=GEN_MODEL, temperature=0.01)
 
 VALIDATION_PROMPT = """You are a claim-checking validator. You will be given:
 1. A TASK that an AI agent was asked to perform.
