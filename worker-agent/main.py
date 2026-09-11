@@ -1,4 +1,6 @@
 import json
+import uuid
+import requests
 import os
 import subprocess
 import hashlib
@@ -27,6 +29,47 @@ from ddgs import DDGS
 import asyncio
 from playwright.async_api import async_playwright
 import nest_asyncio
+
+# ---------------------------------------------------------------------------
+# Helper: send a tool result to the memory ingestion endpoint
+# ---------------------------------------------------------------------------
+
+def ingest_tool_result(execution_id: str, event_id: str, tool_name: str, tool_result: Any, source_url: Optional[str] = None) -> None:
+    """POST a semantic artifact to the FastAPI memory endpoint.
+
+    Parameters
+    ----------
+    execution_id: str
+        Unique identifier for the entire worker execution.
+    event_id: str
+        Unique identifier for this tool call event.
+    tool_name: str
+        Name of the tool that produced the result.
+    tool_result: Any
+        The raw result returned by the tool.  It is converted to a JSON string if it is a dict.
+    source_url: Optional[str]
+        Optional URL that is the source of the result.
+    """
+    try:
+        if isinstance(tool_result, dict):
+            content_payload = json.dumps(tool_result, ensure_ascii=False)
+        else:
+            content_payload = str(tool_result)
+
+        payload = {
+            "content": content_payload,
+            "artifact_type": "tool_result",
+            "execution_id": execution_id,
+            "event_id": event_id,
+            "source": tool_name,
+            "source_url": source_url,
+        }
+        resp = requests.post("http://localhost:8000/memory/ingest", json=payload, timeout=5)
+        resp.raise_for_status()
+    except Exception as e:
+        # Log but do not raise – memory is observational
+        print(f"[Memory ingestion] failed for event {event_id}: {e}")
+
 
 # Apply the patch to allow nested event loops inside the Jupyter runtime environment
 nest_asyncio.apply()
