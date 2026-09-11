@@ -64,6 +64,8 @@ async def memory_search(payload: Dict) -> List[Dict]:
     * ``query`` – the search string
     * ``limit`` – optional maximum number of results (default 8)
     """
+    print("/memory/search")
+    
     if "query" not in payload:
         raise HTTPException(status_code=400, detail="Missing required key: query")
     query_text: str = payload["query"]
@@ -71,15 +73,19 @@ async def memory_search(payload: Dict) -> List[Dict]:
     if limit <= 0:
         raise HTTPException(status_code=400, detail="limit must be positive")
 
+    print(query_text, limit )
     # 1. Embed the query
     provider = OllamaEmbeddingProvider()
     try:
         query_vector = await provider.embed_query(query_text)
     except Exception as exc:
+        print("EMBEDDING FAILURE",exc)
         raise HTTPException(status_code=500, detail=f"Embedding failed: {exc}")
 
     # 2. Perform vector search
     client = _get_client()
+
+    print("EMBEDDING FAILURE",exc)
     try:
         collection =  client.collections.use("MemoryArtifact")
         # Build the query payload
@@ -96,7 +102,7 @@ async def memory_search(payload: Dict) -> List[Dict]:
                                "distance" : art.metadata.distance})
         return normalized
     except Exception as e:
-        print(e)
+        print("COLLECTION QUERY FAILURE",e)
     finally:
         client.close()
 
