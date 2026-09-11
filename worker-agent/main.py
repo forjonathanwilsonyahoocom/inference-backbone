@@ -790,7 +790,7 @@ def run_agent(
             )
         )
 
-        print(len(messages))
+        print("there are currently ",len(messages), " messages in the context")
         
         if verbose:
             if response.content:
