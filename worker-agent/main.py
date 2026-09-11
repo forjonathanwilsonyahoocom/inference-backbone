@@ -828,6 +828,7 @@ def run_agent(
 
         # Distillation now runs AFTER all tool results for this turn are in. Thanks Claude
         if response.usage_metadata.get("input_tokens", 0) > 15000:
+            print("Starting distill")
             conv_text = "\n".join(
                 msg.content if isinstance(msg.content, str) else str(msg.content)
                 for msg in messages
@@ -850,8 +851,9 @@ def run_agent(
                     distilled = True
                     break
                 except Exception as exc:
-                    print(exc, facts_json)
-
+                    raw_content = facts_json.content if facts_json else "(no response)"
+                    print(f"Distillation JSON parse failed: {exc}")
+                    print(f"Raw model output (truncated): {raw_content[:300]}")
 
             if verbose:
                 print("Distilled")
