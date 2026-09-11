@@ -748,7 +748,7 @@ def run_agent(
                 tool_calls = response.tool_calls or []
                 content = response.content or ""
                 #try this a few times if we get no tool calls AND no content
-                if len(tool_calls) > 0 or len(content) > 4
+                if len(tool_calls) > 0 or len(content) > 4:
                     break
         except ResponseError as e:
             # 1. Show the error to the LLM
