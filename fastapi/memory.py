@@ -31,7 +31,7 @@ import os
 from typing import Any
 
 import weaviate
-from weaviate.classes.config import Property, DataType
+from weaviate.classes.config import Property, DataType, Configure
 
 # ---------------------------------------------------------------------------
 # Configuration helpers
@@ -78,47 +78,9 @@ def ensure_memory_collection() -> None:
         if client.collections.exists("MemoryArtifact"):
             # Already present – nothing to do.
             return
-
-        # Define the schema – the order of properties is not
-        # significant but keeping it stable makes debugging easier.
-        schema = {
-            "class": "MemoryArtifact",
-            "properties": [
-                {"name": "content", "dataType": ["text"]},
-                {"name": "artifact_id", "dataType": ["text"]},
-                {"name": "artifact_type", "dataType": ["text"]},
-                {"name": "execution_id", "dataType": ["text"]},
-                {"name": "event_id", "dataType": ["text"]},
-                {"name": "source", "dataType": ["text"]},
-                {"name": "source_url", "dataType": ["text"]},
-                {"name": "chunk_index", "dataType": ["int"]},
-                {"name": "chunk_count", "dataType": ["int"]},
-                {"name": "parent_id", "dataType": ["text"]},
-                {"name": "embedding_model", "dataType": ["text"]},
-                {"name": "embedding_task", "dataType": ["text"]},
-            ],
-            "vectorIndexConfig": {
-                "vectorIndexType": "hnsw",
-                "distanceMetric": "COSINE",
-                "vectorIndexConfig": {
-                    "ef": 64,
-                    "M": 16,
-                    "maxConnections": 512,
-                    "cleanupIntervalSeconds": 30,
-                },
-            },
-        }
-
         client.collections.create(
-            class_config=schema,
-            vector_index_config=weaviate.classes.config.VectorIndexConfig(
-                vector_index_type="hnsw",
-                distance_metric=weaviate.classes.config.DistanceMetric.COSINE,
-                ef=64,
-                M=16,
-                max_connections=512,
-                cleanup_interval_seconds=30,
-            ),
+            "MemoryArtifact",
+            vectorizer_config=Configure.Vectorizer.none(),
         )
     finally:
         client.close()
