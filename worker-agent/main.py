@@ -87,10 +87,8 @@ OLLAMA_BASE_URL = os.getenv(
     "http://10.42.0.192:11434/",
 )
 
-MODEL_NAME = os.getenv(
-    "OLLAMA_MODEL",
-    "gpt-oss:20b",
-)
+MODEL_NAME = os.getenv( "GEN_MODEL", "gpt-oss:20b")
+DISTILL_MODEL_NAME = os.getenv( "DISTILL_GEN_MODEL", "gpt-oss:20b")
 
 llm = ChatOllama(
     model=MODEL_NAME,
@@ -99,12 +97,13 @@ llm = ChatOllama(
     num_ctx=40960,
 )
 distillation_llm = ChatOllama(
-    model=MODEL_NAME,
+    model=DISTILL_MODEL_NAME,
     base_url=OLLAMA_BASE_URL,
     temperature=0.01,
     num_predict=5000,  # distillation JSON should never need more than this
 )
 print(f"Using {MODEL_NAME} at {OLLAMA_BASE_URL}")
+print(f"Distilling with {DISTILL_MODEL_NAME} at {OLLAMA_BASE_URL}")
 
 
 class ToolEvent(BaseModel):

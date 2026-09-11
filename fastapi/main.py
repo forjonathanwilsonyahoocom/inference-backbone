@@ -17,6 +17,7 @@ from typing import Optional, Tuple, List, Dict
 GRAPHDB_URL = os.getenv("GRAPHDB_URL", "http://graphdb:7200/repositories/inference-backbone")
 ONTOLOGY_PREFIX = os.getenv("ONTOLOGY_PREFIX", "http://mindbodyengineer.com/")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://10.42.0.192:11434")
+GEN_MODEL = os.getenv("GEN_MODEL", "gpt-oss:20b")
 
 app = FastAPI()
 
@@ -74,7 +75,7 @@ def ask(query: str) -> str:
     """Send *query* to the Ollama endpoint and return the raw response.
     """
     json_prompt = {
-        "model": "gpt-oss:20b",
+        "model": GEN_MODEL,
         "prompt": query,
         "stream": False,
         "system": "",

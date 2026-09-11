@@ -53,6 +53,7 @@ services:
     environment:
       OLLAMA_URL: http://10.42.0.192:11434
       GEN_MODEL: gpt-oss:20b
+      DISTILL_GEN_MODEL: gpt-oss:20b
       WORKSPACE: /agentworkspace
     volumes:
       - ./worker-agent:/app
