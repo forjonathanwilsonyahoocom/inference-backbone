@@ -778,8 +778,9 @@ def run_agent(
                 )
 
             except ResponseError as e:
-                raw_content = extract_raw_output(e)
+                raw_content = str(e)
 
+                print(raw_content)
                 events.append(
                     ToolEvent(
                         iteration=iteration + 1,
