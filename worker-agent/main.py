@@ -742,6 +742,7 @@ def run_agent(
             print(f"\n--- iteration {iteration + 1} ---")
 
         tool_calls = []
+        response = {}
         try:
             for _ in range(3):
                 response = llm_with_tools.invoke(messages)
@@ -752,7 +753,8 @@ def run_agent(
                     break
         except ResponseError as e:
             # 1. Show the error to the LLM
-
+            print(f"Parsing response from LLM failed: {e}")
+            
             events.append(
                 ToolEvent(
                     iteration=iteration + 1,
@@ -790,7 +792,7 @@ def run_agent(
                 print("Assistant:", response.content[:200])
 
         # The model is finished when it returns content and no tool calls.
-        if not tool_calls:
+        if len(tool_calls) == 0:
             if verbose:
                 if response.content:
                     print("Assistant:", response.content)
