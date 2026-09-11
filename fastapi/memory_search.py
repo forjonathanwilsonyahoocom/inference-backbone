@@ -85,7 +85,6 @@ async def memory_search(payload: Dict) -> List[Dict]:
     # 2. Perform vector search
     client = _get_client()
 
-    print("EMBEDDING FAILURE",exc)
     try:
         collection =  client.collections.use("MemoryArtifact")
         # Build the query payload
