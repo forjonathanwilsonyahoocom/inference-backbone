@@ -27,7 +27,7 @@ services:
       GDB_HEAP_SIZE: 2G      # adjust for your RAM
 
     volumes:
-      - ./datasets/graphdb:/opt/graphdb/home
+      - ./datasets/graphdb:/opt/graphdb
       - ./repository.init:/repository.init
 
     healthcheck:
