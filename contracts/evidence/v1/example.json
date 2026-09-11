@@ -1,1 +1,17 @@
-The OWL reasoner successfully inferred that 'AgentA' is a subclass of 'Worker' based on the ontology axioms.
+{
+  "evidence_id": "evt_01JEXAMPLE",
+  "execution_id": "exec_01JEXAMPLE",
+  "event_id": "event_01JEXAMPLE",
+  "content": "AgentA was identified as a subclass of Worker by the ontology reasoner.",
+  "content_hash": "sha256:REPLACE_WITH_REAL_HASH",
+  "source_type": "reasoner",
+  "source_name": "owl_reasoner",
+  "source_url": null,
+  "observed_at": "2026-09-11T22:00:00Z",
+  "retrieved_at": "2026-09-11T22:00:01Z",
+  "extraction_method": "owl_reasoning",
+  "parent_evidence_ids": [],
+  "metadata": {},
+  "worker_version": "dev",
+  "schema_version": "evidence.v1"
+}
