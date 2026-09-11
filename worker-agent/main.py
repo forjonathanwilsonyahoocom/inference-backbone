@@ -1,11 +1,13 @@
 import json
 import os
 import subprocess
+import hashlib
 from pathlib import Path
 from typing import Any, overload, Mapping, List, Dict, Iterable, Optional
 from pydantic import BaseModel, Field
 from dataclasses import dataclass
 from ollama import ResponseError 
+from collections import deque
 from langchain_core.messages import (
     AIMessage,
     HumanMessage,
@@ -68,6 +70,16 @@ class ToolEvent(BaseModel):
     tool: Optional[str] = None
     args: Dict[str, Any] = Field(default_factory=dict)
     result: Any = None
+
+
+def canonical_json(value: Any) -> str:
+    return json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
+
 
 response = llm.invoke("Reply with exactly: Ollama connection works")
 print(response.content)
@@ -796,6 +808,20 @@ def truncate_history(
     return kept_first + kept_rest
 
 
+
+def tool_call_fingerprint(tool_name: str, args: dict) -> str:
+    payload = {
+        "tool": tool_name,
+        "args": args,
+    }
+
+    encoded = canonical_json(payload).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+    
+def result_fingerprint(result: Any) -> str:
+    encoded = canonical_json(result).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+    
 def run_agent(
     user_request: str,
     max_iterations: int = 150,
@@ -807,6 +833,10 @@ def run_agent(
     ]
     events: list[ToolEvent] = []
     iteration = 0
+        
+    recent_steps = deque(maxlen=12)
+    step_counts = {}
+
     while iteration < max_iterations:
         iteration = iteration + 1
         if verbose:
@@ -908,6 +938,36 @@ def run_agent(
             else:
                 try:
                     tool_result = selected_tool.invoke(tool_args)
+                    
+                    step_fingerprint = (
+                        tool_call_fingerprint(tool_name, tool_args),
+                        result_fingerprint(tool_result),
+                    )
+
+                    recent_steps.append(step_fingerprint)
+
+                    step_counts[step_fingerprint] = step_counts.get(step_fingerprint, 0) + 1
+                    
+                    if step_counts[step_fingerprint] > 2:
+                        tool_result = ({
+                            "status": "stagnation_detected",
+                            "message": (
+                                "This tool call has been repeated and produced the same result. "
+                                "Do not repeat it with the same arguments."
+                            ),
+                            "tool": tool_name,
+                            "arguments": tool_args,
+                            "repeated_count": step_counts[step_fingerprint],
+                            "result" : tool_result,
+                            "suggested_actions": [
+                                "Use a different query or arguments",
+                                "Use another tool",
+                                "Apply the information already returned",
+                                "Finish if the task is complete",
+                            ],
+                        })
+                        print(tool_result)
+
                 except Exception as exc:
                     tool_result = (
                         f"Tool error: {type(exc).__name__}: {exc}"
