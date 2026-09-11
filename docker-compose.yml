@@ -52,8 +52,8 @@ services:
     shm_size: '2gb'
     environment:
       OLLAMA_URL: http://10.42.0.192:11434
-      GEN_MODEL: gpt-oss:20b
-      DISTILL_GEN_MODEL: gpt-oss:20b
+      GEN_MODEL: ornith:9b 
+      DISTILL_GEN_MODEL: granite4.1:8b 
       WORKSPACE: /agentworkspace
     volumes:
       - ./worker-agent:/app

@@ -21,7 +21,7 @@ from typing import List, Dict
 import weaviate
 from weaviate.classes.config import Configure
 
-from .embedding_provider import OllamaEmbeddingProvider
+from embedding_provider import OllamaEmbeddingProvider
 
 # ---------------------------------------------------------------------------
 # Configuration helpers
