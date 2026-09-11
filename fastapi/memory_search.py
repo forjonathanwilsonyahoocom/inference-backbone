@@ -96,7 +96,7 @@ async def memory_search(payload: Dict) -> List[Dict]:
             
         # Normalize
         normalized = []
-        for art in response.objects:
+        for art in results.objects:
             normalized.append({"properties" : art.properties,
                                "distance" : art.metadata.distance})
         return normalized
