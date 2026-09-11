@@ -102,11 +102,11 @@ async def memory_ingest(payload: Dict) -> Dict:
         # 4. Insert each chunk as a separate object
         chunk_ids: List[str] = []
         parent_id = _generate_parent_id(content)
+        memory_artifact = client.collections.use("MemoryArtifact")
         for idx, (chunk, emb) in enumerate(zip(chunks, embeddings)):
-            obj = wvc.data.DataObject(
-                properties={
+           
+            new_id = memory_artifact.data.insert(properties={
                     "content": chunk,
-                    "artifact_id": artifact_type,
                     "artifact_type": artifact_type,
                     "execution_id": execution_id,
                     "event_id": event_id,
@@ -118,12 +118,10 @@ async def memory_ingest(payload: Dict) -> Dict:
                     "embedding_model": provider.model,
                     "embedding_task": "document",
                 },
-                vector=emb,
-            )
-            res = client.collections.get("MemoryArtifact").data.insert(obj)
-            if not res:
+                vector=emb)
+            if not new_id:
                 raise HTTPException(status_code=500, detail="Weaviate insert failed")
-            chunk_ids.append(res["id"])
+            chunk_ids.append(new_id)
         return {
             "artifact_id": artifact_type,
             "parent_id": parent_id,
