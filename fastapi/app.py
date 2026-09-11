@@ -10,10 +10,11 @@ The router is mounted in :mod:`inference_backbone.fastapi.main`.
 
 from fastapi import FastAPI
 
-from inference_backbone.fastapi.memory_ingest import router as memory_router
+from inference_backbone.fastapi.memory_ingest import router as memory_ingest_router
 
 app = FastAPI()
-app.include_router(memory_router)
+app.include_router(memory_search_router)
+app.include_router(memory_ingest_router)
 
 # The original /ingest endpoint is still available via the
 # ``main`` module.  Importing it here keeps backward compatibility
