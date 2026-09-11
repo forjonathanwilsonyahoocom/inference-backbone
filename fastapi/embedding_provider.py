@@ -77,7 +77,7 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
             # Return as normalized float32 for fast dot-product cosine similarity
             arr = np.array(vector, dtype=np.float32)
                         
-            embeddings = embeddings + [ (arr / np.linalg.norm(arr)).array()]
+            embeddings = embeddings + [ (arr / np.linalg.norm(arr)).astype(float).tolist() ]
             print("EMBEDDED!")
             
         if embeddings is None or not isinstance(embeddings, list):
