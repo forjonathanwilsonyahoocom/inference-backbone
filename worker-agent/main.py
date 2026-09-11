@@ -53,7 +53,12 @@ llm = ChatOllama(
     temperature=0.01,
     num_ctx=40960,
 )
-
+distillation_llm = ChatOllama(
+    model=MODEL_NAME,
+    base_url=OLLAMA_BASE_URL,
+    temperature=0.01,
+    num_predict=2000,  # distillation JSON should never need more than this
+)
 print(f"Using {MODEL_NAME} at {OLLAMA_BASE_URL}")
 
 
@@ -842,7 +847,7 @@ def run_agent(
             facts_json = None
             for _ in range(3):
                 try:
-                    facts_json = llm.invoke(distillation_messages)
+                    facts_json = distillation_llm.invoke(distillation_messages)
                     raw = facts_json.content.strip()
                     if raw.startswith("```"):
                         raw = raw.strip("`")
