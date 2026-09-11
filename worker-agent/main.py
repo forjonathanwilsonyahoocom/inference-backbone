@@ -879,7 +879,7 @@ def run_agent(
                     )
                 )
 
-                messages.append(AIMessage(content=raw_content))
+                messages.append(AIMessage(content=raw_content[:2000]))
                 messages.append(
                     HumanMessage(
                         content=(
@@ -912,7 +912,7 @@ def run_agent(
         
         if verbose:
             if response.content:
-                print("Assistant:", response.content[:200])
+                print("Assistant:", response.content[:2000])
 
         # The model is finished when it returns content and no tool calls.
         if len(tool_calls) == 0:
