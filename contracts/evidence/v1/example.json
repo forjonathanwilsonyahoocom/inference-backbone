@@ -2,7 +2,7 @@
   "evidence_id": "evt_01JEXAMPLE",
   "execution_id": "exec_01JEXAMPLE",
   "event_id": "event_01JEXAMPLE",
-  "content": "AgentA was identified as a subclass of Worker by the ontology reasoner.",
+  "content": "The user was identified as a subclass of evolving empath by the owl reasoner.",
   "content_hash": "sha256:REPLACE_WITH_REAL_HASH",
   "source_type": "reasoner",
   "source_name": "owl_reasoner",
