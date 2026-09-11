@@ -102,24 +102,24 @@ async def memory_ingest(payload: Dict) -> Dict:
         chunk_ids: List[str] = []
         parent_id = _generate_parent_id(content)
         for idx, (chunk, emb) in enumerate(zip(chunks, embeddings)):
-            obj = {
-                "content": chunk,
-                "artifact_id": artifact_type,
-                "artifact_type": artifact_type,
-                "execution_id": execution_id,
-                "event_id": event_id,
-                "source": source,
-                "source_url": source_url,
-                "chunk_index": idx,
-                "chunk_count": chunk_count,
-                "parent_id": parent_id,
-                "embedding_model": provider.model,
-                "embedding_task": "document",
-                "vector": emb,
-            }
-            # Weaviate expects the vector under the key ``vector``
-            # and the rest as properties.
-            res = client.collections.get("MemoryArtifact").create(obj)
+            obj = wvc.data.DataObject(
+                properties={
+                    "content": chunk,
+                    "artifact_id": artifact_type,
+                    "artifact_type": artifact_type,
+                    "execution_id": execution_id,
+                    "event_id": event_id,
+                    "source": source,
+                    "source_url": source_url,
+                    "chunk_index": idx,
+                    "chunk_count": chunk_count,
+                    "parent_id": parent_id,
+                    "embedding_model": provider.model,
+                    "embedding_task": "document",
+                },
+                vector=emb,
+            )
+            res = client.collections.get("MemoryArtifact").data.insert(obj)
             if not res:
                 raise HTTPException(status_code=500, detail="Weaviate insert failed")
             chunk_ids.append(res["id"])

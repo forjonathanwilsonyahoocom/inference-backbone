@@ -31,12 +31,7 @@ import os
 from typing import Any
 
 import weaviate
-from weaviate.collections.classes.config import (
-    Property,
-    DataType,
-    Configure,
-)
-from weaviate.collections.classes import Collection
+from weaviate.classes.config import Property, DataType
 
 # ---------------------------------------------------------------------------
 # Configuration helpers
@@ -55,8 +50,8 @@ _GRPC_PORT = int(os.getenv("WEAVIATE_GRPC_PORT", "50051"))
 __all__ = ["_get_client", "ensure_memory_collection"]
 
 
-def _get_client() -> weaviate.Client:
-    """Return a new :class:`weaviate.Client` instance.
+def _get_client() -> weaviate.WeaviateClient:
+    """Return a new :class:`weaviate.WeaviateClient` instance.
 
     The function reads the connection parameters from environment
     variables.  It is intentionally lightweight so that callers can
@@ -86,28 +81,44 @@ def ensure_memory_collection() -> None:
 
         # Define the schema – the order of properties is not
         # significant but keeping it stable makes debugging easier.
-        schema = CollectionSchema(
-            properties=[
-                Property(name="content", data_type=DataType.TEXT),
-                Property(name="artifact_id", data_type=DataType.TEXT),
-                Property(name="artifact_type", data_type=DataType.TEXT),
-                Property(name="execution_id", data_type=DataType.TEXT),
-                Property(name="event_id", data_type=DataType.TEXT),
-                Property(name="source", data_type=DataType.TEXT),
-                Property(name="source_url", data_type=DataType.TEXT),
-                Property(name="chunk_index", data_type=DataType.INT),
-                Property(name="chunk_count", data_type=DataType.INT),
-                Property(name="parent_id", data_type=DataType.TEXT),
-                Property(name="embedding_model", data_type=DataType.TEXT),
-                Property(name="embedding_task", data_type=DataType.TEXT),
+        schema = {
+            "class": "MemoryArtifact",
+            "properties": [
+                {"name": "content", "dataType": ["text"]},
+                {"name": "artifact_id", "dataType": ["text"]},
+                {"name": "artifact_type", "dataType": ["text"]},
+                {"name": "execution_id", "dataType": ["text"]},
+                {"name": "event_id", "dataType": ["text"]},
+                {"name": "source", "dataType": ["text"]},
+                {"name": "source_url", "dataType": ["text"]},
+                {"name": "chunk_index", "dataType": ["int"]},
+                {"name": "chunk_count", "dataType": ["int"]},
+                {"name": "parent_id", "dataType": ["text"]},
+                {"name": "embedding_model", "dataType": ["text"]},
+                {"name": "embedding_task", "dataType": ["text"]},
             ],
-            description="Collection for storing memory artifacts with externally supplied vectors.",
-        )
+            "vectorIndexConfig": {
+                "vectorIndexType": "hnsw",
+                "distanceMetric": "COSINE",
+                "vectorIndexConfig": {
+                    "ef": 64,
+                    "M": 16,
+                    "maxConnections": 512,
+                    "cleanupIntervalSeconds": 30,
+                },
+            },
+        }
 
         client.collections.create(
-            name="MemoryArtifact",
-            schema=schema,
-            vector_config=Configure.Vectors.self_provided(),
+            class_config=schema,
+            vector_index_config=weaviate.classes.config.VectorIndexConfig(
+                vector_index_type="hnsw",
+                distance_metric=weaviate.classes.config.DistanceMetric.COSINE,
+                ef=64,
+                M=16,
+                max_connections=512,
+                cleanup_interval_seconds=30,
+            ),
         )
     finally:
         client.close()
