@@ -89,14 +89,14 @@ async def memory_search(payload: Dict) -> List[Dict]:
             limit=limit,
             return_metadata=MetadataQuery(distance=True))
             
-        # The response structure: {"data": {"Get": {"MemoryArtifact": [ {"id":..., "properties":{...} } ] }}}
-        artifacts = results.get("data", {}).get("Get", {}).get("MemoryArtifact", [])
         # Normalize
         normalized = []
         for art in response.objects:
             normalized.append({"properties" : art.properties,
                                "distance" : art.metadata.distance})
         return normalized
+    except Exception as e:
+        print(e)
     finally:
         client.close()
 
