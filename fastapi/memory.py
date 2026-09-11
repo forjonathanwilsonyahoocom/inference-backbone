@@ -31,12 +31,12 @@ import os
 from typing import Any
 
 import weaviate
-from weaviate.collections.schema import (
-    CollectionSchema,
+from weaviate.collections.classes.config import (
     Property,
     DataType,
     Configure,
 )
+from weaviate.collections.classes import Collection
 
 # ---------------------------------------------------------------------------
 # Configuration helpers
