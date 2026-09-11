@@ -16,10 +16,14 @@ VALIDATION_PROMPT = """You are a claim-checking validator. You will be given:
 1. A TASK that an AI agent was asked to perform.
 2. The agent's FINAL RESPONSE — what it reported back to the user.
 3. An EVIDENCE LOG — the actual tool calls the agent made and their real results.
+4. SUPPLEMENTAL EVIDENCE — artifacts retrieved from semantic memory (Weaviate).
+
+IMPORTANT: The EVIDENCE LOG is the authoritative record. The SUPPLEMENTAL
+EVIDENCE is a candidate pool only — it is NOT automatically trusted.
 
 Your job: extract each discrete, checkable factual claim from the FINAL
 RESPONSE, then decide whether that claim is directly supported by something
-in the EVIDENCE LOG.
+in the EVIDENCE LOG or SUPPLEMENTAL EVIDENCE.
 
 Rules:
 - A claim is "supported" only if the evidence log contains a tool result that
@@ -28,6 +32,12 @@ Rules:
   in the abstract.
 - A claim the agent asserted with no matching tool result is "unsupported",
   even if it sounds plausible.
+- SUPPLEMENTAL EVIDENCE is a candidate pool. If a retrieved artifact matches
+  a claim, it is a candidate — the validator must still determine whether
+  it actually supports the claim. Do not blindly trust retrieved evidence.
+- Distinguish evidence provenance in your response:
+  * "direct" — came from the original execution events
+  * "retrieved" — came from semantic memory search
 - Ignore stylistic/summary sentences that make no checkable factual claim
   (e.g. "Both sources agree").
 - Ignore claims about the agent's own process (e.g. "I searched the web")
@@ -38,7 +48,7 @@ Respond with ONLY a JSON object, no other text, no markdown fences, in this
 exact shape:
 {{
   "claims": [
-    {{"text": "<claim as stated>", "supported": true|false, "evidence": "<short reference to the supporting tool result, or null>"}}
+    {{"text": "<claim as stated>", "supported": true|false, "evidence": "<short reference to the supporting tool result, or null>", "provenance": "direct"|"retrieved"}}
   ],
   "overall_verdict": "supported" | "partially_supported" | "unsupported"
 }}
@@ -49,13 +59,14 @@ class ValidateRequest(BaseModel):
     task_description: str
     final_response: str
     events: list[dict]
+    supplemental_evidence: list[dict] = []
 
 
-def build_evidence_text(events: list[dict]) -> str:
+def build_evidence_text(events: list[dict], supplemental_evidence: list[dict] = None) -> str:
     evidence_events = [
         e for e in events if e.get("tool") not in ("response", "error_response")
     ]
-    if not evidence_events:
+    if not evidence_events and not supplemental_evidence:
         return "(no tool calls were made)"
 
     lines = []
@@ -64,6 +75,15 @@ def build_evidence_text(events: list[dict]) -> str:
             f"- iteration {e.get('iteration')}: called `{e.get('tool')}` "
             f"with args {e.get('args')} -> result: {str(e.get('result'))[:1000]}"
         )
+    if supplemental_evidence:
+        lines.append("")
+        lines.append("SUPPLEMENTAL EVIDENCE (retrieved from semantic memory):")
+        for ev in supplemental_evidence:
+            lines.append(f"  - [retrieved] {ev.get('artifact_id', '?')}")
+            lines.append(f"    source: {ev.get('source', '?')}")
+            lines.append(f"    execution_id: {ev.get('execution_id', '?')}")
+            lines.append(f"    event_id: {ev.get('event_id', '?')}")
+            lines.append(f"    -> {ev.get('content', '')}")
     return "\n".join(lines)
 
 
@@ -85,7 +105,7 @@ def health():
 
 @app.post("/validate")
 def validate(req: ValidateRequest):
-    evidence_text = build_evidence_text(req.events)
+    evidence_text = build_evidence_text(req.events, req.supplemental_evidence)
 
     user_content = (
         f"TASK:\n{req.task_description}\n\n"
