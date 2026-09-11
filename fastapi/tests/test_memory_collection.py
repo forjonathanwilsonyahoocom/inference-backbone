@@ -6,16 +6,16 @@ from memory import ensure_memory_collection, _get_client
 
 @pytest.mark.timeout(10)
 def test_memory_collection_creation_and_idempotency():
-    """Verify that ``MemoryArtifact`` collection is created and that
+    """Verify that ``EvidenceChunk`` collection is created and that
     calling the creation routine twice does not raise an exception.
     """
     # First call – should create the collection
     ensure_memory_collection()
     client = _get_client()
     try:
-        assert client.collections.exists("MemoryArtifact"), "Collection should exist after first call"
+        assert client.collections.exists("EvidenceChunk"), "Collection should exist after first call"
         # Inspect the schema to confirm properties
-        schema = client.collections.get("MemoryArtifact").schema
+        schema = client.collections.get("EvidenceChunk").schema
         prop_names = {p.name for p in schema.properties}
         expected = {
             "content",

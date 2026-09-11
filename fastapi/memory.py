@@ -1,7 +1,7 @@
 """FastAPI memory module for Weaviate access.
 
 This module provides a thin wrapper around the Weaviate v4 client that
-creates an idempotent ``MemoryArtifact`` collection and exposes a helper
+creates an idempotent ``EvidenceChunk`` collection and exposes a helper
 function to obtain a client instance.
 
 The collection is defined with externally supplied vectors (``self_provided``)
@@ -68,18 +68,18 @@ def _get_client() -> weaviate.WeaviateClient:
 
 
 def ensure_memory_collection() -> None:
-    """Create the ``MemoryArtifact`` collection if it does not exist.
+    """Create the ``EvidenceChunk`` collection if it does not exist.
 
     The operation is idempotent – calling it multiple times will not
     raise an exception or overwrite an existing collection.
     """
     client = _get_client()
     try:
-        if client.collections.exists("MemoryArtifact"):
+        if client.collections.exists("EvidenceChunk"):
             # Already present – nothing to do.
             return
         client.collections.create(
-            "MemoryArtifact",
+            "EvidenceChunk",
             vector_config=Configure.Vectors.self_provided(),
         )
     finally:

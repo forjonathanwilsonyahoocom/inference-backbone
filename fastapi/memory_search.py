@@ -1,4 +1,4 @@
-"""FastAPI endpoint for semantic search over the MemoryArtifact collection.
+"""FastAPI endpoint for semantic search over the EvidenceChunk collection.
 
 The endpoint implements the specification:
 
@@ -6,7 +6,7 @@ The endpoint implements the specification:
 * Request body: ``{"query": "text", "limit": 8}``
 * Pipeline:
   1. Embed the query using :class:`OllamaEmbeddingProvider`.
-  2. Perform a vector search against the ``MemoryArtifact`` collection.
+  2. Perform a vector search against the ``EvidenceChunk`` collection.
   3. Return a list of results containing only the required fields.
 
 The implementation uses the Weaviate 4.23.x collections/query API and
@@ -58,7 +58,7 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 @router.post("/memory/search")
 async def memory_search(payload: Dict) -> List[Dict]:
-    """Perform a semantic search over the MemoryArtifact collection.
+    """Perform a semantic search over the EvidenceChunk collection.
 
     Expected JSON keys:
     * ``query`` – the search string
@@ -86,7 +86,7 @@ async def memory_search(payload: Dict) -> List[Dict]:
     client = _get_client()
 
     try:
-        collection =  client.collections.use("MemoryArtifact")
+        collection =  client.collections.use("EvidenceChunk")
         # Build the query payload
         
         results = collection.query.near_vector(

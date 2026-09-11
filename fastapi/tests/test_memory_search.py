@@ -135,7 +135,7 @@ def test_memory_search_end_to_end():
     weaviate_client = _get_client()
     try:
         for chunk_id in ingest_data["chunks"]:
-            weaviate_client.collections.get("MemoryArtifact").delete(chunk_id)
+            weaviate_client.collections.get("EvidenceChunk").delete(chunk_id)
     finally:
         weaviate_client.close()
 
@@ -143,7 +143,7 @@ def test_memory_search_end_to_end():
     weaviate_client = _get_client()
     try:
         for chunk_id in ingest_data["chunks"]:
-            obj = weaviate_client.collections.get("MemoryArtifact").get(chunk_id)
+            obj = weaviate_client.collections.get("EvidenceChunk").get(chunk_id)
             assert obj is None, f"Chunk {chunk_id} still present after cleanup"
     finally:
         weaviate_client.close()
@@ -165,7 +165,7 @@ def test_memory_search_end_to_end():
     weaviate_client = _get_client()
     try:
         for chunk_id in ingest_data["chunks"]:
-            weaviate_client.collections.get("MemoryArtifact").delete(chunk_id)
+            weaviate_client.collections.get("EvidenceChunk").delete(chunk_id)
     finally:
         weaviate_client.close()
 

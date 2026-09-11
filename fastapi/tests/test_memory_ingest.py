@@ -120,7 +120,7 @@ def test_memory_ingest_end_to_end():
     weaviate_client = _get_client()
     try:
         for idx, chunk_id in enumerate(data["chunks"]):
-            obj = weaviate_client.collections.get("MemoryArtifact").get(chunk_id)
+            obj = weaviate_client.collections.get("EvidenceChunk").get(chunk_id)
             assert obj is not None, f"Chunk {chunk_id} not found in Weaviate"
             props = obj["properties"]
             # Basic property checks
@@ -150,7 +150,7 @@ def test_memory_ingest_end_to_end():
     weaviate_client = _get_client()
     try:
         for chunk_id in data["chunks"]:
-            weaviate_client.collections.get("MemoryArtifact").delete(chunk_id)
+            weaviate_client.collections.get("EvidenceChunk").delete(chunk_id)
     finally:
         weaviate_client.close()
 
@@ -158,7 +158,7 @@ def test_memory_ingest_end_to_end():
     weaviate_client = _get_client()
     try:
         for chunk_id in data["chunks"]:
-            obj = weaviate_client.collections.get("MemoryArtifact").get(chunk_id)
+            obj = weaviate_client.collections.get("EvidenceChunk").get(chunk_id)
             assert obj is None, f"Chunk {chunk_id} still present after cleanup"
     finally:
         weaviate_client.close()
@@ -175,6 +175,6 @@ def test_memory_ingest_end_to_end():
     weaviate_client = _get_client()
     try:
         for chunk_id in data2["chunks"]:
-            weaviate_client.collections.get("MemoryArtifact").delete(chunk_id)
+            weaviate_client.collections.get("EvidenceChunk").delete(chunk_id)
     finally:
         weaviate_client.close()

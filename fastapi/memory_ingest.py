@@ -52,7 +52,7 @@ def _generate_parent_id(content: str) -> str:
 
 @router.post("/memory/ingest")
 async def memory_ingest(payload: Dict) -> Dict:
-    """Ingest raw text into the ``MemoryArtifact`` collection.
+    """Ingest raw text into the ``EvidenceChunk`` collection.
 
     Expected JSON keys:
 
@@ -102,7 +102,7 @@ async def memory_ingest(payload: Dict) -> Dict:
         # 4. Insert each chunk as a separate object
         chunk_ids: List[str] = []
         parent_id = _generate_parent_id(content)
-        memory_artifact = client.collections.use("MemoryArtifact")
+        memory_artifact = client.collections.use("EvidenceChunk")
         for idx, (chunk, emb) in enumerate(zip(chunks, embeddings)):
            
             new_id = memory_artifact.data.insert(properties={
