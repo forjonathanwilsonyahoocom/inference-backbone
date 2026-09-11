@@ -35,15 +35,15 @@ router = APIRouter()
 # Helper: create a stable parent identifier
 # ---------------------------------------------------------------------------
 
-def _generate_parent_id() -> str:
-    """Return a deterministic UUID4 string.
+def _generate_parent_id(content: str) -> str:
+    """Return a deterministic UUID5 string based on *content*.
 
-    The function uses :func:`uuid.uuid4` which is already
-    deterministic enough for our purposes – the same content will
-    always produce the same parent id because the caller supplies the
-    same *artifact_id*.
+    The spec requires a *stable* parent identifier for each artifact.
+    Using :func:`uuid.uuid5` with a fixed namespace guarantees that
+    the same content always maps to the same UUID, while still keeping
+    the identifier opaque.
     """
-    return str(uuid.uuid4())
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, content))
 
 # ---------------------------------------------------------------------------
 # Endpoint implementation
@@ -100,7 +100,7 @@ async def memory_ingest(payload: Dict) -> Dict:
     try:
         # 4. Insert each chunk as a separate object
         chunk_ids: List[str] = []
-        parent_id = _generate_parent_id()
+        parent_id = _generate_parent_id(content)
         for idx, (chunk, emb) in enumerate(zip(chunks, embeddings)):
             obj = {
                 "content": chunk,
