@@ -662,78 +662,137 @@ def truncate_history(
     preserve: int = 2,
 ) -> List[BaseMessage]:
     """
-     Return a *new* list that
+    Preserve the first `preserve` messages and retain the newest complete
+    conversation units that fit within `max_tokens`.
 
-    1. always keeps the first ``preserve`` messages (default 2),
-    2. truncates the *remaining* messages so that the total token count
-       (estimated or actual, depending on ``tokenizer``) does not exceed
-       ``max_tokens``.
+    Conversation units include:
 
-    The original message list is never mutated.
-
-    Parameters
-    ----------
-    messages: List[BaseMessage]
-        All messages in chronological order (index 0 is the oldest).
-    max_tokens: int, default 25_000
-        Token budget for the *truncated* part of the history.
-        Tokens used by the preserved messages are *not* counted.
-    tokenizer: callable, optional
-        If supplied, must accept a string and return an object whose
-        ``__len__`` gives the token count.  This is useful when you
-        want an exact count rather than the 1‑token ≈ 4‑chars heuristic.
-    preserve: int, default 2
-        Number of messages that must stay in the returned list regardless
-        of their size.
-
-    Returns
-    -------
-    List[BaseMessage]
-        A new list containing the preserved messages followed by the
-        truncated remainder, but operates on *turns* instead of individual
-        messages, so an AIMessage with tool_calls and its ToolMessage results
-        are always kept or dropped together.
+    - an AI tool-call message plus its following ToolMessages;
+    - an invalid AI response plus the following correction HumanMessage;
+    - ordinary messages;
+    - consecutive tool messages attached to the preceding AI message.
     """
-    msg_len = len(messages)
-    if msg_len <= preserve:
+
+    if len(messages) <= preserve:
         return messages.copy()
 
     kept_first = messages[:preserve]
     rest = messages[preserve:]
 
-    # Group `rest` into turns: a turn starts at a HumanMessage or an
-    # AIMessage, and absorbs any immediately-following ToolMessages.
-    turns: List[List[BaseMessage]] = []
-    for msg in rest:
-        if isinstance(msg, ToolMessage) and turns:
-            turns[-1].append(msg)
-        else:
-            turns.append([msg])
+    def is_tool_call_message(msg: BaseMessage) -> bool:
+        return (
+            isinstance(msg, AIMessage)
+            and bool(getattr(msg, "tool_calls", None))
+        )
 
-    def turn_tokens(turn: List[BaseMessage]) -> int:
-        total = 0
-        for msg in turn:
-            content = msg.content if isinstance(msg.content, str) else str(msg.content)
-            if tokenizer is not None:
-                try:
-                    total += len(tokenizer(content))
-                    continue
-                except Exception:
-                    pass
-            total += len(content) // 4
-        return total
+    def is_invalid_response_pair_start(
+        index: int,
+        items: List[BaseMessage],
+    ) -> bool:
+        """
+        Treat AIMessage followed by HumanMessage as a recovery pair only
+        when the human message looks like a retry/correction instruction.
+        """
+        if index + 1 >= len(items):
+            return False
 
+        current = items[index]
+        following = items[index + 1]
+
+        if not isinstance(current, AIMessage):
+            return False
+
+        if not isinstance(following, HumanMessage):
+            return False
+
+        text = str(following.content).lower()
+
+        recovery_markers = (
+            "invalid",
+            "parse",
+            "parser",
+            "tool call",
+            "tool-call",
+            "retry",
+            "previous response",
+            "could not be parsed",
+        )
+
+        return any(marker in text for marker in recovery_markers)
+
+    # Build atomic units.
+    units: List[List[BaseMessage]] = []
+    i = 0
+
+    while i < len(rest):
+        msg = rest[i]
+
+        # Failed AI output followed by a correction request.
+        if is_invalid_response_pair_start(i, rest):
+            units.append([rest[i], rest[i + 1]])
+            i += 2
+            continue
+
+        # AI tool call plus all immediately following ToolMessages.
+        if is_tool_call_message(msg):
+            unit = [msg]
+            i += 1
+
+            while i < len(rest) and isinstance(rest[i], ToolMessage):
+                unit.append(rest[i])
+                i += 1
+
+            units.append(unit)
+            continue
+
+        # A stray ToolMessage should remain attached to the preceding unit
+        # if possible rather than becoming an independent conversation turn.
+        if isinstance(msg, ToolMessage) and units:
+            units[-1].append(msg)
+            i += 1
+            continue
+
+        # Ordinary HumanMessage, AIMessage, or SystemMessage.
+        units.append([msg])
+        i += 1
+
+    def message_tokens(msg: BaseMessage) -> int:
+        content = msg.content
+
+        if not isinstance(content, str):
+            content = str(content)
+
+        if tokenizer is not None:
+            try:
+                return len(tokenizer(content))
+            except Exception:
+                pass
+
+        # Avoid zero-token messages.
+        return max(1, len(content) // 4)
+
+    def unit_tokens(unit: List[BaseMessage]) -> int:
+        return sum(message_tokens(msg) for msg in unit)
+
+    # Work backward from the newest unit.
+    selected: List[List[BaseMessage]] = []
     total = 0
-    kept_turns = []
-    for turn in reversed(turns):
-        n = turn_tokens(turn)
-        if total + n > max_tokens:
-            print("truncating")
-            break
-        kept_turns.append(turn)
-        total += n
 
-    kept_rest = [msg for turn in reversed(kept_turns) for msg in turn]
+    for unit in reversed(units):
+        size = unit_tokens(unit)
+
+        if total + size <= max_tokens:
+            selected.append(unit)
+            total += size
+            continue
+
+        # Do not stop entirely because one newest unit is too large.
+        # Continue looking for smaller, older units that fit.
+        continue
+
+    selected.reverse()
+    kept_rest = [msg for unit in selected for msg in unit]
+
     return kept_first + kept_rest
 
 
@@ -780,7 +839,7 @@ def run_agent(
             except ResponseError as e:
                 raw_content = str(e)
 
-                print(raw_content)
+                print("ResponseError ", raw_content)
                 events.append(
                     ToolEvent(
                         iteration=iteration + 1,
@@ -801,6 +860,7 @@ def run_agent(
                         )
                     )
                 )
+                print("trying again")
 
         else:
             # Ten retries failed.
@@ -877,7 +937,7 @@ def run_agent(
             )
 
         # Distillation now runs AFTER all tool results for this turn are in. Thanks Claude
-        if response.usage_metadata.get("input_tokens", 0) > 20000:
+        if response.usage_metadata.get("input_tokens", 0) > 20_000:
             print("Starting distill")
             conv_text = "\n".join(
                 msg.content if isinstance(msg.content, str) else str(msg.content)
