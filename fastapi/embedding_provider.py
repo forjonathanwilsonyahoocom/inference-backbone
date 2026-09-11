@@ -91,9 +91,14 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
     async def embed_query(self, text: str) -> List[float]:
         if not text:
             return []
-        payload = {"model": self.model, "input": text}
+        payload = {"model": self.model, "prompt": text}
         data = await self._post(payload)
-        embeddings = data.get("embeddings")
+        vector = data["embedding"]
+        # Return as normalized float32 for fast dot-product cosine similarity
+        arr = np.array(vector, dtype=np.float32)
+                    
+        embeddings = [ (arr / np.linalg.norm(arr)).astype(float).tolist() ]
+            
         if embeddings is None or not isinstance(embeddings, list):
             raise ValueError("Malformed response: missing 'embeddings' list")
         if len(embeddings) != 1:
