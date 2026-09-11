@@ -23,6 +23,7 @@ import json
 import uuid
 from typing import Dict, List
 
+import weaviate.classes as wvc
 from fastapi import APIRouter, HTTPException
 
 from chunker import chunk_text
