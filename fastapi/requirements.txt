@@ -3,5 +3,6 @@ requests
 uvicorn
 httpx
 pyyaml
+numpy
 rdflib
 weaviate-client==4.23.1

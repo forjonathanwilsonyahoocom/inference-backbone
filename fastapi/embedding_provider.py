@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import os
 from typing import List, Any
-
+import numpy as np
 import httpx
 
 __all__ = ["EmbeddingProvider", "OllamaEmbeddingProvider"]
@@ -51,7 +51,7 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
         if not base:
             raise ValueError("Environment variable OLLAMA_BASE_URL must be set")
         self.base_url = base.rstrip("/")
-        self.model = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text:latest")
+        self.model = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
         self.client = httpx.AsyncClient(base_url=self.base_url)
 
     async def _post(self, payload: Any) -> Any:
@@ -67,9 +67,18 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
     async def embed_documents(self, texts: List[str]) -> List[List[float]]:
         if not texts:
             return []
-        payload = {"model": self.model, "input": texts}
-        data = await self._post(payload)
-        embeddings = data.get("embeddings")
+        embeddings = []
+        for text in texts:
+            payload = {"model": self.model, "prompt": texts}
+            data = await self._post(payload)
+            
+            vector = data["embedding"]
+            # Return as normalized float32 for fast dot-product cosine similarity
+            arr = np.array(vector, dtype=np.float32)
+                        
+            embeddings = embeddings + [ arr / np.linalg.norm(arr)]
+            print("EMBEDDED!")
+            
         if embeddings is None or not isinstance(embeddings, list):
             raise ValueError("Malformed response: missing 'embeddings' list")
         # Validate each embedding is a list of floats
