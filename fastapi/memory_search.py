@@ -20,6 +20,7 @@ from typing import List, Dict
 
 import weaviate
 from weaviate.classes.config import Configure
+from weaviate.classes.query import MetadataQuery
 
 from embedding_provider import OllamaEmbeddingProvider
 
@@ -80,43 +81,21 @@ async def memory_search(payload: Dict) -> List[Dict]:
     # 2. Perform vector search
     client = _get_client()
     try:
-        collection = client.collections.get("MemoryArtifact")
+        collection =  client.collections.use("MemoryArtifact")
         # Build the query payload
-        query_payload = {
-            "vector": query_vector,
-            "limit": limit,
-            "properties": [
-                "artifact_id",
-                "parent_id",
-                "content",
-                "artifact_type",
-                "execution_id",
-                "event_id",
-                "source",
-                "source_url",
-                "chunk_index",
-                "chunk_count",
-            ],
-        }
-        results = collection.query(query_payload)
+        
+        results = collection.query.near_vector(
+            near_vector=query_vector, # your query vector goes here
+            limit=limit,
+            return_metadata=MetadataQuery(distance=True))
+            
         # The response structure: {"data": {"Get": {"MemoryArtifact": [ {"id":..., "properties":{...} } ] }}}
         artifacts = results.get("data", {}).get("Get", {}).get("MemoryArtifact", [])
         # Normalize
         normalized = []
-        for art in artifacts:
-            props = art.get("properties", {})
-            normalized.append({
-                "artifact_id": props.get("artifact_id"),
-                "parent_id": props.get("parent_id"),
-                "content": props.get("content"),
-                "artifact_type": props.get("artifact_type"),
-                "execution_id": props.get("execution_id"),
-                "event_id": props.get("event_id"),
-                "source": props.get("source"),
-                "source_url": props.get("source_url"),
-                "chunk_index": props.get("chunk_index"),
-                "chunk_count": props.get("chunk_count"),
-            })
+        for art in response.objects:
+            normalized.append({"properties" : art.properties,
+                               "distance" : art.metadata.distance})
         return normalized
     finally:
         client.close()
