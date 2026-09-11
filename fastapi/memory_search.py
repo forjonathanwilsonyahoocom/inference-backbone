@@ -19,7 +19,7 @@ import os
 from typing import List, Dict
 
 import weaviate
-from weaviate.collections.schema import Configure
+from weaviate.classes.config import Configure
 
 from .embedding_provider import OllamaEmbeddingProvider
 
