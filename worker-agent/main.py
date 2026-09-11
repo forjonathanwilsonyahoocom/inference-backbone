@@ -414,7 +414,7 @@ def write_file(path: str, content: Any, overwrite: bool = False) -> str:
     file_path.write_text(content_str, encoding="utf-8")
     return (
         f"Created {len(content_str)} characters in "
-        f"{file_path.relative_to(Path.cwd())}"
+        f"{file_path.relative_to(WORKSPACE_PATH)}"
     )
 
 
