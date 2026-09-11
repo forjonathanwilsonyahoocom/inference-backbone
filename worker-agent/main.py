@@ -2,6 +2,8 @@ import json
 import uuid
 import requests
 import os
+import uuid
+import requests
 import subprocess
 import hashlib
 from pathlib import Path
@@ -864,6 +866,7 @@ def run_agent(
     max_iterations: int = 150,
     verbose: bool = False,
 ) -> str:
+    execution_id = str(uuid.uuid4())
     messages = [
         SystemMessage(content=SYSTEM_PROMPT),
         HumanMessage(content=user_request),
@@ -975,6 +978,9 @@ def run_agent(
             else:
                 try:
                     tool_result = selected_tool.invoke(tool_args)
+                    # Ingest the tool result into memory
+                    event_id = str(uuid.uuid4())
+                    ingest_tool_result(execution_id, event_id, tool_name, tool_result, source_url=None)
                     
                     step_fingerprint = (
                         tool_call_fingerprint(tool_name, tool_args),
