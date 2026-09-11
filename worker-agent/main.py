@@ -746,13 +746,16 @@ def run_agent(
         tool_calls = []
         response = {}
         try:
-            for _ in range(3):
+            for _ in range(10):
                 response = llm_with_tools.invoke(messages)
                 tool_calls = response.tool_calls or []
                 content = response.content or ""
                 #try this a few times if we get no tool calls AND no content
                 if len(tool_calls) > 0 or len(content) > 4:
                     break
+                else:
+                    print("Model fails to response")
+                    print(response)
         except ResponseError as e:
             # 1. Show the error to the LLM
             print(f"Parsing response from LLM failed: {e}")
