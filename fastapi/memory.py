@@ -80,7 +80,7 @@ def ensure_memory_collection() -> None:
             return
         client.collections.create(
             "MemoryArtifact",
-            vector_config=Configure.Vectorizer.none(),
+            vector_config=Configure.Vectors.self_provided(),
         )
     finally:
         client.close()
