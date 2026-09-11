@@ -1,6 +1,6 @@
 """Endpoint for ingesting raw text into Weaviate.
 
-The new endpoint lives in :mod:`inference_backbone.fastapi.memory`.
+The new endpoint lives in :mod:`memory`.
 It accepts a JSON payload with the fields described in the user
 specification and returns a minimal response that contains the
 generated artifact id and the number of chunks that were created.
@@ -25,9 +25,9 @@ from typing import Dict, List
 
 from fastapi import APIRouter, HTTPException
 
-from inference_backbone.fastapi.chunker import chunk_text
-from inference_backbone.fastapi.embedding_provider import OllamaEmbeddingProvider
-from inference_backbone.fastapi.memory import ensure_memory_collection, _get_client
+from chunker import chunk_text
+from embedding_provider import OllamaEmbeddingProvider
+from memory import ensure_memory_collection, _get_client
 
 router = APIRouter()
 

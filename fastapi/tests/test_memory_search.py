@@ -3,9 +3,9 @@ import json
 import pytest
 import requests
 from fastapi.testclient import TestClient
-from inference_backbone.fastapi.app import app
-from inference_backbone.fastapi.chunker import chunk_text
-from inference_backbone.fastapi.memory import _get_client, ensure_memory_collection
+from app import app
+from chunker import chunk_text
+from memory import _get_client, ensure_memory_collection
 
 # Helper functions
 

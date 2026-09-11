@@ -1,6 +1,6 @@
 import pytest
 import weaviate
-from inference_backbone.fastapi.memory import ensure_memory_collection, _get_client
+from memory import ensure_memory_collection, _get_client
 
 # Test that the collection can be created and is idempotent
 

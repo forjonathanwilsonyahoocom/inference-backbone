@@ -1,7 +1,7 @@
 import os
 import pytest
 import json
-from inference_backbone.fastapi.embedding_provider import OllamaEmbeddingProvider
+from embedding_provider import OllamaEmbeddingProvider
 
 # Helper to create a mock httpx transport
 from httpx import Response, Request
