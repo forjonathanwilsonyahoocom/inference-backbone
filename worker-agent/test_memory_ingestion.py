@@ -4,8 +4,8 @@ import json
 import pytest
 
 # Set environment variables required by main
-os.environ['OLLAMA_BASE_URL'] = 'http://localhost:11434/'
-os.environ['OLLAMA_MODEL'] = 'gpt-oss:20b'
+os.environ['OLLAMA_BASE_URL'] = 'http://10.42.0.192:11434/'
+os.environ['GEN_MODEL'] = 'gpt-oss:20b'
 
 # Import the module after setting env
 from inference_backbone.worker_agent import main as worker_main
