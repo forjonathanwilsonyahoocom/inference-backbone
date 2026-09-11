@@ -317,7 +317,6 @@ def search_file(path: str, query: str) -> str:
                 break
 
     return json.dumps(results, ensure_ascii=False, indent=2)
-}
 
 
 @tool
