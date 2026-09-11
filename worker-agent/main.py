@@ -64,7 +64,7 @@ def ingest_tool_result(execution_id: str, event_id: str, tool_name: str, tool_re
             "source": tool_name,
             "source_url": source_url,
         }
-        resp = requests.post("http://localhost:8000/memory/ingest", json=payload, timeout=5)
+        resp = requests.post("http://fastapi:8000/memory/ingest", json=payload, timeout=10)
         resp.raise_for_status()
     except Exception as e:
         # Log but do not raise – memory is observational
@@ -642,11 +642,6 @@ your response must be less than 3000 chars
 Make sure the JSON is syntactically valid (no trailing commas, proper quoting).
 
 """
-
-
-
-
-
 
 
 SYSTEM_PROMPT = """
