@@ -735,12 +735,21 @@ def run_agent(
         HumanMessage(content=user_request),
     ]
     events: list[ToolEvent] = []
-    for iteration in range(max_iterations):
+    iteration = 0
+    while iteration < max_iterations:
+        iteration = iteration + 1
         if verbose:
             print(f"\n--- iteration {iteration + 1} ---")
 
+        tool_calls = []
         try:
-            response = llm_with_tools.invoke(messages)
+            for _ in range(3):
+                response = llm_with_tools.invoke(messages)
+                tool_calls = response.tool_calls or []
+                content = response.content or ""
+                #try this a few times if we get no tool calls AND no content
+                if len(tool_calls) > 0 or len(content) > 4
+                    break
         except ResponseError as e:
             # 1. Show the error to the LLM
 
@@ -759,6 +768,7 @@ def run_agent(
                 )
             )
             # 2. Don't count this as a real iteration
+            iteration = iteration - 1
             continue
 
 
@@ -774,14 +784,12 @@ def run_agent(
         )
 
         print(len(messages))
-        tool_calls = response.tool_calls or []
-
+        
         if verbose:
             if response.content:
                 print("Assistant:", response.content[:200])
-           # print("Tool calls:", tool_calls)
 
-        # The model is finished when it returns no tool calls.
+        # The model is finished when it returns content and no tool calls.
         if not tool_calls:
             if verbose:
                 if response.content:
