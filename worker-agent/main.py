@@ -83,6 +83,9 @@ WORKSPACE.mkdir(parents=True, exist_ok=True)
 WORKSPACE = WORKSPACE.resolve()
 print(WORKSPACE)
 
+
+EXCLUDED_DIRS = {".git", "__pycache__", ".pytest_cache", "node_modules", ".venv", "venv", ".mypy_cache", ".ruff_cache"}
+
 def safe_path(relative_path: str) -> Path:
     """
     Resolve a user-provided path inside WORKSPACE.
@@ -229,6 +232,14 @@ def web_fetch(url: str) -> str:
 
     except Exception as e:
         return f"Error: Web fetch exception encountered during execution: {str(e)}"
+        
+
+def _is_binary(file: Path, sample_size: int = 1024) -> bool:
+    try:
+        with open(file, "rb") as f:
+            return b"\x00" in f.read(sample_size)
+    except Exception:
+        return True
 
 @tool
 def search_file(path: str, query: str) -> str:
@@ -262,16 +273,15 @@ def search_file(path: str, query: str) -> str:
     * Very large files (over `max_chars` bytes) are truncated before
       searching; the truncated text ends with `"\n...[truncated]"`.
     """
-
-    # Resolve path safely
+    
     target_path = safe_path(path)
 
-    # Basic existence check
     if not target_path.exists():
         return f"Path does not exist: {path}"
 
-    # Helper to search a single file and return matches
     def _search_single(file: Path) -> List[Dict[str, str]]:
+        if _is_binary(file):
+            return []
         try:
             content = file.read_text(encoding="utf-8")
         except UnicodeDecodeError:
@@ -291,38 +301,37 @@ def search_file(path: str, query: str) -> str:
         return matches
 
     results: List[Dict[str, str]] = []
+    max_total_hits = 50
 
     if target_path.is_file():
         results.extend(_search_single(target_path))
     else:
-        # Directory: iterate recursively over all files
-        for file in target_path.rglob("*"):
-            if file.is_file():
-                results.extend(_search_single(file))
-                # Optional: stop early if a global limit is desired
+        for file in sorted(target_path.rglob("*")):
+            if not file.is_file():
+                continue
+            relative = file.relative_to(WORKSPACE)
+            if any(part in EXCLUDED_DIRS for part in relative.parts):
+                continue
+            results.extend(_search_single(file))
+            if len(results) >= max_total_hits:
+                break
 
     return json.dumps(results, ensure_ascii=False, indent=2)
-
-
-
-
+}
 
 
 @tool
 def list_files() -> str:
     """List files and directories in the current project workspace."""
     entries = []
-
     for path in sorted(WORKSPACE.rglob("*")):
         relative = path.relative_to(WORKSPACE)
-        if ".git" in relative.parts or "__pycache__" in relative.parts:
+        if any(part in EXCLUDED_DIRS for part in relative.parts):
             continue
-
         suffix = "/" if path.is_dir() else ""
         entries.append(f"{relative}{suffix}")
-
     return "\n".join(entries) if entries else "(workspace is empty)"
-
+    
 @tool
 def read_file(
     path: str,
@@ -747,39 +756,56 @@ def run_agent(
 
         tool_calls = []
         response = {}
-        try:
-            for _ in range(10):
+        for retry in range(10):
+            try:
                 response = llm_with_tools.invoke(messages)
+
                 tool_calls = response.tool_calls or []
                 content = response.content or ""
-                #try this a few times if we get no tool calls AND no content
-                if len(tool_calls) > 0 or len(content) > 4:
-                    break
-                else:
-                    print("Model fails to response")
-                    print(response)
-        except ResponseError as e:
-            # 1. Show the error to the LLM
-            print(f"Parsing response from LLM failed: {e}")
-            
-            events.append(
-                ToolEvent(
-                    iteration=iteration + 1,
-                    event_type="parse_error",
-                    args={},
-                    result=str(e)
-                )
-            )
-            messages.append(
-                SystemMessage(
-                    content=f"⚠️  Parsing error: {e}. "
-                            "Generate a correct tool call or explain the issue."
-                )
-            )
-            # 2. Don't count this as a real iteration
-            iteration = iteration - 1
-            continue
 
+                if tool_calls or len(content.strip()) > 4:
+                    break
+
+                messages.append(
+                    AIMessage(content=content)
+                )
+                messages.append(
+                    HumanMessage(
+                        content=(
+                            "Your response was empty or unusable. "
+                            "Return one valid tool call or content only."
+                        )
+                    )
+                )
+
+            except ResponseError as e:
+                raw_content = extract_raw_output(e)
+
+                events.append(
+                    ToolEvent(
+                        iteration=iteration + 1,
+                        event_type="parse_error",
+                        args={},
+                        result={"error": str(e), "raw_output": raw_content},
+                    )
+                )
+
+                messages.append(AIMessage(content=raw_content))
+                messages.append(
+                    HumanMessage(
+                        content=(
+                            "The output above failed tool-call parsing.\n"
+                            f"Error: {e}\n"
+                            "Return exactly one valid tool call. "
+                            "Do not explain your reasoning."
+                        )
+                    )
+                )
+
+        else:
+            # Ten retries failed.
+            print("Model failed to produce a valid response after 10 retries")
+            
 
         messages.append(response)
 
@@ -817,6 +843,8 @@ def run_agent(
 
             if selected_tool is None:
                 tool_result = f"Unknown tool: {tool_name}"
+                # 2. Don't count this as a real iteration
+                iteration = iteration - 1
             else:
                 try:
                     tool_result = selected_tool.invoke(tool_args)
@@ -898,8 +926,6 @@ def run_agent(
             "final_response": response.content,
             "iterations": iteration + 1,
             "events": events}
-
-
 
 
 
