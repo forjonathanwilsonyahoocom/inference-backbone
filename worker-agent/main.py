@@ -561,16 +561,17 @@ you will be given the initial user prompt, followed by everything currently in t
 
 when the context already contains your earlier distillation result, the distillation may include information from messages that have been truncated from the context
 
-if the third message decribes a tool call, we are on the first distillation pass for this thread
+if the third message describes a tool call, we are on the first distillation pass for this thread
 
 use the information from the context to infer the progress of the thread and help form the direction of the tool enabled agent
 
 output **only** a single JSON object with these top‑level keys:
-  - artifacts:   [{ "id":"", "type":"", "value":"" }]
-  - claims:      [{ "statement":"", "source":"", "confidence":0‑1 }]
+  - artifacts:   [{ "id":"", "type":"", "value":"" }]  #only keep important parts of artifacts, not whole files
+  - claims:      [{ "statement":"", "source":"", "confidence":0‑1 }] #claims based on agent tools not the human prompt
   - understandings:[{ "concept":"", "detail":""}]
   - hypotheses:  [{ "hypothesis":"", "status":"pending/confirmed/ruled‑out", "confidence":0‑1 }]
-  - direction:   [{ "step":"", "deadline":"YYYY‑MM‑DD"}]
+  - completed_steps:   [{ "step":"", "result":""}] #try to prevent looping
+  - todo_steps:   [{ "step":"", "deadline":"YYYY‑MM‑DD"}] #intent
 
 If a key has no entries, use an empty array.
 **Do NOT** wrap the output in Markdown or quotes around keys.
