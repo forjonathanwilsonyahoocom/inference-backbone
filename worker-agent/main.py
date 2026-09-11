@@ -57,7 +57,7 @@ distillation_llm = ChatOllama(
     model=MODEL_NAME,
     base_url=OLLAMA_BASE_URL,
     temperature=0.01,
-    num_predict=2000,  # distillation JSON should never need more than this
+    num_predict=5000,  # distillation JSON should never need more than this
 )
 print(f"Using {MODEL_NAME} at {OLLAMA_BASE_URL}")
 
@@ -574,6 +574,7 @@ output **only** a single JSON object with these top‑level keys:
 
 If a key has no entries, use an empty array.
 **Do NOT** wrap the output in Markdown or quotes around keys.
+your response must be less than 3000 chars
 Make sure the JSON is syntactically valid (no trailing commas, proper quoting).
 
 """
@@ -842,7 +843,7 @@ def run_agent(
             )
 
         # Distillation now runs AFTER all tool results for this turn are in. Thanks Claude
-        if response.usage_metadata.get("input_tokens", 0) > 15000:
+        if response.usage_metadata.get("input_tokens", 0) > 20000:
             print("Starting distill")
             conv_text = "\n".join(
                 msg.content if isinstance(msg.content, str) else str(msg.content)
@@ -884,7 +885,7 @@ def run_agent(
                 else:
                     messages = messages[:2] + [summary_msg] + messages[2:]
 
-                messages = truncate_history(messages, max_tokens=10_000, preserve=3)
+                messages = truncate_history(messages, max_tokens=15_000, preserve=3)
 
 
     return {"condition" : f"Agent stopped after {max_iterations} iterations. The workspace may contain partial results.",
