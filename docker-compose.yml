@@ -42,6 +42,7 @@ services:
     ports:
       - "8000:8000"
     environment:
+      GRAPHDB_URL: http://graphdb:7200/repositories/inference-backbone
       OLLAMA_BASE_URL: http://10.42.0.192:11434
       GEN_MODEL: gpt-oss:20b
     volumes:
