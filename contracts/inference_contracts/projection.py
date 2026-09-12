@@ -1,4 +1,4 @@
-import json
+from datetime import datetime
 from pathlib import Path
 from typing import List
 
@@ -46,8 +46,8 @@ def chunks_to_evidence(chunks: List[EvidenceChunk]) -> Evidence:
         content=content,
         content_hash="",
         source_type="",
-        observed_at=None,
-        retrieved_at=None,
+        observed_at=datetime.now(),
+        retrieved_at=datetime.now(),
         extraction_method="",
         worker_version="",
         metadata={},
