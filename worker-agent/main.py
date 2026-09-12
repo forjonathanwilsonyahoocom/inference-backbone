@@ -5,7 +5,9 @@ import os
 import uuid
 import requests
 import subprocess
+from datetime import datetime
 import hashlib
+from contracts.inference_contracts.evidence import Evidence
 from pathlib import Path
 from typing import Any, overload, Mapping, List, Dict, Iterable, Optional
 from pydantic import BaseModel, Field
@@ -36,36 +38,25 @@ import nest_asyncio
 # Helper: send a tool result to the evidence ingestion endpoint
 # ---------------------------------------------------------------------------
 
-def ingest_tool_result(execution_id: str, event_id: str, tool_name: str, tool_result: Any, source_url: Optional[str] = None) -> None:
-    """POST a semantic artifact to the FastAPI evidence endpoint.
-
-    Parameters
-    ----------
-    execution_id: str
-        Unique identifier for the entire worker execution.
-    event_id: str
-        Unique identifier for this tool call event.
-    tool_name: str
-        Name of the tool that produced the result.
-    tool_result: Any
-        The raw result returned by the tool.  It is converted to a JSON string if it is a dict.
-    source_url: Optional[str]
-        Optional URL that is the source of the result.
-    """
+def ingest_tool_event(execution_id: str, tool_event: ToolEvent) -> None:
+  
     try:
-        if isinstance(tool_result, dict):
-            content_payload = json.dumps(tool_result, ensure_ascii=False)
-        else:
-            content_payload = str(tool_result)
-
-        payload = {
-            "content": content_payload,
-            "artifact_type": "tool_result",
-            "execution_id": execution_id,
-            "event_id": event_id,
-            "source": tool_name,
-            "source_url": source_url,
-        }
+    
+        now = datetime.utcnow()
+         
+        payload = Evidence(
+            evidence_id=str(uuid.uuid4()),
+            execution_id=execution_id,
+            event_id=f"{execution_id}-{tool_event.iteration}",
+            evidence_type=tool_event.tool,          # e.g. "web_search", "read_file"
+            content=str(tool_event.result),         # jam for now, per your call
+            source_type=tool_event.event_type,
+            source_name=tool_event.tool,
+            observed_at=now,
+            retrieved_at=now,
+            metadata={"args": tool_event.args},     # structured, don't lose it
+            worker_version=1.0,
+        )
         resp = requests.post("http://fastapi:8000/ingest/evidence", json=payload, timeout=10)
         resp.raise_for_status()
     except Exception as e:
@@ -984,8 +975,6 @@ def run_agent(
                 try:
                     tool_result = selected_tool.invoke(tool_args)
                     # Ingest the tool result into evidence
-                    event_id = str(uuid.uuid4())
-                    ingest_tool_result(execution_id, event_id, tool_name, tool_result, source_url=None)
                     
                     step_fingerprint = (
                         tool_call_fingerprint(tool_name, tool_args),
@@ -1016,20 +1005,22 @@ def run_agent(
                         })
                         print(tool_result)
 
+                    
                 except Exception as exc:
                     tool_result = (
                         f"Tool error: {type(exc).__name__}: {exc}"
                     )
 
-            events.append(
-                ToolEvent(
+            tool_result_event = ToolEvent(
                     iteration=iteration + 1,
-                    event_type="tool_call",
+                    event_type="tool_call_result",
                     tool=tool_name,
                     args=tool_args,
                     result=tool_result
                 )
-            )
+            events.append(tool_result_event)
+            
+            ingest_tool_event(execution_id, tool_result_event)
 
             if verbose:
                 print(f"Executing: {tool_name}({str(tool_args)[:200]})")

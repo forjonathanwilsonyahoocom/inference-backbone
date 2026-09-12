@@ -11,7 +11,7 @@ class Evidence(BaseModel):
 
     evidence_type: str
     content: str
-    content_hash: str
+    content_hash: str | None = None
 
     source_type: str
     source_name: str | None = None
