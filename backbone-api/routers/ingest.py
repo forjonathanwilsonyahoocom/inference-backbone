@@ -32,7 +32,7 @@ async def evidence_ingest(payload: Evidence) -> Dict:
             )
        embedding = await embedding_provider.embed(raw_chunk)
        
-       new_id = evidence_chunk_collection.data.insert(properties = typed_chunk.model_dump(), vector=emb)
+       new_id = evidence_chunk_collection.data.insert(properties = typed_chunk.model_dump(), vector=embedding)
         
     return {"parent_id": payload.content_hash,
             "chunk_count": len(raw_chunks),
