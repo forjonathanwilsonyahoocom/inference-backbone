@@ -16,7 +16,7 @@ VALIDATION_PROMPT = """You are a claim-checking validator. You will be given:
 1. A TASK that an AI agent was asked to perform.
 2. The agent's FINAL RESPONSE — what it reported back to the user.
 3. An EVIDENCE LOG — the actual tool calls the agent made and their real results.
-4. SUPPLEMENTAL EVIDENCE — artifacts retrieved from semantic memory (Weaviate).
+4. SUPPLEMENTAL EVIDENCE — artifacts retrieved from semantic evidence (Weaviate).
 
 IMPORTANT: The EVIDENCE LOG is the authoritative record. The SUPPLEMENTAL
 EVIDENCE is a candidate pool only — it is NOT automatically trusted.
@@ -37,7 +37,7 @@ Rules:
   it actually supports the claim. Do not blindly trust retrieved evidence.
 - Distinguish evidence provenance in your response:
   * "direct" — came from the original execution events
-  * "retrieved" — came from semantic memory search
+  * "retrieved" — came from semantic evidence search
 - Ignore stylistic/summary sentences that make no checkable factual claim
   (e.g. "Both sources agree").
 - Ignore claims about the agent's own process (e.g. "I searched the web")
@@ -77,7 +77,7 @@ def build_evidence_text(events: list[dict], supplemental_evidence: list[dict] = 
         )
     if supplemental_evidence:
         lines.append("")
-        lines.append("SUPPLEMENTAL EVIDENCE (retrieved from semantic memory):")
+        lines.append("SUPPLEMENTAL EVIDENCE (retrieved from semantic evidence):")
         for ev in supplemental_evidence:
             lines.append(f"  - [retrieved] {ev.get('artifact_id', '?')}")
             lines.append(f"    source: {ev.get('source', '?')}")

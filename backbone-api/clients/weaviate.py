@@ -1,28 +1,8 @@
-"""FastAPI memory module for Weaviate access.
+"""FastAPI evidence module for Weaviate access.
 
-This module provides a thin wrapper around the Weaviate v4 client that
+This module provides a thin wrapper around the Weaviate v4 client and
 creates an idempotent ``EvidenceChunk`` collection and exposes a helper
 function to obtain a client instance.
-
-The collection is defined with externally supplied vectors (``self_provided``)
-and the following properties:
-
-* ``content``          – TEXT
-* ``artifact_id``      – TEXT
-* ``artifact_type``    – TEXT
-* ``execution_id``     – TEXT
-* ``event_id``         – TEXT
-* ``source``           – TEXT
-* ``source_url``       – TEXT
-* ``chunk_index``      – INT
-* ``chunk_count``      – INT
-* ``parent_id``        – TEXT
-* ``embedding_model``  – TEXT
-* ``embedding_task``   – TEXT
-
-The module is intentionally lightweight – it does not expose the raw
-Weaviate client to the rest of the application.  Only the two helper
-functions are exported.
 """
 
 from __future__ import annotations
@@ -47,10 +27,7 @@ _GRPC_PORT = int(os.getenv("WEAVIATE_GRPC_PORT", "50051"))
 # Public API
 # ---------------------------------------------------------------------------
 
-__all__ = ["_get_client", "ensure_memory_collection"]
-
-
-def _get_client() -> weaviate.WeaviateClient:
+def get_weaviate_client() -> weaviate.WeaviateClient:
     """Return a new :class:`weaviate.WeaviateClient` instance.
 
     The function reads the connection parameters from environment
@@ -67,19 +44,19 @@ def _get_client() -> weaviate.WeaviateClient:
     )
 
 
-def ensure_memory_collection() -> None:
-    """Create the ``EvidenceChunk`` collection if it does not exist.
+def ensure_weaviate_collection(collection_name: str) -> None:
+    """Create the ``collection_name`` collection if it does not exist.
 
     The operation is idempotent – calling it multiple times will not
     raise an exception or overwrite an existing collection.
     """
-    client = _get_client()
+    client = get_weaviate_client()
     try:
-        if client.collections.exists("EvidenceChunk"):
+        if client.collections.exists(collection_name):
             # Already present – nothing to do.
             return
         client.collections.create(
-            "EvidenceChunk",
+            collection_name,
             vector_config=Configure.Vectors.self_provided(),
         )
     finally:

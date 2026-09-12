@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Evidence(BaseModel):
@@ -9,37 +9,20 @@ class Evidence(BaseModel):
     execution_id: str
     event_id: str
 
+    evidence_type: str
     content: str
     content_hash: str
 
     source_type: str
-    source_name: Optional[str] = None
-    source_url: Optional[str] = None
+    source_name: str | None = None
+    source_url: str | None = None
 
     observed_at: datetime
     retrieved_at: datetime
+    extraction_method: str | None = None
 
-    extraction_method: str
-
-    parent_evidence_ids: List[str] = []
-
-    metadata: Dict[str, Any] = {}
+    parent_evidence_ids: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
     worker_version: str
     schema_version: Literal["evidence.v1"] = "evidence.v1"
-
-    def to_dict(self) -> Dict[str, Any]:
-        return self.dict()
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Evidence":
-        return cls(**data)
-
-    @classmethod
-    def schema_json(cls) -> str:
-        return super().schema_json()
-
-    @classmethod
-    def schema_dict(cls) -> Dict[str, Any]:
-        return super().schema()
-

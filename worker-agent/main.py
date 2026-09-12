@@ -33,11 +33,11 @@ from playwright.async_api import async_playwright
 import nest_asyncio
 
 # ---------------------------------------------------------------------------
-# Helper: send a tool result to the memory ingestion endpoint
+# Helper: send a tool result to the evidence ingestion endpoint
 # ---------------------------------------------------------------------------
 
 def ingest_tool_result(execution_id: str, event_id: str, tool_name: str, tool_result: Any, source_url: Optional[str] = None) -> None:
-    """POST a semantic artifact to the FastAPI memory endpoint.
+    """POST a semantic artifact to the FastAPI evidence endpoint.
 
     Parameters
     ----------
@@ -66,11 +66,11 @@ def ingest_tool_result(execution_id: str, event_id: str, tool_name: str, tool_re
             "source": tool_name,
             "source_url": source_url,
         }
-        resp = requests.post("http://fastapi:8000/memory/ingest", json=payload, timeout=10)
+        resp = requests.post("http://fastapi:8000/ingest/evidence", json=payload, timeout=10)
         resp.raise_for_status()
     except Exception as e:
-        # Log but do not raise – memory is observational
-        print(f"[Memory ingestion] failed for event {event_id}: {e}")
+        # Log but do not raise – evidence is observational
+        print(f"[Evidence ingestion] failed for event {event_id}: {e}")
 
 
 # Apply the patch to allow nested event loops inside the Jupyter runtime environment
@@ -220,7 +220,7 @@ def web_fetch(url: str) -> str:
                     "--disable-blink-features=AutomationControlled", # Evade automated tracking flags
                     "--no-sandbox",                                 # Required for root execution inside Docker
                     "--disable-setuid-sandbox",
-                    "--disable-dev-shm-usage",                      # Use disk swap to avoid shared memory engine crashes
+                    "--disable-dev-shm-usage",                      # Use disk swap to avoid shared evidence engine crashes
                     "--disable-infobars"
                 ]
             )
@@ -983,7 +983,7 @@ def run_agent(
             else:
                 try:
                     tool_result = selected_tool.invoke(tool_args)
-                    # Ingest the tool result into memory
+                    # Ingest the tool result into evidence
                     event_id = str(uuid.uuid4())
                     ingest_tool_result(execution_id, event_id, tool_name, tool_result, source_url=None)
                     

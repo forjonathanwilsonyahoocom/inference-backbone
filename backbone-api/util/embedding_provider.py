@@ -22,16 +22,12 @@ __all__ = ["EmbeddingProvider", "OllamaEmbeddingProvider"]
 
 
 class EmbeddingProvider:
-    """Abstract base class for embedding providers.
+    """Abstract base class for embedding provider.
 
-    Subclasses must implement :meth:`embed_documents` and
-    :meth:`embed_query`.
+    Subclasses must implement :meth:`embed` 
     """
 
-    async def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        raise NotImplementedError
-
-    async def embed_query(self, text: str) -> List[float]:
+    async def embed(self, text: str) -> List[float]:
         raise NotImplementedError
 
 
@@ -65,30 +61,7 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
         response.raise_for_status()
         return response.json()
 
-    async def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        if not texts:
-            return []
-        embeddings = []
-        for text in texts:
-            payload = {"model": self.model, "prompt": text}
-            data = await self._post(payload)
-            
-            vector = data["embedding"]
-            # Return as normalized float32 for fast dot-product cosine similarity
-            arr = np.array(vector, dtype=np.float32)
-                        
-            embeddings = embeddings + [ (arr / np.linalg.norm(arr)).astype(float).tolist() ]
-            print("EMBEDDED!")
-            
-        if embeddings is None or not isinstance(embeddings, list):
-            raise ValueError("Malformed response: missing 'embeddings' list")
-        # Validate each embedding is a list of floats
-        for emb in embeddings:
-            if not isinstance(emb, list) or not all(isinstance(v, (float, int)) for v in emb):
-                raise ValueError("Malformed response: embeddings must be list of floats")
-        return embeddings
-
-    async def embed_query(self, text: str) -> List[float]:
+    async def embed(self, text: str) -> List[float]:
         if not text:
             return []
         payload = {"model": self.model, "prompt": text}
@@ -97,16 +70,11 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
         # Return as normalized float32 for fast dot-product cosine similarity
         arr = np.array(vector, dtype=np.float32)
                     
-        embeddings = [ (arr / np.linalg.norm(arr)).astype(float).tolist() ]
-            
-        if embeddings is None or not isinstance(embeddings, list):
-            raise ValueError("Malformed response: missing 'embeddings' list")
-        if len(embeddings) != 1:
-            raise ValueError("Malformed response: expected single embedding for query")
-        emb = embeddings[0]
-        if not isinstance(emb, list) or not all(isinstance(v, (float, int)) for v in emb):
+        embedding =  (arr / np.linalg.norm(arr)).astype(float).tolist() 
+ 
+        if not isinstance(embedding, list) or not all(isinstance(v, (float, int)) for v in emb):
             raise ValueError("Malformed response: embedding must be list of floats")
-        return emb
+        return embedding
 
     async def __aenter__(self):
         return self

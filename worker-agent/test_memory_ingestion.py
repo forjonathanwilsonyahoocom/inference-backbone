@@ -48,7 +48,7 @@ result = worker_main.run_agent("Please read the README.md file.")
 
 # Assertions
 assert result["condition"] != "no tool calls", "Agent did not perform any tool calls"
-assert len(captured) == 1, "Memory ingestion was not called"
+assert len(captured) == 1, "Evidence ingestion was not called"
 payload = captured[0]["json"]
 assert payload["artifact_type"] == "tool_result"
 assert payload["execution_id"] == "11111111-1111-1111-1111-111111111111"

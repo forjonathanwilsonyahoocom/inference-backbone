@@ -1,6 +1,6 @@
 """Integration test: worker event → indexed artifact → validator retrieves artifact → validator associates it with execution/event identity.
 
-This test demonstrates the semantic memory retrieval flow:
+This test demonstrates the semantic evidence retrieval flow:
 1. A worker event is executed (simulated)
 2. The result is ingested into Weaviate (via the fastapi app)
 3. The validator searches for relevant artifacts (via the fastapi app)
@@ -38,8 +38,8 @@ def simulate_worker_event() -> dict:
 # 2. Ingest the result into Weaviate
 # ---------------------------------------------------------------------------
 
-def ingest_into_memory(event: dict) -> dict:
-    """Ingest a tool result into Weaviate via the memory_ingest endpoint."""
+def ingest_into_evidence(event: dict) -> dict:
+    """Ingest a tool result into Weaviate via the evidence_ingest endpoint."""
     client = TestClient(fastapi_app)
     payload = {
         "content": event["result"],
@@ -50,7 +50,7 @@ def ingest_into_memory(event: dict) -> dict:
         "source_url": None,
     }
 
-    response = client.post("/memory/ingest", json=payload)
+    response = client.post("/evidence/ingest", json=payload)
     response.raise_for_status()
     return response.json()
 
@@ -59,11 +59,11 @@ def ingest_into_memory(event: dict) -> dict:
 # 3. Search for the artifact
 # ---------------------------------------------------------------------------
 
-def search_memory(query: str, limit: int = 5) -> list:
+def search_evidence(query: str, limit: int = 5) -> list:
     """Search Weaviate for relevant artifacts."""
     client = TestClient(fastapi_app)
     payload = {"query": query, "limit": limit}
-    response = client.post("/memory/search", json=payload)
+    response = client.post("/evidence/search", json=payload)
     response.raise_for_status()
     return response.json()
 
@@ -96,7 +96,7 @@ def validate_with_supplemental(
 # 5. Run the integration test
 # ---------------------------------------------------------------------------
 
-def test_semantic_memory_flow():
+def test_semantic_evidence_flow():
     """Demonstrate the full flow: worker event → indexed artifact → validator retrieves artifact → validator can associate it with execution/event identity."""
 
     # Step 1: Simulate a worker event
@@ -105,16 +105,16 @@ def test_semantic_memory_flow():
     print(f"  Tool: {worker_event['tool']}")
     print(f"  Result: {worker_event['result'][:50]}...")
 
-    # Step 2: Ingest into memory
-    ingested = ingest_into_memory(worker_event)
-    print(f"\nStep 2: Ingested into memory")
+    # Step 2: Ingest into evidence
+    ingested = ingest_into_evidence(worker_event)
+    print(f"\nStep 2: Ingested into evidence")
     print(f"  Artifact ID: {ingested['artifact_id']}")
     print(f"  Parent ID: {ingested['parent_id']}")
     print(f"  Chunk count: {ingested['chunk_count']}")
 
     # Step 3: Search for the artifact
-    search_results = search_memory("README content", limit=5)
-    print(f"\nStep 3: Searched memory")
+    search_results = search_evidence("README content", limit=5)
+    print(f"\nStep 3: Searched evidence")
     print(f"  Found {len(search_results)} results")
     if search_results:
         print(f"  First result artifact_id: {search_results[0]['artifact_id']}")
@@ -150,5 +150,5 @@ def test_semantic_memory_flow():
 
 
 if __name__ == "__main__":
-    result = test_semantic_memory_flow()
+    result = test_semantic_evidence_flow()
     print(f"\nFinal result: {json.dumps(result, indent=2)}")
