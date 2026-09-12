@@ -36,7 +36,7 @@ try:
 except requests.exceptions.RequestException as error:
     print(f"HTTP request failed: {error}")
 ```
-```text
+```bash
 ✅ **Workspace is empty** – verified.  
 ✅ **Web search for “OWL reasoning”** – results retrieved.  
 ✅ **README.md** created with the first search result.
@@ -46,9 +46,7 @@ except requests.exceptions.RequestException as error:
 ### Quick Check
 Open `README.md` to confirm the content:
 
-```bash
 cat README.md
-```
 
 You should see the title, URL, and snippet from the Owlready2 documentation.
 
