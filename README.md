@@ -36,7 +36,7 @@ try:
 except requests.exceptions.RequestException as error:
     print(f"HTTP request failed: {error}")
 ```
-```markdown
+```text
 ✅ **Workspace is empty** – verified.  
 ✅ **Web search for “OWL reasoning”** – results retrieved.  
 ✅ **README.md** created with the first search result.
