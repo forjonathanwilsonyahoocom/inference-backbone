@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from contracts.inference_contracts.evidence_chunk import EvidenceChunk
 from contracts.general_contracts.comms import SearchRequest
 from typing import List, Dict
+from weaviate.classes.query import MetadataQuery
 from util.embedding_provider import OllamaEmbeddingProvider
 from clients.weaviate import get_weaviate_client
 
