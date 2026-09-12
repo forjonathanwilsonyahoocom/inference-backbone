@@ -32,5 +32,5 @@ async def evidence_chunk_search(payload: SearchRequest) -> List[Dict]:
     except Exception as e:
         print("evidence_chunk_search FAILURE",e)
     finally:
-        client.close()
+        weaviate_client.close()
         
