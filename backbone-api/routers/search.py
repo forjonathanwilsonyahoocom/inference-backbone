@@ -16,7 +16,7 @@ async def evidence_chunk_search(payload: SearchRequest) -> List[Dict]:
         evidence_chunk_collection =  weaviate_client.collections.use("EvidenceChunk")
         # Build the query payload
         
-        query_vector = await provider.embed(payload.query)
+        query_vector = await embedding_provider.embed(payload.query)
         
         results = evidence_chunk_collection.query.near_vector(
             near_vector=query_vector, # your query vector goes here
