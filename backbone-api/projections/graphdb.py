@@ -2,7 +2,9 @@
 projections/graphdb.py
 
 Generalized entity -> RDF/Turtle projection, plus the first concrete
-projection: Evidence -> Turtle.
+projection: Evidence -> Turtle. Transport (the actual GraphDB POST)
+lives in clients/graphdb_client.py, not here -- this module only ever
+builds Graph/Turtle content.
 
 Design notes:
 - field_mapping is an ordered list of (attr_name, predicate, transform)
@@ -16,13 +18,16 @@ Design notes:
 - None values are skipped, not written as empty literals.
 """
 
-from datetime import datetime
 from typing import Any, Callable
 
+import httpx
 from rdflib import RDF, Graph, Literal, Namespace, URIRef
 from rdflib.term import Identifier
 
-EX = Namespace("http://www.mindbodyengineer.com/")
+from contracts.inference_contracts.evidence import Evidence
+from clients.graphdb_client import post_turtle
+
+EX = Namespace("http://mindbodyengineer.com/")
 
 # (attr_name, predicate, optional transform)
 # transform(value) -> either a raw python value (wrapped in Literal)
@@ -106,3 +111,18 @@ def evidence_to_turtle(evidence: Any, graph: Graph | None = None) -> str:
     node_iri = evidence_iri(evidence.evidence_id)
     build_node_turtle(g, node_iri, EX.Evidence, evidence, EVIDENCE_FIELD_MAPPING)
     return g.serialize(format="turtle")
+
+
+async def write_evidence_to_graphdb(
+    evidence: Evidence,
+    client: httpx.AsyncClient | None = None,
+) -> None:
+    """Thin wrapper: project then transport. All the actual write
+    mechanics (URL, error handling, client reuse) live in
+    clients.graphdb_client.post_turtle -- this function's only job is
+    knowing that Evidence needs evidence_to_turtle() first.
+    write_claim_to_graphdb, when Claims land, will look identical
+    except for the projection call.
+    """
+    turtle = evidence_to_turtle(evidence)
+    await post_turtle(turtle, client=client)

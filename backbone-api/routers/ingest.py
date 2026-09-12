@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from contracts.inference_contracts.evidence import Evidence
 from contracts.inference_contracts.evidence_chunk import EvidenceChunk
+from projections.graphdb import write_evidence_to_graphdb
 from util.chunker import chunk_text
 from typing import List, Dict
 from util.embedding_provider import OllamaEmbeddingProvider
@@ -11,6 +12,10 @@ ingest_router = APIRouter()
 
 @ingest_router.post("/ingest/evidence")
 async def evidence_ingest(payload: Evidence) -> Dict:
+
+
+    write_evidence_to_graphdb(payload)
+    
     ensure_weaviate_collection("EvidenceChunk")
     
     weaviate_client = get_weaviate_client()
@@ -19,6 +24,7 @@ async def evidence_ingest(payload: Evidence) -> Dict:
         evidence_chunk_collection = weaviate_client.collections.use("EvidenceChunk")
         embedding_provider = OllamaEmbeddingProvider()
         payload.content_hash = context_based_id(payload.content)
+
         # 1. Chunk the content
         raw_chunks = chunk_text(payload.content)
         
