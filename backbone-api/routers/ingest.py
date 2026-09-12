@@ -14,7 +14,7 @@ ingest_router = APIRouter()
 async def evidence_ingest(payload: Evidence) -> Dict:
 
 
-    write_evidence_to_graphdb(payload)
+    await write_evidence_to_graphdb(payload)
     
     ensure_weaviate_collection("EvidenceChunk")
     
