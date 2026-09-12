@@ -34,6 +34,27 @@ import asyncio
 from playwright.async_api import async_playwright
 import nest_asyncio
 
+
+
+class ToolEvent(BaseModel):
+    iteration: int
+    event_type: str
+    tool: Optional[str] = None
+    args: Dict[str, Any] = Field(default_factory=dict)
+    result: Any = None
+
+
+def canonical_json(value: Any) -> str:
+    return json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
+
+
+
+
 # ---------------------------------------------------------------------------
 # Helper: send a tool result to the evidence ingestion endpoint
 # ---------------------------------------------------------------------------
@@ -97,23 +118,6 @@ distillation_llm = ChatOllama(
 )
 print(f"Using {MODEL_NAME} at {OLLAMA_BASE_URL}")
 print(f"Distilling with {DISTILL_MODEL_NAME} at {OLLAMA_BASE_URL}")
-
-
-class ToolEvent(BaseModel):
-    iteration: int
-    event_type: str
-    tool: Optional[str] = None
-    args: Dict[str, Any] = Field(default_factory=dict)
-    result: Any = None
-
-
-def canonical_json(value: Any) -> str:
-    return json.dumps(
-        value,
-        sort_keys=True,
-        separators=(",", ":"),
-        default=str,
-    )
 
 
 response = llm.invoke("Reply with exactly: Ollama connection works")
