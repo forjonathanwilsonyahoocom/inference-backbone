@@ -72,7 +72,7 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
                     
         embedding =  (arr / np.linalg.norm(arr)).astype(float).tolist() 
  
-        if not isinstance(embedding, list) or not all(isinstance(v, (float, int)) for v in emb):
+        if not isinstance(embedding, list) or not all(isinstance(v, (float, int)) for v in embedding):
             raise ValueError("Malformed response: embedding must be list of floats")
         return embedding
 
