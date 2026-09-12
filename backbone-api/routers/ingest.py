@@ -15,27 +15,33 @@ async def evidence_ingest(payload: Evidence) -> Dict:
     
     weaviate_client = get_weaviate_client()
     
-    evidence_chunk_collection = weaviate_client.collections.use("EvidenceChunk")
-    embedding_provider = OllamaEmbeddingProvider()
-    payload.content_hash = context_based_id(payload.content)
-    # 1. Chunk the content
-    raw_chunks = chunk_text(payload.content)
-    
-    for idx, raw_chunk in enumerate(raw_chunks):
-       typed_chunk = EvidenceChunk(
-                chunk_id=context_based_id(raw_chunk),
-                evidence_id=payload.evidence_id,
-                content=raw_chunk,
-                chunk_index=idx,
-                chunk_count=len(raw_chunks),
-                embedding_task="document",
-            )
-       embedding = await embedding_provider.embed(raw_chunk)
-       
-       new_id = evidence_chunk_collection.data.insert(properties = typed_chunk.model_dump(), vector=embedding)
+    try:
+        evidence_chunk_collection = weaviate_client.collections.use("EvidenceChunk")
+        embedding_provider = OllamaEmbeddingProvider()
+        payload.content_hash = context_based_id(payload.content)
+        # 1. Chunk the content
+        raw_chunks = chunk_text(payload.content)
         
-    return {"parent_id": payload.content_hash,
-            "chunk_count": len(raw_chunks),
-            "chunks": chunk_ids}
+        chunk_ids = []
+        for idx, raw_chunk in enumerate(raw_chunks):
+           typed_chunk = EvidenceChunk(
+                    chunk_id=context_based_id(raw_chunk),
+                    evidence_id=payload.evidence_id,
+                    content=raw_chunk,
+                    chunk_index=idx,
+                    chunk_count=len(raw_chunks),
+                    embedding_task="document",
+                )
+           embedding = await embedding_provider.embed(raw_chunk)
+           
+           chunk_ids.append(evidence_chunk_collection.data.insert(properties = typed_chunk.model_dump(), vector=embedding))
+            
+        return {"parent_id": payload.content_hash,
+                "chunk_count": len(raw_chunks),
+                "chunks": chunk_ids}
+    except Exception as e:
+        print("evidence_ingest FAILURE" , e)
+    finally:
+        weaviate_client.close()
     
 
