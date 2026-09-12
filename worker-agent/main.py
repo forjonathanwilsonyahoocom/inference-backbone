@@ -76,13 +76,13 @@ def ingest_tool_event(execution_id: str, tool_event: ToolEvent) -> None:
             observed_at=now,
             retrieved_at=now,
             metadata={"args": tool_event.args},     # structured, don't lose it
-            worker_version=1.0,
+            worker_version="1.0.1",
         )
         resp = requests.post("http://fastapi:8000/ingest/evidence", json=payload, timeout=10)
         resp.raise_for_status()
     except Exception as e:
         # Log but do not raise – evidence is observational
-        print(f"[Evidence ingestion] failed for event {event_id}: {e}")
+        print(f"[Evidence ingestion] failed for event {tool_event}: {e}")
 
 
 # Apply the patch to allow nested event loops inside the Jupyter runtime environment
