@@ -5,7 +5,8 @@ import os
 import uuid
 import requests
 import subprocess
-from datetime import datetime
+from datetime import datetime, UTC
+
 import hashlib
 from contracts.inference_contracts.evidence import Evidence
 from pathlib import Path
@@ -63,8 +64,8 @@ def ingest_tool_event(execution_id: str, tool_event: ToolEvent) -> None:
   
     try:
     
-        now = datetime.utcnow()
-         
+        now = datetime.now(UTC).isoformat()
+
         payload = Evidence(
             evidence_id=str(uuid.uuid4()),
             execution_id=execution_id,
