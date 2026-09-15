@@ -38,6 +38,6 @@ def write_evidence_to_file(evidence: Evidence, overwrite: bool = False) -> Path:
 
     # Serialize the Pydantic model to JSON (pretty‑printed for debugging)
     with file_path.open("w", encoding="utf-8") as fp:
-        json.dump(evidence.model_dump(), fp, indent=2, ensure_ascii=False)
+        json.dump(evidence.model_dump(mode="json"), fp, indent=2, ensure_ascii=False)
 
     return file_path
