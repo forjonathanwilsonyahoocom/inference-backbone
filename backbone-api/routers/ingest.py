@@ -5,6 +5,7 @@ from projections.graphdb import write_evidence_to_graphdb
 from util.chunker import chunk_text
 from typing import List, Dict
 from util.embedding_provider import OllamaEmbeddingProvider
+from util.file_persistence import write_evidence_to_file
 from util.identity import context_based_id
 from clients.weaviate import get_weaviate_client, ensure_weaviate_collection
 
@@ -13,7 +14,9 @@ ingest_router = APIRouter()
 @ingest_router.post("/ingest/evidence")
 async def evidence_ingest(payload: Evidence) -> Dict:
 
-
+    file_path = write_evidence_to_file(payload)
+    print(f"[ingest] Persisted evidence to {file_path}")
+    
     await write_evidence_to_graphdb(payload)
     
     ensure_weaviate_collection("EvidenceChunk")
