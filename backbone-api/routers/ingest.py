@@ -14,10 +14,6 @@ ingest_router = APIRouter()
 @ingest_router.post("/ingest/evidence")
 async def evidence_ingest(payload: Evidence) -> Dict:
 
-    file_path = write_evidence_to_file(payload)
-    print(f"[ingest] Persisted evidence to {file_path}")
-    
-    await write_evidence_to_graphdb(payload)
     
     ensure_weaviate_collection("EvidenceChunk")
     
@@ -28,6 +24,11 @@ async def evidence_ingest(payload: Evidence) -> Dict:
         embedding_provider = OllamaEmbeddingProvider()
         payload.content_hash = context_based_id(payload.content)
 
+        file_path = write_evidence_to_file(payload)
+        print(f"[ingest] Persisted evidence to {file_path}")
+        
+        await write_evidence_to_graphdb(payload)
+        
         # 1. Chunk the content
         raw_chunks = chunk_text(payload.content)
         
