@@ -8,7 +8,7 @@ BASE_DIR = Path("/indexed-artifacts")
 
 retrieval_router = APIRouter()
 
-.get("/file/evidence/{evidence_id}")
+@retrieval_router.get("/file/evidence/{evidence_id}")
 async def get_evidence_file(evidence_id: str):
  
     store_path = BASE_DIR / "/evidence"
