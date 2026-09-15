@@ -37,6 +37,7 @@ async def evidence_ingest(payload: Evidence) -> Dict:
            typed_chunk = EvidenceChunk(
                     chunk_id=context_based_id(raw_chunk),
                     evidence_id=payload.evidence_id,
+                    event_id=payload.event_id,
                     content=raw_chunk,
                     chunk_index=idx,
                     chunk_count=len(raw_chunks),

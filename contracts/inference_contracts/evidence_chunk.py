@@ -4,7 +4,8 @@ from pydantic import BaseModel
 class EvidenceChunk(BaseModel):
     chunk_id: str | None = None
     evidence_id: str
-
+    event_id: str
+    
     content: str
 
     chunk_index: int
