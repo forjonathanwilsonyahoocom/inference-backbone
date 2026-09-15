@@ -48,6 +48,7 @@ services:
     volumes:
       - ./backbone-api:/app
       - ./contracts:/app/contracts
+      - ./datasets/backbone-api:/indexed-artifacts
 
   worker-agent:
     build: ./worker-agent
