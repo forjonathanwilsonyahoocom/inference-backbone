@@ -79,7 +79,7 @@ def ingest_tool_event(execution_id: str, tool_event: ToolEvent) -> None:
             metadata={"args": tool_event.args},     # structured, don't lose it
             worker_version="1.0.1",
         )
-        resp = requests.post("http://fastapi:8000/ingest/evidence", json=payload.model_dump(mode="json"), timeout=10)
+        resp = requests.post("http://backbone-api:8000/ingest/evidence", json=payload.model_dump(mode="json"), timeout=10)
         resp.raise_for_status()
     except Exception as e:
         # Log but do not raise – evidence is observational
