@@ -92,7 +92,10 @@ def build_evidence_text(events: list[dict], supplemental_evidence: list[dict] = 
         return "(no tool calls were made)"
     lines = []
     for e in evidence_events:
-        lines.append(f"- iteration {e.get('iteration')}: called `{e.get('tool')}` with args {e.get('args')} -> result: {str(e.get('result'))[:1000]}")
+        iteration = int(e.get('event_id').split('-')[-1].split('.')[0]) if e.get('event_id') else e.get('iteration')
+        tool = e.get('tool', e.get('evidence_type', 'Nothing'))
+        result = str(e.get('result', e.get('content', 'None' )))[:1000]
+        lines.append(f"- iteration {iteration}: called `{tool}` with args {e.get('args')} -> result: {result}")
     if supplemental_evidence:
         lines.append("")
         lines.append("SUPPLEMENTAL EVIDENCE (retrieved from semantic evidence):")
