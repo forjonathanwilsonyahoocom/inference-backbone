@@ -11,10 +11,11 @@ retrieval_router = APIRouter()
 @retrieval_router.get("/file/evidence/{evidence_id}")
 async def get_evidence_file(evidence_id: str):
  
-    store_path = BASE_DIR / "/evidence"
+    store_path = BASE_DIR / "evidence"
     
-    file_path =  store_path / f"/{evidence_id}.json"
+    file_path =  store_path / f"{evidence_id}.json"
 
     if not file_path.exists():
         return {"error": "file not found"}
+        
     return FileResponse(path=str(file_path), media_type="application/json")
