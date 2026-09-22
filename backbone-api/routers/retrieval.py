@@ -8,12 +8,12 @@ BASE_DIR = Path("/indexed-artifacts")
 
 retrieval_router = APIRouter()
 
-@retrieval_router.get("/file/evidence/{evidence_id}")
+@retrieval_router.get("/file/evidence/{event_id}")
 async def get_evidence_file(evidence_id: str):
  
     store_path = BASE_DIR / "evidence"
     
-    file_path =  store_path / f"{evidence_id}.json"
+    file_path =  store_path / f"{event_id}.json"
 
     if not file_path.exists():
         return {"error": "file not found"}
