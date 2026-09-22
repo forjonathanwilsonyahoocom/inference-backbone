@@ -84,11 +84,15 @@ def build_evidence_text(events: list[dict]) -> str:
         return "(no tool calls were made)"
     lines = []
     for e in evidence_events:
-        iteration = int(e.get('event_id').split('-')[-1])
-        tool = e.get('evidence_type', 'Nothing')
-        result = str(e.get('content', 'None' ))[:1000]
-        lines.append(f"- iteration {iteration}: called `{tool}` with args {e.get('args')} -> result: {result}")
- 
+        try:
+            iteration = int(e.get('event_id').split('-')[-1])
+            tool = e.get('evidence_type', 'Nothing')
+            result = str(e.get('content', 'None' ))[:1000]
+            lines.append(f"- iteration {iteration}: called `{tool}` with args {e.get('args')} -> result: {result}")
+        except Exception as exc:
+            print(exc)
+            print(e)
+     
     return "\n".join(lines)
 
 
