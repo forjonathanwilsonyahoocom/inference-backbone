@@ -41,7 +41,7 @@ async def list_evidence_files(execution_id: str):
     event_ids = [name.split(".")[1] for _, name in files]
     return {
         "execution_id": execution_id,
-        "iterations": [int(name.split('-')[-1].split('.')[0]) for name in event_ids],
+        "iterations": [int(name.split('-')[-1]) for name in event_ids],
         "event_ids": event_ids,
     }
 
