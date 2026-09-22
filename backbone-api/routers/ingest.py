@@ -14,27 +14,31 @@ ingest_router = APIRouter()
 @ingest_router.post("/ingest/evidence")
 async def evidence_ingest(payload: Evidence) -> Dict:
 
-    
-    ensure_weaviate_collection("EvidenceChunk")
-    
     weaviate_client = get_weaviate_client()
-    
+        
     try:
-        evidence_chunk_collection = weaviate_client.collections.use("EvidenceChunk")
-        embedding_provider = OllamaEmbeddingProvider()
-        payload.content_hash = context_based_id(payload.content)
 
+
+        payload.content_hash = context_based_id(payload.content)
+                
         file_path = write_evidence_to_file(payload)
         print(f"[ingest] Persisted evidence to {file_path}")
-        
+
         await write_evidence_to_graphdb(payload)
+
+        ensure_weaviate_collection("EvidenceChunk")
+
         
-        # 1. Chunk the content
-        raw_chunks = chunk_text(payload.content)
-        
-        chunk_ids = []
-        for idx, raw_chunk in enumerate(raw_chunks):
-           typed_chunk = EvidenceChunk(
+        evidence_chunk_collection = weaviate_client.collections.use("EvidenceChunk")
+
+        # ---- 1️⃣  Embed with a context‑manager ----
+        async with OllamaEmbeddingProvider() as embedding_provider:
+
+            raw_chunks = chunk_text(payload.content)
+            chunk_ids = []
+
+            for idx, raw_chunk in enumerate(raw_chunks):
+                typed_chunk = EvidenceChunk(
                     chunk_id=context_based_id(raw_chunk),
                     evidence_id=payload.evidence_id,
                     event_id=payload.event_id,
@@ -43,16 +47,23 @@ async def evidence_ingest(payload: Evidence) -> Dict:
                     chunk_count=len(raw_chunks),
                     embedding_task="document",
                 )
-           embedding = await embedding_provider.embed(raw_chunk)
-           
-           chunk_ids.append(evidence_chunk_collection.data.insert(properties = typed_chunk.model_dump(), vector=embedding))
-            
-        return {"parent_id": payload.content_hash,
-                "chunk_count": len(raw_chunks),
-                "chunks": chunk_ids}
-    except Exception as e:
-        print("evidence_ingest FAILURE" , e)
-    finally:
-        weaviate_client.close()
-    
+                embedding = await embedding_provider.embed(raw_chunk)
 
+                chunk_ids.append(
+                    evidence_chunk_collection.data.insert(
+                        properties=typed_chunk.model_dump(), vector=embedding
+                    )
+                )
+
+        return {
+            "parent_id": payload.content_hash,
+            "chunk_count": len(raw_chunks),
+            "chunks": chunk_ids,
+        }
+
+    except Exception as e:
+        print("evidence_ingest FAILURE", e)
+        raise
+    finally:
+        # ---- 2️⃣  Close the Weaviate client ----
+        weaviate_client.close()
