@@ -86,9 +86,10 @@ def build_evidence_text(events: list[dict]) -> str:
     for e in evidence_events:
         try:
             iteration = int(e.get('event_id').split('-')[-1])
-            tool = e.get('evidence_type', 'Nothing')
-            result = str(e.get('content', 'None' ))[:1000]
-            lines.append(f"- iteration {iteration}: called `{tool}` with args {e.get('args')} -> result: {result}")
+            tool = e.get('evidence_type', 'Nothing') #this will be the name of the tool called
+            result = str(e.get('content', 'None' ))[:1000] #this is the result of the tool call
+            metadata = str(e.get('metadata'))[:1000] #includes args to tool
+            lines.append(f"- iteration {iteration}: called `{tool}` with metadata {metadata} -> result: {result}")
         except Exception as exc:
             print(exc)
             print(e)
