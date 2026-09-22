@@ -87,7 +87,7 @@ def fetch_evidence_events(execution_id: str) -> list[dict]:
 
 
 def build_evidence_text(events: list[dict], supplemental_evidence: list[dict] = None) -> str:
-    evidence_events = [e for e in events if e.get("tool") not in ("response", "error_response")]
+    evidence_events = [e for e in events if e.get("tool", e.get("evidence_type") ) not in ("response", "error_response")]
     if not evidence_events and not supplemental_evidence:
         return "(no tool calls were made)"
     lines = []
