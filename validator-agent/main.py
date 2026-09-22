@@ -17,14 +17,12 @@ VALIDATION_PROMPT = """You are a claim-checking validator. You will be given:
 1. A TASK that an AI agent was asked to perform.
 2. The agent's FINAL RESPONSE — what it reported back to the user.
 3. An EVIDENCE LOG — the actual tool calls the agent made and their real results.
-4. SUPPLEMENTAL EVIDENCE — artifacts retrieved from semantic evidence (Weaviate).
 
-IMPORTANT: The EVIDENCE LOG is the authoritative record. The SUPPLEMENTAL
-EVIDENCE is a candidate pool only — it is NOT automatically trusted.
+IMPORTANT: The EVIDENCE LOG is the authoritative record.
 
 Your job: extract each discrete, checkable factual claim from the FINAL
 RESPONSE, then decide whether that claim is directly supported by something
-in the EVIDENCE LOG or SUPPLEMENTAL EVIDENCE.
+in the EVIDENCE LOG 
 
 Rules:
 - A claim is "supported" only if the evidence log contains a tool result that
@@ -33,12 +31,8 @@ Rules:
   in the abstract.
 - A claim the agent asserted with no matching tool result is "unsupported",
   even if it sounds plausible.
-- SUPPLEMENTAL EVIDENCE is a candidate pool. If a retrieved artifact matches
-  a claim, it is a candidate — the validator must still determine whether
-  it actually supports the claim. Do not blindly trust retrieved evidence.
 - Distinguish evidence provenance in your response:
   * "direct" — came from the original execution events
-  * "retrieved" — came from semantic evidence search
 - Ignore stylistic/summary sentences that make no checkable factual claim
   (e.g. "Both sources agree").
 - Ignore claims about the agent's own process (e.g. "I searched the web")
@@ -59,9 +53,7 @@ exact shape:
 class ValidateRequest(BaseModel):
     task_description: str
     final_response: str
-    events: list[dict] = []
-    supplemental_evidence: list[dict] = []
-    execution_id: str | None = None
+    execution_id: str
 
 
 def fetch_evidence_events(execution_id: str) -> list[dict]:
@@ -86,25 +78,17 @@ def fetch_evidence_events(execution_id: str) -> list[dict]:
     return events
 
 
-def build_evidence_text(events: list[dict], supplemental_evidence: list[dict] = None) -> str:
-    evidence_events = [e for e in events if e.get("tool", e.get("evidence_type") ) not in ("response", "error_response")]
-    if not evidence_events and not supplemental_evidence:
+def build_evidence_text(events: list[dict]) -> str:
+    evidence_events = [e for e in events if e.get("evidence_type") not in ("response", "error_response")]
+    if not evidence_events:
         return "(no tool calls were made)"
     lines = []
     for e in evidence_events:
-        iteration = int(e.get('event_id').split('-')[-1].split('.')[0]) if e.get('event_id') else e.get('iteration')
-        tool = e.get('tool', e.get('evidence_type', 'Nothing'))
-        result = str(e.get('result', e.get('content', 'None' )))[:1000]
+        iteration = int(e.get('event_id').split('-')[-1])
+        tool = e.get('evidence_type', 'Nothing')
+        result = str(e.get('content', 'None' ))[:1000]
         lines.append(f"- iteration {iteration}: called `{tool}` with args {e.get('args')} -> result: {result}")
-    if supplemental_evidence:
-        lines.append("")
-        lines.append("SUPPLEMENTAL EVIDENCE (retrieved from semantic evidence):")
-        for ev in supplemental_evidence:
-            lines.append(f"  - [retrieved] {ev.get('artifact_id', '?')}")
-            lines.append(f"    source: {ev.get('source', '?')}")
-            lines.append(f"    execution_id: {ev.get('execution_id', '?')}")
-            lines.append(f"    event_id: {ev.get('event_id', '?')}")
-            lines.append(f"    -> {ev.get('content', '')}")
+ 
     return "\n".join(lines)
 
 
@@ -123,13 +107,12 @@ def health():
 
 @app.post("/validate")
 def validate(req: ValidateRequest):
-    events = req.events
-    if req.execution_id and not events:
-        try:
-            events = fetch_evidence_events(req.execution_id)
-        except Exception as exc:
-            return {"error": f"Failed to fetch evidence: {exc}"}
-    evidence_text = build_evidence_text(events, req.supplemental_evidence)
+    try:
+        events = fetch_evidence_events(req.execution_id)
+    except Exception as exc:
+        return {"error": f"Failed to fetch evidence: {exc}"}
+    evidence_text = build_evidence_text(events)
+    print(evidence_text)
     user_content = f"TASK:\n{req.task_description}\n\nFINAL RESPONSE:\n{req.final_response}\n\nEVIDENCE LOG:\n{evidence_text}"
     messages = [SystemMessage(content=VALIDATION_PROMPT), HumanMessage(content=user_content)]
     result = None
