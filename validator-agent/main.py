@@ -1,5 +1,6 @@
 import json
 import os
+import requests
 
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -46,9 +47,9 @@ Rules:
 
 Respond with ONLY a JSON object, no other text, no markdown fences, in this
 exact shape:
-{{
+{ {
   "claims": [
-    {{"text": "<claim as stated>", "supported": true|false, "evidence": "<short reference to the supporting tool result, or null>", "provenance": "direct"|"retrieved"}}
+    {"text": "<claim as stated>", "supported": true|false, "evidence": "<short reference to the supporting tool result, or null>", "provenance": "direct"|"retrieved"}
   ],
   "overall_verdict": "supported" | "partially_supported" | "unsupported"
 }}
@@ -58,23 +59,40 @@ exact shape:
 class ValidateRequest(BaseModel):
     task_description: str
     final_response: str
-    events: list[dict]
+    events: list[dict] = []
     supplemental_evidence: list[dict] = []
+    execution_id: str | None = None
+
+
+def fetch_evidence_events(execution_id: str) -> list[dict]:
+    base_url = "http://backbone-api:8000"
+    list_resp = requests.get(f"{base_url}/list/evidence/{execution_id}")
+    if list_resp.status_code != 200:
+        raise RuntimeError(f"Failed to list evidence for {execution_id}: {list_resp.text}")
+    list_data = list_resp.json()
+    event_ids = list_data.get("event_ids") or []
+    if not event_ids:
+        event_ids = list_data if isinstance(list_data, list) else []
+    events = []
+    for eid in event_ids:
+        file_resp = requests.get(f"{base_url}/file/evidence/{eid}")
+        if file_resp.status_code != 200:
+            continue
+        try:
+            ev = file_resp.json()
+            events.append(ev)
+        except Exception:
+            continue
+    return events
 
 
 def build_evidence_text(events: list[dict], supplemental_evidence: list[dict] = None) -> str:
-    evidence_events = [
-        e for e in events if e.get("tool") not in ("response", "error_response")
-    ]
+    evidence_events = [e for e in events if e.get("tool") not in ("response", "error_response")]
     if not evidence_events and not supplemental_evidence:
         return "(no tool calls were made)"
-
     lines = []
     for e in evidence_events:
-        lines.append(
-            f"- iteration {e.get('iteration')}: called `{e.get('tool')}` "
-            f"with args {e.get('args')} -> result: {str(e.get('result'))[:1000]}"
-        )
+        lines.append(f"- iteration {e.get('iteration')}: called `{e.get('tool')}` with args {e.get('args')} -> result: {str(e.get('result'))[:1000]}")
     if supplemental_evidence:
         lines.append("")
         lines.append("SUPPLEMENTAL EVIDENCE (retrieved from semantic evidence):")
@@ -94,30 +112,23 @@ def parse_json_response(raw: str) -> dict:
         text = text[text.find("{"): text.rfind("}") + 1]
     return json.loads(text)
 
-
 app = FastAPI()
-
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
-
 @app.post("/validate")
 def validate(req: ValidateRequest):
-    evidence_text = build_evidence_text(req.events, req.supplemental_evidence)
-
-    user_content = (
-        f"TASK:\n{req.task_description}\n\n"
-        f"FINAL RESPONSE:\n{req.final_response}\n\n"
-        f"EVIDENCE LOG:\n{evidence_text}"
-    )
-
-    messages = [
-        SystemMessage(content=VALIDATION_PROMPT),
-        HumanMessage(content=user_content),
-    ]
-
+    events = req.events
+    if req.execution_id and not events:
+        try:
+            events = fetch_evidence_events(req.execution_id)
+        except Exception as exc:
+            return {"error": f"Failed to fetch evidence: {exc}"}
+    evidence_text = build_evidence_text(events, req.supplemental_evidence)
+    user_content = f"TASK:\n{req.task_description}\n\nFINAL RESPONSE:\n{req.final_response}\n\nEVIDENCE LOG:\n{evidence_text}"
+    messages = [SystemMessage(content=VALIDATION_PROMPT), HumanMessage(content=user_content)]
     result = None
     last_error = None
     for _ in range(3):
@@ -127,8 +138,6 @@ def validate(req: ValidateRequest):
             break
         except Exception as exc:
             last_error = str(exc)
-
     if result is None:
         return {"error": f"Validation failed after retries: {last_error}"}
-
     return result
