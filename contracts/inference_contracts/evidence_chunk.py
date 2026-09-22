@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 class EvidenceChunk(BaseModel):
     chunk_id: str | None = None
+    execution_id: str
     evidence_id: str
     event_id: str
     

@@ -40,6 +40,7 @@ async def evidence_ingest(payload: Evidence) -> Dict:
             for idx, raw_chunk in enumerate(raw_chunks):
                 typed_chunk = EvidenceChunk(
                     chunk_id=context_based_id(raw_chunk),
+                    execution_id=payload.execution_id,
                     evidence_id=payload.evidence_id,
                     event_id=payload.event_id,
                     content=raw_chunk,
