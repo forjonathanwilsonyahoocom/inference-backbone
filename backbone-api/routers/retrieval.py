@@ -38,7 +38,7 @@ async def list_evidence_files(execution_id: str):
             iteration = int(m.group(1))
             files.append((iteration, f.name))
     files.sort(key=lambda x: x[0])
-    event_ids = [name for _, name in files]
+    event_ids = [name.split(".")[1] for _, name in files]
     return {
         "execution_id": execution_id,
         "iterations": [int(name.split('-')[-1].split('.')[0]) for name in event_ids],
