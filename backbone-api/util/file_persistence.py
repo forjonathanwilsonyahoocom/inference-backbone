@@ -27,10 +27,10 @@ def write_evidence_to_file(evidence: Evidence, overwrite: bool = False) -> Path:
     Path
         Absolute path to the written file.
     """
-    store_path = BASE_DIR / "/evidence"
+    store_path = BASE_DIR / "evidence"
     _ensure_dir(store_path)
     
-    file_path =  store_path / f"/{evidence.event_id}.json"
+    file_path =  store_path / f"{evidence.event_id}.json"
 
     if file_path.exists() and not overwrite:
         # Idempotent: skip if already present
