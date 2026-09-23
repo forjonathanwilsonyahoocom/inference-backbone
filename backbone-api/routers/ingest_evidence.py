@@ -27,7 +27,7 @@ async def evidence_ingest(payload: Evidence) -> Dict:
         file_path = write_to_file(
                         content=payload,
                         location="evidence",
-                        identifier=evidence.event_id,
+                        identifier=payload.event_id,
                     )
                     
         print(f"[ingest] Persisted evidence to {file_path}")
