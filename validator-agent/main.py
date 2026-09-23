@@ -94,7 +94,7 @@ def fetch_evidence_events(execution_id: str) -> list[dict]:
     return events
 
 
-def build_evidence_text(e: dict]) -> str:
+def build_evidence_text(e: dict) -> str:
     try:
         iteration = int(e.get('event_id').split('-')[-1])
         tool = e.get('evidence_type', 'Nothing') #this will be the name of the tool called
@@ -104,7 +104,7 @@ def build_evidence_text(e: dict]) -> str:
     except Exception as exc:
         print(exc)
         print(e)
-        return None
+        return ""
 
 def parse_json_response(raw: str) -> dict:
     text = raw.strip()
@@ -133,7 +133,7 @@ def extract_claims(req: ClaimsRequest):
         except Exception as exc:
             last_error = str(exc)
     if result is None:
-        return {"error": f"Claim extaction failed after retries: {last_error}"}
+        return {"error": f"Claim extraction failed after retries: {last_error}"}
     return result
     
 @app.post("/validate")
