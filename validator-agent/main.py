@@ -169,57 +169,23 @@ def validate(req: ValidateRequest):
             val = support_obj.get("supported", 0)
             if claim_id not in support_map:
                 support_map[claim_id] = {}
-            support_map[claim_id][event_id] = val
-    return {"support_map": support_map}
-
-# New endpoint for overall verdict
-@app.post("/overall_verdict")
-def overall_verdict(req: ValidateRequest):
-    # Reuse the support map logic
-    support_map = None
-    try:
-        events = fetch_evidence_events(req.execution_id)
-    except Exception as exc:
-        return {"error": f"Failed to fetch evidence: {exc}"}
-    validation_results = []
-    for e in events:
-        evidence_text = build_evidence_text(e)
-        user_content = f"CLAIMS:\n{req.claims_map}\n\nEVIDENCE_ITEM:\n{evidence_text}"
-        messages = [SystemMessage(content=VALIDATION_PROMPT), HumanMessage(content=user_content)]
-        result = None
-        for _ in range(3):
-            try:
-                response = llm.invoke(messages)
-                result = parse_json_response(response.content)
-                break
-            except Exception as exc:
-                pass
-        if result is None:
-            result = {"error": f"Validation failed after retries: {exc}"}
-        validation_results.append({"event_id": e["event_id"], "result": result})
-    # Build support map
-    support_map = {}
-    for vr in validation_results:
-        event_id = vr.get("event_id")
-        result = vr.get("result", {})
-        support = result.get("support_map", {})
-        for claim_id, support_obj in support.items():
-            val = support_obj.get("supported", 0)
-            if claim_id not in support_map:
-                support_map[claim_id] = {}
-            support_map[claim_id][event_id] = val
-    # Compute overall verdict using simple heuristic
+            if val > 0:
+                support_map[claim_id][event_id] = val
     claim_scores = []
     for claim_id, evidence_vals in support_map.items():
         if evidence_vals:
             avg = sum(evidence_vals.values()) / len(evidence_vals)
             claim_scores.append(avg)
+        else:
+            claim_scores.append(0)
     overall = "unsupported"
-    if claim_scores:
-        avg_overall = sum(claim_scores) / len(claim_scores)
-        if avg_overall > 0.8:
-            overall = "supported"
-        elif avg_overall > 0.4:
-            overall = "partially_supported"
-    return {"overall_verdict": overall}
+    avg_overall = sum(claim_scores) / len(claim_scores)
+    if avg_overall > 0.8:
+        overall = "supported"
+    elif avg_overall > 0.4:
+        overall = "partially_supported"
+    
+    return {"support_map": support_map,
+            "overall_verdict": overall}
+
 # End of file
