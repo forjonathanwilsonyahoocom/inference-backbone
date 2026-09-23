@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from contracts.inference_contracts.evidence import Evidence
 from contracts.inference_contracts.evidence_chunk import EvidenceChunk
-from projections.graphdb import write_evidence_to_graphdb
+from projections.graphdb.evidence import write_evidence_to_graphdb
 from util.chunker import chunk_text
 from typing import List, Dict
 from util.embedding_provider import OllamaEmbeddingProvider
@@ -21,13 +21,17 @@ async def evidence_ingest(payload: Evidence) -> Dict:
 
         payload.content_hash = context_based_id(payload.content)
                 
-        file_path = write_evidence_to_file(payload)
+        file_path = write_to_file(
+                        content=payload,
+                        location="evidence",
+                        identifier=evidence.event_id,
+                    )
+                    
         print(f"[ingest] Persisted evidence to {file_path}")
 
         await write_evidence_to_graphdb(payload)
 
         ensure_weaviate_collection("EvidenceChunk")
-
         
         evidence_chunk_collection = weaviate_client.collections.use("EvidenceChunk")
 

@@ -1,8 +1,7 @@
 """
-projections/graphdb.py
+projections/graphdb/evidence.py
 
-Generalized entity -> RDF/Turtle projection, plus the first concrete
-projection: Evidence -> Turtle. Transport (the actual GraphDB POST)
+concrete projection: Evidence -> Turtle. Transport (the actual GraphDB POST)
 lives in clients/graphdb_client.py, not here -- this module only ever
 builds Graph/Turtle content.
 
@@ -26,45 +25,7 @@ from rdflib.term import Identifier
 
 from contracts.inference_contracts.evidence import Evidence
 from clients.graphdb_client import post_turtle
-
-EX = Namespace("http://mindbodyengineer.com/")
-
-# (attr_name, predicate, optional transform)
-# transform(value) -> either a raw python value (wrapped in Literal)
-# or an rdflib Identifier (URIRef/Literal/BNode), used as-is.
-FieldMapping = list[tuple[str, URIRef, Callable[[Any], Any] | None]]
-
-
-def build_node_turtle(
-    graph: Graph,
-    node_iri: URIRef,
-    rdf_type: URIRef,
-    entity: Any,
-    field_mapping: FieldMapping,
-) -> Graph:
-    """Add triples for one entity to `graph` per field_mapping. Mutates
-    and returns `graph` so callers can build up multi-node graphs."""
-    graph.add((node_iri, RDF.type, rdf_type))
-
-    for attr_name, predicate, transform in field_mapping:
-        raw_value = getattr(entity, attr_name, None)
-        if raw_value is None:
-            continue
-
-        values = raw_value if isinstance(raw_value, list) else [raw_value]
-        for v in values:
-            if v is None:
-                continue
-            transformed = transform(v) if transform else v
-            term = (
-                transformed
-                if isinstance(transformed, Identifier)
-                else Literal(transformed)
-            )
-            graph.add((node_iri, predicate, term))
-
-    return graph
-
+from projections.graphdb.turtle import build_node_turtle, FieldMapping, EX
 
 # --- Evidence projection -----------------------------------------------
 

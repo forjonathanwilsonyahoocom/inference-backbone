@@ -1,43 +1,59 @@
 # inference-backbone/backbone-api/util/file_persistence.py
-import json
+
 from pathlib import Path
 
-from contracts.inference_contracts.evidence import Evidence
+from pydantic import BaseModel
 
-# Base directory inside the container (mounted from host)
+
+# Base directory inside the container, mounted from the host
 BASE_DIR = Path("/indexed-artifacts")
 
-def _ensure_dir(p: Path) -> None:
-    """Create the base directory if it does not exist."""
-    p.mkdir(parents=True, exist_ok=True)
 
-def write_evidence_to_file(evidence: Evidence, overwrite: bool = False) -> Path:
+def _ensure_dir(path: Path) -> None:
+    """Create a directory and its parents if they do not exist."""
+    path.mkdir(parents=True, exist_ok=True)
+
+
+def write_to_file(
+    content: BaseModel,
+    location: str,
+    identifier: str,
+    overwrite: bool = False,
+) -> Path:
     """
-    Persist the full Evidence payload as JSON.
+    Persist any Pydantic model as JSON.
 
     Parameters
     ----------
-    evidence : Evidence
-        The payload received from the ingest endpoint.
-    overwrite : bool, default False
-        If False and the file already exists, the function is a no‑op.
+    content:
+        Any Pydantic BaseModel instance.
+    location:
+        Relative subdirectory under BASE_DIR.
+    identifier:
+        Filename without the .json extension.
+    overwrite:
+        If False and the file already exists, do nothing.
 
     Returns
     -------
     Path
-        Absolute path to the written file.
+        Absolute path to the persisted file.
     """
-    store_path = BASE_DIR / "evidence"
+    store_path = BASE_DIR / location
     _ensure_dir(store_path)
-    
-    file_path =  store_path / f"{evidence.event_id}.json"
+
+    file_path = store_path / f"{identifier}.json"
 
     if file_path.exists() and not overwrite:
-        # Idempotent: skip if already present
         return file_path
 
-    # Serialize the Pydantic model to JSON (pretty‑printed for debugging)
-    with file_path.open("w", encoding="utf-8") as fp:
-        json.dump(evidence.model_dump(mode="json"), fp, indent=2, ensure_ascii=False)
+    file_path.write_text(
+        content.model_dump_json(
+            indent=2,
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
 
     return file_path
+
