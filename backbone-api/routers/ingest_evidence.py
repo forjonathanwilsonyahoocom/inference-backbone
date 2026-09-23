@@ -8,7 +8,7 @@ from projections.graphdb.evidence import write_evidence_to_graphdb
 from util.chunker import chunk_text
 from typing import List, Dict
 from util.embedding_provider import OllamaEmbeddingProvider
-from util.file_persistence import write_evidence_to_file
+from util.file_persistence import write_to_file
 from util.identity import context_based_id
 from clients.weaviate import get_weaviate_client, ensure_weaviate_collection
 
