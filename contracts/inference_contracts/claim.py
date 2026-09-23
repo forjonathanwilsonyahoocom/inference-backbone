@@ -17,5 +17,8 @@ class Claim(BaseModel):
     
     metadata: dict[str, Any] = Field(default_factory=dict)
 
-    worker_version: str
+    embedding_model: str | None = None
+    embedding_task: str
+    
+    validator_version: str
     schema_version: Literal["claim.v1"] = "claim.v1"
