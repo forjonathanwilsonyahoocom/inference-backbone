@@ -171,6 +171,8 @@ def validate(req: ValidateRequest):
                 support_map[claim_id] = {}
             if val > 0:
                 support_map[claim_id][event_id] = val
+                
+    #use simple heuristic to determine overall support 
     claim_scores = []
     for claim_id, evidence_vals in support_map.items():
         if evidence_vals:

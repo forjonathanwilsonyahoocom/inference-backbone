@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 class Claim(BaseModel):
     claim_id: str
+    importance: float
     execution_id: str
 
     content: str
