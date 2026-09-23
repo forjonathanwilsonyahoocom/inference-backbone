@@ -117,7 +117,6 @@ def validate(req: ValidateRequest):
     except Exception as exc:
         return {"error": f"Failed to fetch evidence: {exc}"}
     evidence_text = build_evidence_text(events)
-    print(evidence_text)
     user_content = f"TASK:\n{req.task_description}\n\nFINAL RESPONSE:\n{req.final_response}\n\nEVIDENCE LOG:\n{evidence_text}"
     messages = [SystemMessage(content=VALIDATION_PROMPT), HumanMessage(content=user_content)]
     result = None

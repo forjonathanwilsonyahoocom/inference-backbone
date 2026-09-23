@@ -71,7 +71,7 @@ def ingest_tool_event(execution_id: str, tool_event: ToolEvent) -> None:
             execution_id=execution_id,
             event_id=f"{execution_id}-{tool_event.iteration}",
             evidence_type=tool_event.tool,          # e.g. "web_search", "read_file"
-            content=str(tool_event.result),         # jam for now, per your call
+            content=str(tool_event.result), 
             source_type=tool_event.event_type,
             source_name=tool_event.tool,
             observed_at=now,
@@ -963,7 +963,8 @@ def run_agent(
             return {"condition" : "no tool calls",
                     "final_response": response.content,
                     "iterations": iteration + 1,
-                    "events": events}
+                    "events": events,
+                    "execution_id" : execution_id}
 
         for tool_call in tool_calls:
             tool_name = tool_call["name"]
@@ -1089,12 +1090,8 @@ def run_agent(
     return {"condition" : f"Agent stopped after {max_iterations} iterations. The workspace may contain partial results.",
             "final_response": response.content,
             "iterations": iteration + 1,
-            "events": events}
-
-
-
-# ... all your existing code: SYSTEM_PROMPT, ToolEvent, tool functions,
-# TOOLS_BY_NAME, run_agent() — unchanged, stays above this ...
+            "events": events,
+            "execution_id" : execution_id}
 
 from fastapi import FastAPI
 
