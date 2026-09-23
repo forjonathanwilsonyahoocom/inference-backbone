@@ -5,6 +5,7 @@ app = FastAPI()
 
 from routers.health import health_router
 from routers.ingest_evidence import ingest_evidence_router
+from routers.ingest_claim import ingest_claim_router
 from routers.search import search_router
 from routers.retrieval import retrieval_router
 

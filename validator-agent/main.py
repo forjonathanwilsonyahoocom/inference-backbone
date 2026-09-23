@@ -4,7 +4,10 @@ import requests
 
 from fastapi import FastAPI
 from pydantic import BaseModel
+from typing import Dict, List
 from langchain_ollama import ChatOllama
+
+from contracts.inference_contracts.claim import Claim
 from langchain_core.messages import SystemMessage, HumanMessage
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://10.42.0.192:11434")
@@ -62,6 +65,35 @@ exact shape:
     "claim_2": {"supported": <numeric assigned support>}
 }}
 """
+
+# ---------------------------------------------------------------------------
+# Helper: send a tool result to the evidence ingestion endpoint
+# ---------------------------------------------------------------------------
+
+def ingest_claims(execution_id: str, claims:  List[Dict]) -> None:
+  
+    now = datetime.now(UTC).isoformat()
+    for claim in claims:
+        claim_id = str(uuid.uuid4())
+        claim["claim_id"] = claim_id
+        try:
+            payload = Claim(
+                claim_id=claim_id,
+                importance=float(claim["importance"]),
+                execution_id=execution_id,
+                content=claim["text"], 
+                observed_at=now,
+                retrieved_at=now,
+                validator_version="1.0.1",
+            )
+            resp = requests.post("http://backbone-api:8000/ingest/claim", json=payload.model_dump(mode="json"), timeout=10)
+            resp.raise_for_status()
+        except Exception as e:
+            # Log but do not raise – evidence is observational
+            print(f"[Claim ingestion] failed for claim {claim}: {e}")
+    return claims
+
+
 
 class ClaimsRequest(BaseModel):
     task_description: str
@@ -134,6 +166,8 @@ def extract_claims(req: ClaimsRequest):
             last_error = str(exc)
     if result is None:
         return {"error": f"Claim extraction failed after retries: {last_error}"}
+    
+    result = ingest_claims(result)
     return result
     
 @app.post("/validate")
