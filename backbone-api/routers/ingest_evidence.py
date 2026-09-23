@@ -1,3 +1,6 @@
+"""
+routers/ingest_evidence.py
+"""
 from fastapi import APIRouter
 from contracts.inference_contracts.evidence import Evidence
 from contracts.inference_contracts.evidence_chunk import EvidenceChunk
@@ -9,9 +12,9 @@ from util.file_persistence import write_evidence_to_file
 from util.identity import context_based_id
 from clients.weaviate import get_weaviate_client, ensure_weaviate_collection
 
-ingest_router = APIRouter()
+ingest_evidence_router = APIRouter()
 
-@ingest_router.post("/ingest/evidence")
+@ingest_evidence_router.post("/ingest/evidence")
 async def evidence_ingest(payload: Evidence) -> Dict:
 
     weaviate_client = get_weaviate_client()
