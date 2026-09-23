@@ -13,48 +13,64 @@ GEN_MODEL = os.getenv("GEN_MODEL", "gpt-oss:20b")
 print(f"Using {GEN_MODEL} at {OLLAMA_URL}/")
 llm = ChatOllama(base_url=OLLAMA_URL, model=GEN_MODEL, temperature=0.01)
 
-VALIDATION_PROMPT = """You are a claim-checking validator. You will be given:
+CLAIM_EXTRACTION_PROMPT = """You are part of a multi stage claim-checking validator. You will be given:
 1. A TASK that an AI agent was asked to perform.
 2. The agent's FINAL RESPONSE — what it reported back to the user.
-3. An EVIDENCE LOG — the actual tool calls the agent made and their real results.
-
-IMPORTANT: The EVIDENCE LOG is the authoritative record.
 
 Your job: extract each discrete, checkable factual claim from the FINAL
-RESPONSE, then decide whether that claim is directly supported by something
-in the EVIDENCE LOG 
+RESPONSE, and give it an importance value from 0 to 1, where 1 indicates a very important claim and 0 means this claim has only marginal value
 
-Rules:
-- A claim is "supported" only if the evidence log contains a tool result that
-  actually backs it up. Do not use your own outside knowledge to decide a
-  claim is true — you are checking traceability to evidence, not correctness
-  in the abstract.
-- A claim the agent asserted with no matching tool result is "unsupported",
-  even if it sounds plausible.
-- Distinguish evidence provenance in your response:
-  * "direct" — came from the original execution events
-- Ignore stylistic/summary sentences that make no checkable factual claim
-  (e.g. "Both sources agree").
-- Ignore claims about the agent's own process (e.g. "I searched the web")
-  unless the process claim itself is checkable against the evidence log
-  (e.g. "I checked three sources" when only one tool call exists).
+Output format:
+- A list of claims, each with a unique claim_id (e.g., "claim_1") and the
+  claim text.
 
 Respond with ONLY a JSON object, no other text, no markdown fences, in this
 exact shape:
-{ {
+{
   "claims": [
-    {"text": "<claim as stated>", "supported": true|false, "evidence": "<short reference to the supporting tool result, or null>", "provenance": "direct"|"retrieved"}
-  ],
-  "overall_verdict": "supported" | "partially_supported" | "unsupported"
+    {"claim_id": "claim_1", "text": "<claim as stated>", "importance" : <numeric importance assigned>},
+    {"claim_id": "claim_2", "text": "<claim as stated>", "importance" : <numeric importance assigned>}
+  ]
+}
+"""
+
+VALIDATION_PROMPT = """You are part of a multi stage claim-checking validator. You will be given:
+1. JSON formatted list of claims
+3. An EVIDENCE_ITEM — an actual tool call the agent made and their real results.
+
+IMPORTANT: The EVIDENCE_ITEM is part of the authoritative record.
+
+Your job: for each claim rate from 0 to 1 whether that claim is directly supported by the EVIDENCE_ITEM, 
+1 means this claim is well supported by this EVIDENCE_ITEM, 
+0 means this EVIDENCE_ITEM is not related to this claim
+
+Rules:
+- A claim is "supported" only if the EVIDENCE_ITEM contains a tool result that
+  actually backs it up. Do not use your own outside knowledge to decide a
+  claim is true — you are checking traceability to evidence, not correctness
+  in the abstract.
+- A claim the agent asserted that this EVIDENCE_ITEM does not support should result in a 0 rating for this EVIDENCE_ITEM
+  even if it sounds plausible.
+- it is completely possible that an EVIDENCE_ITEM does not support any of the listed claims
+- it is equally possible that an EVIDENCE_ITEM supports multiple claims at various degrees
+
+Respond with ONLY a JSON object, no other text, no markdown fences, in this
+exact shape:
+{ "support_map": {
+    "claim_1": {"supported": <numeric assigned support>},
+    "claim_3": {"supported": <numeric assigned support>},
+    "claim_2": {"supported": <numeric assigned support>}
 }}
 """
 
-
-class ValidateRequest(BaseModel):
+class ClaimsRequest(BaseModel):
     task_description: str
     final_response: str
     execution_id: str
 
+class ValidateRequest(BaseModel):
+    claims_map: str
+    execution_id: str
 
 def fetch_evidence_events(execution_id: str) -> list[dict]:
     base_url = "http://backbone-api:8000"
@@ -78,24 +94,17 @@ def fetch_evidence_events(execution_id: str) -> list[dict]:
     return events
 
 
-def build_evidence_text(events: list[dict]) -> str:
-    evidence_events = [e for e in events if e.get("evidence_type") not in ("response", "error_response")]
-    if not evidence_events:
-        return "(no tool calls were made)"
-    lines = []
-    for e in evidence_events:
-        try:
-            iteration = int(e.get('event_id').split('-')[-1])
-            tool = e.get('evidence_type', 'Nothing') #this will be the name of the tool called
-            result = str(e.get('content', 'None' ))[:1000] #this is the result of the tool call
-            metadata = str(e.get('metadata'))[:1000] #includes args to tool
-            lines.append(f"- iteration {iteration}: called `{tool}` with metadata {metadata} -> result: {result}")
-        except Exception as exc:
-            print(exc)
-            print(e)
-     
-    return "\n".join(lines)
-
+def build_evidence_text(e: dict]) -> str:
+    try:
+        iteration = int(e.get('event_id').split('-')[-1])
+        tool = e.get('evidence_type', 'Nothing') #this will be the name of the tool called
+        result = str(e.get('content', 'None' )) #this is the result of the tool call
+        metadata = str(e.get('metadata')) #includes args to tool
+        return f"- iteration {iteration}: called `{tool}` with metadata {metadata} -> result: {result}"
+    except Exception as exc:
+        print(exc)
+        print(e)
+        return None
 
 def parse_json_response(raw: str) -> dict:
     text = raw.strip()
@@ -110,15 +119,10 @@ app = FastAPI()
 def health():
     return {"status": "ok"}
 
-@app.post("/validate")
-def validate(req: ValidateRequest):
-    try:
-        events = fetch_evidence_events(req.execution_id)
-    except Exception as exc:
-        return {"error": f"Failed to fetch evidence: {exc}"}
-    evidence_text = build_evidence_text(events)
-    user_content = f"TASK:\n{req.task_description}\n\nFINAL RESPONSE:\n{req.final_response}\n\nEVIDENCE LOG:\n{evidence_text}"
-    messages = [SystemMessage(content=VALIDATION_PROMPT), HumanMessage(content=user_content)]
+@app.post("/extract_claims")
+def extract_claims(req: ClaimsRequest):
+    user_content = f"TASK:\n{req.task_description}\n\nFINAL RESPONSE:\n{req.final_response}"
+    messages = [SystemMessage(content=CLAIM_EXTRACTION_PROMPT), HumanMessage(content=user_content)]
     result = None
     last_error = None
     for _ in range(3):
@@ -129,5 +133,30 @@ def validate(req: ValidateRequest):
         except Exception as exc:
             last_error = str(exc)
     if result is None:
-        return {"error": f"Validation failed after retries: {last_error}"}
+        return {"error": f"Claim extaction failed after retries: {last_error}"}
     return result
+    
+@app.post("/validate")
+def validate(req: ValidateRequest):
+    try:
+        events = fetch_evidence_events(req.execution_id)
+    except Exception as exc:
+        return {"error": f"Failed to fetch evidence: {exc}"}
+    validation_results = []
+    for e in events:
+        evidence_text = build_evidence_text(e)
+        user_content = f"CLAIMS:\n{req.claims_map}\n\nEVIDENCE_ITEM:\n{evidence_text}"
+        messages = [SystemMessage(content=VALIDATION_PROMPT), HumanMessage(content=user_content)]
+        result = None
+        last_error = None
+        for _ in range(3):
+            try:
+                response = llm.invoke(messages)
+                result = parse_json_response(response.content)
+                break
+            except Exception as exc:
+                last_error = str(exc)
+        if result is None:
+            result = {"error": f"Validation failed after retries: {last_error}"}
+        validation_results.append({"event_id" : e["event_id"], "result" : result})
+    return {"support" : validation_results}
