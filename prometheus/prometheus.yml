@@ -1,4 +1,4 @@
- Prometheus scrape config for the inference-backbone stack.
+# Prometheus scrape config for the inference-backbone stack.
 # Metrics are deliberately short-lived (see --storage.tsdb.retention.time in compose).
 
 global:
