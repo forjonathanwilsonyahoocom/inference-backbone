@@ -233,22 +233,36 @@ resulting graph will be used to locate similar tasks / claims / support patterns
 
 ### 🏗️ System Architecture Flow
 ```text
-                   INFERENCE-BACKBONE
-                          │
-                 ┌────────┴────────┐
-                 │                 │
-                 ▼                 ▼
-             GraphDB           Weaviate
-             "truth"           "similarity"
-                 │                 │
-                 │                 │
-              RDF/SPARQL       vectors/BM25
-                 │                 │
-                 └────────┬────────┘
-                          │
-                       FastAPI
-                          │
-                ┌─────────┴─────────┐
-                │                   │
-             Worker             Validator
+                        ┌───────────────┐
+                        │     Task      │
+                        └───────┬───────┘
+                                │
+                         Worker Agent
+                                │
+                    ┌───────────┴───────────┐
+                    │                       │
+              Execution facts          Final response
+                    │                       │
+                    │                Claim extraction
+                    │                       │
+                    └───────────┬───────────┘
+                                │
+                           Validator
+                                │
+                   ┌────────────┴────────────┐
+                   │                         │
+             Claims/Evidence              Edges
+                   │                         │
+                   └────────────┬────────────┘
+                                │
+                         Canonical records
+                                │
+              ┌─────────────────┼─────────────────┐
+              │                 │                 │
+              ▼                 ▼                 ▼
+          RDF/Turtle        Embeddings         Metrics
+              │                 │                 │
+              ▼                 ▼                 ▼
+           GraphDB          Weaviate          Prometheus
+
 ```
