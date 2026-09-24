@@ -1,6 +1,7 @@
 
 from langchain_core.tools import tool
-    
+
+from toolbox.util import safe_path
 from typing import Optional
 
 @tool

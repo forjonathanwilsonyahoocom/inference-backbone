@@ -1,5 +1,6 @@
 from langchain_core.tools import tool
 import subprocess
+import os
 from toolbox.util import WORKSPACE
 
 @tool
