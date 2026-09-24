@@ -35,8 +35,10 @@ from prompts.worker import SYSTEM_PROMPT
 from agent.telemetry import ingest_tool_event, ToolEvent
 from agent.truncation import truncate_history
 
+from prometheus_client import start_http_server
 
 metrics = MetricsWrapper("worker-agent")
+start_http_server(8080)
 
 metrics.emit(metrics.get_counter_message("startup", "worker agent system startup"))
 
