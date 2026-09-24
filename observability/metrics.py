@@ -3,7 +3,7 @@ Metrics abstraction currently making Prometheus scraped endpoint data
 """
 from prometheus_client import Counter, Gauge
 import time
-from typing import Dict,
+from typing import Dict
 
 example_message = {"type": "counter",
                    "name": "example1",
