@@ -1,0 +1,18 @@
+ Prometheus scrape config for the inference-backbone stack.
+# Metrics are deliberately short-lived (see --storage.tsdb.retention.time in compose).
+
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+  external_labels:
+    stack: inference-backbone
+
+scrape_configs:
+  # Services that expose /metrics on the shared network. We
+  # scrape them by their compose DNS name Add one target per service
+  # (default metrics path is /metrics).
+  - job_name: inference-backbone 
+    static_configs:
+      - targets: ["worker-agent:8080"]
+        labels: { service: worker }
+
