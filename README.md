@@ -22,34 +22,44 @@ Prompt → Worker Agent → (Ingest → GraphDB / Weaviate) → Inference → Va
 
 ### Observability
 
-Metrics are exposed via Prometheus and visualised in Grafana. Key metrics include:
+Metrics are exposed via Prometheus and visualized in Grafana. Key metrics include:
 - Inference latency
 - Query throughput
-- GPU utilisation
+- machine utilization
 - Telemetry event counts
 
 ---
 
 ## Detailed Documentation
 
-The rest of this repository contains the implementation details, Docker‑Compose configuration, and example notebooks. Refer to the `docs/` directory for deeper dives.
+The rest of this repository contains the implementation details, Docker‑Compose configuration, and example notebooks. 
 
 
 for example: collect the output from the worker agent
 ```python
+from IPython.display import display, Markdown, Latex, JSON
 import requests
 
-url = "http://10.42.0.1:8001/run"
+url = "http://worker-agent:8000/run"
 
 task_description = """
+in the workspace there is a project
 
-    testing updates to the telemetry, please assert the workspace is empty, then do a web search for OWL reasoning, and write one README.md file that contains the first search result 
+./inference-backone
+
+DISCOVERY AND DOCUMENTATION MISSION
+
+we have reached a milestone! we added some metrics to allow better observation!
+
+would you inspect the project, then modify the README.md file at the root of that project to have a high level explanation of the current operation and flow
+
+please include an image link in the README.md to the file ./inference-backone/readme/agent_dashboard.png
 
 """
 payload = {
     "request": task_description,
-    "verbose": True,
-    "max_iterations":40
+    "verbose": False,
+    "max_iterations":100
 }
 
 try:
@@ -63,45 +73,87 @@ try:
 
     # If the endpoint returns JSON:
     result = response.json()
-    print(result["final_response"])
+    display(Markdown(result["final_response"]))
 
 except requests.exceptions.RequestException as error:
     print(f"HTTP request failed: {error}")
 ```
-```bash
-✅ **Workspace is empty** – verified.  
-✅ **Web search for “OWL reasoning”** – results retrieved.  
-✅ **README.md** created with the first search result.
-
----
-
-### Quick Check
-Open `README.md` to confirm the content:
-
-cat README.md
-
-You should see the title, URL, and snippet from the Owlready2 documentation.
-
----
-
-### Next Steps (Optional)
-- **Add more search results**: Append additional entries to the README.  
-- **Create a simple script** that fetches the full article content using `web_fetch`.  
-- **Set up a local OWL reasoner** (e.g., Owlready2 or Pellet) and link it to a small ontology for experimentation.
-
-Let me know which direction you'd like to explore next!
+```markdown
+The README now contains a high‑level overview, core components, flow diagram, image link, observability section, and a note about detailed docs. The original example code and planned section remain at the bottom; you may want to move them into a separate section or delete if not needed. Let me know if you’d like to tidy that further or add more sections.
 ```
 
-then pass that return val to the validation agent:
+then pass that return val to the validation agent's claim extraction endpoint like this:
 
 ```python
 
-url = "http://10.42.0.1:8002/validate"
+url = "http://validator-agent:8000/extract_claims"
 
 payload = {
     "task_description": task_description,
     "final_response": result['final_response'] if len(result['final_response'] ) > 5 else "claims to be done",
-    "events": result['events']
+    "execution_id": result['execution_id'] 
+}
+claim_result = {}
+try:
+    response = requests.post(
+        url,
+        json=payload,  # Serializes the dict and sets Content-Type: application/json
+        timeout=1000,
+    )
+
+    response.raise_for_status()
+
+    # If the endpoint returns JSON:
+    claim_result = response.json()
+
+except requests.exceptions.RequestException as error:
+    print(f"HTTP request failed: {error}")
+
+display(JSON(claim_result, expanded=True))
+
+
+```
+which will respond with something like:
+
+```json
+{'claims': [{'claim_id': 'f7a1f551-018a-4d9e-b29c-6a969c9e402c',
+             'importance': 0.9,
+             'text': 'The README now contains a high‑level overview'},
+            {'claim_id': '30222259-0fb1-404e-bfda-3ab4e4938eca',
+             'importance': 0.8,
+             'text': 'The README now contains core components'},
+            {'claim_id': 'e804cb90-9187-4294-8140-61456bb2cbcd',
+             'importance': 0.9,
+             'text': 'The README now contains a flow diagram'},
+            {'claim_id': '7abda36d-f5d8-47ce-9176-dc3344acd3b9',
+             'importance': 0.9,
+             'text': 'The README now contains an image link'},
+            {'claim_id': '7033b462-80cb-4843-b533-6b9ad3370523',
+             'importance': 0.7,
+             'text': 'The README now contains an observability section'},
+            {'claim_id': '9b5c24e2-8975-47ee-abcb-a16bdaa1a4c8',
+             'importance': 0.4,
+             'text': 'The README now contains a note about detailed docs'},
+            {'claim_id': '326177ce-9c36-4b15-8540-0ac3bfa5fce4',
+             'importance': 0.3,
+             'text': 'The original example code remains at the bottom'},
+            {'claim_id': '06d881f0-e0ee-4df5-b139-b6c4dd8626f0',
+             'importance': 0.3,
+             'text': 'The original planned section remains at the bottom'},
+            {'claim_id': 'b3675327-2cf7-4931-8c98-8a6de6eddbf8',
+             'importance': 0.2,
+             'text': 'The example code and planned section could be moved into '
+                     'a separate section or deleted if not needed'}]}
+```
+finally send that claim list back to the validator agent's validation endpoint like:
+
+```python
+
+url = "http://validator-agent:8000/validate"
+
+payload = {
+    "claims_map": str(claim_result),
+    "execution_id": result['execution_id'] 
 }
 validation_result = {}
 try:
@@ -119,44 +171,62 @@ try:
 except requests.exceptions.RequestException as error:
     print(f"HTTP request failed: {error}")
 
-validation_result
+display(JSON(validation_result, expanded=True))
 
 ```
 
-```text
-{'claims': [{'text': 'Workspace is empty – verified.',
-   'supported': True,
-   'evidence': 'list_files result',
-   'provenance': 'direct'},
-  {'text': 'Web search for “OWL reasoning” – results retrieved.',
-   'supported': True,
-   'evidence': 'web_search result',
-   'provenance': 'direct'},
-  {'text': 'README.md created with the first search result.',
-   'supported': True,
-   'evidence': 'write_file result',
-   'provenance': 'direct'},
-  {'text': 'The README.md contains the title, URL, and snippet from the Owlready2 documentation.',
-   'supported': True,
-   'evidence': 'write_file result',
-   'provenance': 'direct'},
-  {'text': "The title in the README.md is 'Reasoning — Owlready2 0.52 documentation - Read the Docs'.",
-   'supported': True,
-   'evidence': 'write_file result',
-   'provenance': 'direct'},
-  {'text': "The URL in the README.md is 'https://owlready2.readthedocs.io/en/latest/reasoning.html'.",
-   'supported': True,
-   'evidence': 'write_file result',
-   'provenance': 'direct'},
-  {'text': "The snippet in the README.md is 'Before performing reasoning, you need to create all Classes, Properties and Instances, and to ensure that restrictions and disjointnesses / differences have been defined too.'.",
-   'supported': True,
-   'evidence': 'write_file result',
-   'provenance': 'direct'}],
- 'overall_verdict': 'supported'}
+to get back an assessment of the recorded tool call results support for the claims:
+
+```json
+{'overall_verdict': 'partially_supported',
+ 'support_map': {'06d881f0-e0ee-4df5-b139-b6c4dd8626f0': {},
+                 '30222259-0fb1-404e-bfda-3ab4e4938eca': {'09b37264-fb3d-42e0-bae2-80f2e7d18443-7': 1},
+                 '326177ce-9c36-4b15-8540-0ac3bfa5fce4': {},
+                 '7033b462-80cb-4843-b533-6b9ad3370523': {'09b37264-fb3d-42e0-bae2-80f2e7d18443-7': 1},
+                 '7abda36d-f5d8-47ce-9176-dc3344acd3b9': {'09b37264-fb3d-42e0-bae2-80f2e7d18443-7': 1},
+                 '9b5c24e2-8975-47ee-abcb-a16bdaa1a4c8': {'09b37264-fb3d-42e0-bae2-80f2e7d18443-7': 1},
+                 'b3675327-2cf7-4931-8c98-8a6de6eddbf8': {},
+                 'e804cb90-9187-4294-8140-61456bb2cbcd': {'09b37264-fb3d-42e0-bae2-80f2e7d18443-7': 1},
+                 'f7a1f551-018a-4d9e-b29c-6a969c9e402c': {'09b37264-fb3d-42e0-bae2-80f2e7d18443-7': 1}}}
 ```
+
+## implemented:
+
+relies on http callable LLM that handles tool calls, all tests have been done with assorted models on local ollama instance
+
+### worker_agent tool calls
+
+* list_files
+* read_file
+* write_file
+* edit_file
+* search_file
+* run_command
+* web_search
+* web_fetch
+
+### validator agent extracts claims and examines tool calls as evidence of claim support
+the validator also handles calling the backbone-api endpoints to ingest the claims
+
+### weaviate ingest of claims and evidence
+as implemented uses nomic embeddings for indexing
+
+### graphdb ingest of claims and evidence
+while ingest works, there are no edges formed yet and the schema in the repo init is only a sketch
+
+### prometheus metrics
+currently only implemented for worker agent
+
+### grafana visualization of metrics
+currently only one dashboard is init for worker agent as shown above
+
 ## planned:
 
-An intelligent, autonomous retrieval and ingestion infrastructure designed for agentic workflows. This backbone allows agents to receive a prompt, automatically search the web via headless browser instances, safely parse and chunk document semantics, vector-embed data patterns locally, and traverse information via a distributed GraphQL knowledge layer. 
+An intelligent, autonomous retrieval and ingestion infrastructure designed for agentic workflows.
+
+This backbone allows agents to receive a prompt, automatically search the web via headless browser instances, safely parse and chunk document semantics, vector-embed data patterns locally, and traverse information via a GraphQL knowledge layer.
+
+resulting graph will be used to locate similar tasks / claims / support patterns etc
 
 ### 🏗️ System Architecture Flow
 ```text
