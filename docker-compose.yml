@@ -80,3 +80,10 @@ services:
       - ./validator-agent:/app
       - ./contracts:/app/contracts
 
+  jupyter:
+    build: ./jupyter
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./jupyter/notebooks/:/localjup/notebooks
+
