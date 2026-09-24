@@ -15,8 +15,6 @@ class Claim(BaseModel):
 
     observed_at: datetime
     retrieved_at: datetime
-    
-    metadata: dict[str, Any] = Field(default_factory=dict)
 
     embedding_model: str | None = None
     embedding_task: str
