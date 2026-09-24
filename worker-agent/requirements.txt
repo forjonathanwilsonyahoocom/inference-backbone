@@ -7,3 +7,5 @@ fastapi
 uvicorn
 nest_asyncio
 beautifulsoup4
+prometheus_client>=0.22.1
+

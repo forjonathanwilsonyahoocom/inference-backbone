@@ -6,6 +6,7 @@ import uuid
 import requests
 import subprocess
 from datetime import datetime, UTC
+from observability.metrics import MetricsWrapper
 
 import hashlib
 from contracts.inference_contracts.evidence import Evidence
@@ -1096,6 +1097,8 @@ def run_agent(
 from fastapi import FastAPI
 
 app = FastAPI()
+
+metrics = MetricsWrapper("worker-agent")
 
 class AgentRequest(BaseModel):
     request: str
