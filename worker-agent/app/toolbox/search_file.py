@@ -1,7 +1,7 @@
 import json
 from langchain_core.tools import tool
 
-from toolbox.util import safe_path, WORKSPACE
+from toolbox.util import safe_path, WORKSPACE, EXCLUDED_DIRS
 from pathlib import Path
 
 from typing import List, Dict
