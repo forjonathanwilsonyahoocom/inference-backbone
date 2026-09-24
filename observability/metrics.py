@@ -24,6 +24,7 @@ example_message = {"type": "counter",
 class MetricsWrapper:
     def __init__(self, service_name: str):
         self.counters = {}
+        self.service_name = service_name
         self.gauges = {}
         self.gauge_avg = {}
         
@@ -32,7 +33,7 @@ class MetricsWrapper:
             if msg['type'] == "counter":
                 c = self.counters.get(msg['name'], "missing")
                 if c == "missing":
-                    c = Counter(f"{service_name}_{msg['name']}, msg['description'], list(msg.get('labels', {}).keys()))
+                    c = Counter(f"{self.service_name}_{msg['name']}", msg['description'], list(msg.get('labels', {}).keys()))
 
                 if 'labels' in msg:
                     c.labels(*list(msg.get('labels', {}).values())).inc(msg.get('value', 1))
@@ -44,7 +45,7 @@ class MetricsWrapper:
                 c = self.gauges.get(msg['name'], "missing")
                 a = self.gauge_avg.get(msg['name'], {"total" : 0, "n" : 0})
                 if c == "missing":
-                    c = Gauge(f"{service_name}_{ msg['name']}", msg['description'])
+                    c = Gauge(f"{self.service_name}_{ msg['name']}", msg['description'])
 
                 a["total"] = a["total"] + msg.get('value', 1)
                 a["n"] = a["n"] + 1
@@ -88,12 +89,12 @@ class MetricsWrapper:
         return labeler
 
 
-    def get_metric_label(location=None, exception=None):
+    def get_metric_label(self, location=None, exception=None):
       
         reported_exception = "none"
 
         if location is None:
-            location = 'service_name'
+            location = self.service_name
 
         if exception != None:
             reported_exception = f"{repr(exception)}{getattr(exception, 'message', 'no_message')}"
