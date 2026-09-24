@@ -1,7 +1,39 @@
 # inference-backbone
 
-## this is under dev currently
-today while it does provide agent loop and tools, it only ingests to weaviate and graph db, it does not yet use that info
+## Overview
+
+`inference-backbone` is a self‑sustaining compute backbone that **powers a human + AI ecosystem**. It orchestrates data ingestion, semantic enrichment, vector similarity, and inference across a distributed knowledge‑graph stack.
+
+### Core Components
+
+- **GraphDB** – stores RDF triples and exposes SPARQL endpoints.
+- **Weaviate** – vector store for similarity search.
+- **FastAPI** – API gateway exposing ingestion, retrieval, and validation endpoints.
+- **Worker Agent** – runs inference loops, collects telemetry, and pushes results to GraphDB/Weaviate.
+- **Validator Agent** – verifies claims against the knowledge base.
+
+### Flow
+
+```
+Prompt → Worker Agent → (Ingest → GraphDB / Weaviate) → Inference → Validation → API
+```
+
+![Agent Dashboard](./readme/agent_dashboard.png)
+
+### Observability
+
+Metrics are exposed via Prometheus and visualised in Grafana. Key metrics include:
+- Inference latency
+- Query throughput
+- GPU utilisation
+- Telemetry event counts
+
+---
+
+## Detailed Documentation
+
+The rest of this repository contains the implementation details, Docker‑Compose configuration, and example notebooks. Refer to the `docs/` directory for deeper dives.
+
 
 for example: collect the output from the worker agent
 ```python
