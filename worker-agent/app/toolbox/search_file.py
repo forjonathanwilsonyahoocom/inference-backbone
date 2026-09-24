@@ -1,5 +1,7 @@
 import json
 from langchain_core.tools import tool
+
+from toolbox.util import safe_path, WORKSPACE
 from pathlib import Path
 
 def _is_binary(file: Path, sample_size: int = 1024) -> bool:
