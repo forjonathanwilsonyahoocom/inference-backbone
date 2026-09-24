@@ -72,7 +72,7 @@ exact shape:
 # Helper: send a tool result to the evidence ingestion endpoint
 # ---------------------------------------------------------------------------
 
-def ingest_claims(execution_id: str, claims:  List[Dict]) -> None:
+def ingest_claims(execution_id: str, claims:  List[Dict]) -> List[Dict]:
   
     now = datetime.now(UTC).isoformat()
     for i, claim in enumerate(claims):
@@ -170,7 +170,7 @@ def extract_claims(req: ClaimsRequest):
     if result is None:
         return {"error": f"Claim extraction failed after retries: {last_error}"}
     
-    result = ingest_claims(req.execution_id, result)
+    result["claims"] = ingest_claims(req.execution_id, result["claims"])
     return result
     
 @app.post("/validate")
