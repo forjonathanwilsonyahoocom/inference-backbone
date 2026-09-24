@@ -194,7 +194,7 @@ to get back an assessment of the recorded tool call results support for the clai
 
 relies on http callable LLM that handles tool calls, all tests have been done with assorted models on local ollama instance
 
-### worker_agent tool calls
+### worker-agent tool calls
 
 * list_files
 * read_file
@@ -204,6 +204,9 @@ relies on http callable LLM that handles tool calls, all tests have been done wi
 * run_command
 * web_search
 * web_fetch
+
+### worker-agent context management
+as the workers context reaches a threshold, it is distilled and truncated to compress the context
 
 ### validator agent extracts claims and examines tool calls as evidence of claim support
 the validator also handles calling the backbone-api endpoints to ingest the claims
