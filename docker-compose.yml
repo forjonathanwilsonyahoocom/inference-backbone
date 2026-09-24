@@ -62,7 +62,7 @@ services:
       DISTILL_GEN_MODEL: gpt-oss:20b 
       WORKSPACE: /agentworkspace
     volumes:
-      - ./worker-agent:/app
+      - ./worker-agent/app:/app
       - ./contracts:/app/contracts
       - ./observability:/app/observability
       - ./worker-agent-workspace:/agentworkspace
