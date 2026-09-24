@@ -1,7 +1,7 @@
 
 from langchain_core.tools import tool
 from toolbox.util import safe_path, WORKSPACE_PATH
-from typing import Any
+from typing import Any, Mapping
 
 @tool
 def write_file(path: str, content: Any, overwrite: bool = False) -> str:
