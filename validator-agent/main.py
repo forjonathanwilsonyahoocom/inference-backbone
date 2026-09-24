@@ -2,6 +2,8 @@ import json
 import os
 import requests
 
+import uuid
+from datetime import datetime, UTC
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Dict, List
