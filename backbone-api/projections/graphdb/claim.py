@@ -35,6 +35,7 @@ def claim_iri(claim_id: str) -> URIRef:
 
 CLAIM_FIELD_MAPPING: FieldMapping = [
     ("claim_id", EX.hasClaimId, None),
+    ("claim_number", EX.hasClaimNumber, None),
     ("importance", EX.hasImportance, None),
     ("execution_id", EX.hasExecutionId, None),
     ("content", EX.hasContent, None),

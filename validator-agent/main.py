@@ -73,12 +73,13 @@ exact shape:
 def ingest_claims(execution_id: str, claims:  List[Dict]) -> None:
   
     now = datetime.now(UTC).isoformat()
-    for claim in claims:
+    for i, claim in enumerate(claims):
         claim_id = str(uuid.uuid4())
         claim["claim_id"] = claim_id
         try:
             payload = Claim(
                 claim_id=claim_id,
+                claim_number=i,
                 importance=float(claim["importance"]),
                 execution_id=execution_id,
                 content=claim["text"], 
@@ -167,7 +168,7 @@ def extract_claims(req: ClaimsRequest):
     if result is None:
         return {"error": f"Claim extraction failed after retries: {last_error}"}
     
-    result = ingest_claims(result)
+    result = ingest_claims(req.execution_id, result)
     return result
     
 @app.post("/validate")

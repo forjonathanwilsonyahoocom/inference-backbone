@@ -32,7 +32,7 @@ async def claim_ingest(payload: Claim) -> Dict:
         file_path = write_to_file(
             content=payload,
             location="claim",
-            identifier=payload.claim_id,
+            identifier=str(f"{payload.execution_id}-{payload.claim_number}",
         )
         print(f"[ingest] Persisted claim to {file_path}")
 
