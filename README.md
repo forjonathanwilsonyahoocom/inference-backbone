@@ -78,7 +78,7 @@ try:
 except requests.exceptions.RequestException as error:
     print(f"HTTP request failed: {error}")
 ```
-```markdown
+```bash
 The README now contains a high‑level overview, core components, flow diagram, image link, observability section, and a note about detailed docs. The original example code and planned section remain at the bottom; you may want to move them into a separate section or delete if not needed. Let me know if you’d like to tidy that further or add more sections.
 ```
 
