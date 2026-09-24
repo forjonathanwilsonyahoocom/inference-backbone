@@ -1,5 +1,5 @@
 # --- Stage 1: Build virtual environment ---
-FROM python:3.12-slim as compiler
+FROM python:3.12-slim AS compiler
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app/
 
@@ -10,7 +10,7 @@ COPY ./requirements.txt /app/requirements.txt
 RUN pip install --upgrade pip && pip install -Ur requirements.txt
 
 # --- Stage 2: Final Runtime ---
-FROM python:3.12-slim as runner
+FROM python:3.12-slim AS runner
 WORKDIR /app/
 
 # 1. Copy the compiled Python virtual environment from stage 1
