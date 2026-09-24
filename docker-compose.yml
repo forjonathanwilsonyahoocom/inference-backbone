@@ -96,7 +96,7 @@ services:
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=${PROM_RETENTION:-6h}
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro,Z
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./datasets/prometheus:/prometheus
     ports:
       - "9090:9090"
@@ -107,7 +107,7 @@ services:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
     volumes:
-      - ./grafana/dashboards:/var/lib/grafana/dashboards
-      - ./datasets/grafana:/var/lib/grafana
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:rw
+      - ./datasets/grafana:/var/lib/grafana:rw
     ports:
       - "3011:3000"
