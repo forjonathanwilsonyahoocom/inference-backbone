@@ -40,7 +40,9 @@ from prometheus_client import start_http_server
 metrics = MetricsWrapper("worker-agent")
 start_http_server(8080)
 
-metrics.emit(metrics.get_counter_message("lifecycle_startup", "worker agent system startup"))
+operation_metric_labeler = metrics.get_counter_message_labeler("operation", "agent general activity")
+    
+metrics.emit(operation_metric_labeler({"operation" : "startup"}))
 
 for package in [
     "langchain",
@@ -141,8 +143,7 @@ def run_agent(
     verbose: bool = False,
 ) -> str:
 
-
-    metrics.emit(metrics.get_counter_message("lifecycle_begin_loop", "worker agent starting task"))
+    metrics.emit(operation_metric_labeler({"operation" : "begin loop"}))
 
     tool_call_metric_labeler = metrics.get_counter_message_labeler("tool_call", "the agent calls a tool")
     failure_metric_labeler = metrics.get_counter_message_labeler("tool_call_failure", "the agent tool fails")
@@ -163,8 +164,8 @@ def run_agent(
         iteration = iteration + 1
         if verbose:
             print(f"\n--- iteration {iteration + 1} ---")
-
-        metrics.emit(metrics.get_counter_message("lifecycle_agent_iterate", "worker agent iterates on task"))
+            
+        metrics.emit(operation_metric_labeler({"operation" : "iterate"}))
         
         tool_calls = []
         response = {}
@@ -245,7 +246,8 @@ def run_agent(
             if verbose:
                 if response.content:
                     print("Assistant:", response.content)
-            metrics.emit(metrics.get_counter_message("lifecycle_loop_completed", "worker returned results"))
+            
+            metrics.emit(operation_metric_labeler({"operation" : "completed"}))
             return {"condition" : "no tool calls",
                     "final_response": response.content,
                     "iterations": iteration + 1,
@@ -381,8 +383,8 @@ def run_agent(
                     messages = messages[:2] + [summary_msg] + messages[2:]
 
                 messages = truncate_history(messages, max_tokens=15_000, preserve=3)
-
-    metrics.emit(metrics.get_counter_message("lifecycle_loop_too_long", "worker ran out of turns"))
+    
+    metrics.emit(operation_metric_labeler({"operation" : "ran out of turns"}))
     return {"condition" : f"Agent stopped after {max_iterations} iterations. The workspace may contain partial results.",
             "final_response": response.content,
             "iterations": iteration + 1,
