@@ -1,6 +1,58 @@
 services:
+ 
+  backbone-api:
+    build:
+      context: .
+      dockerfile: backbone-api/Dockerfile
+    container_name: backbone_api
+    ports:
+      - "8000:8000"
+    environment:
+      GRAPHDB_URL: http://graphdb:7200/repositories/inference-backbone
+      OLLAMA_BASE_URL: http://10.42.0.192:11434
+      GEN_MODEL: gpt-oss:20b
+    volumes:
+      - ./datasets/backbone-api:/indexed-artifacts
+
+  worker-agent:
+    build:
+      context: .
+      dockerfile: worker-agent/Dockerfile
+    container_name: worker_agent
+    ports:
+      - "8001:8000"
+    shm_size: '2gb'
+    environment:
+      OLLAMA_URL: http://10.42.0.192:11434
+      GEN_MODEL: gpt-oss:20b 
+      DISTILL_GEN_MODEL: gpt-oss:20b 
+      WORKSPACE: /agentworkspace
+    volumes:
+      - ./worker-agent-workspace:/agentworkspace
+    restart: unless-stopped
+
+  validator-agent:
+    build:
+      context: .
+      dockerfile: validator-agent/Dockerfile
+    container_name: validator_agent
+    ports:
+      - "8002:8000"
+    environment:
+      OLLAMA_URL: http://10.42.0.192:11434
+      GEN_MODEL: gpt-oss:20b
+    restart: unless-stopped
+
+  jupyter:
+    build: ./jupyter
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./jupyter/notebooks/:/localjup/notebooks
+
   weaviate:
     image: semitechnologies/weaviate:1.39.3-2489571.amd64
+    container_name: weaviate
     ports:
       - "8084:8080"
       - "50051:50051"
@@ -35,58 +87,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 30
-
-  backbone-api:
-    build: ./backbone-api
-    container_name: backbone_api
-    ports:
-      - "8000:8000"
-    environment:
-      GRAPHDB_URL: http://graphdb:7200/repositories/inference-backbone
-      OLLAMA_BASE_URL: http://10.42.0.192:11434
-      GEN_MODEL: gpt-oss:20b
-    volumes:
-      - ./backbone-api:/app
-      - ./contracts:/app/contracts
-      - ./datasets/backbone-api:/indexed-artifacts
-
-  worker-agent:
-    build: ./worker-agent
-    container_name: worker_agent
-    ports:
-      - "8001:8000"
-    shm_size: '2gb'
-    environment:
-      OLLAMA_URL: http://10.42.0.192:11434
-      GEN_MODEL: gpt-oss:20b 
-      DISTILL_GEN_MODEL: gpt-oss:20b 
-      WORKSPACE: /agentworkspace
-    volumes:
-      - ./worker-agent/app:/app
-      - ./contracts:/app/contracts
-      - ./observability:/app/observability
-      - ./worker-agent-workspace:/agentworkspace
-    restart: unless-stopped
-
-  validator-agent:
-    build: ./validator-agent
-    container_name: validator_agent
-    ports:
-      - "8002:8000"
-    environment:
-      OLLAMA_URL: http://10.42.0.192:11434
-      GEN_MODEL: gpt-oss:20b
-    restart: unless-stopped
-    volumes:
-      - ./validator-agent:/app
-      - ./contracts:/app/contracts
-
-  jupyter:
-    build: ./jupyter
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./jupyter/notebooks/:/localjup/notebooks
 
   prometheus:
     image: docker.io/prom/prometheus:v2.54.1

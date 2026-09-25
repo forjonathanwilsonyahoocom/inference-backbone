@@ -3,11 +3,15 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY ./backbone-api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the entire fastapi package
-COPY . .
+COPY ./backbone-api .
+COPY contracts/ /tmp/contracts/
+RUN pip install --no-cache-dir /tmp/contracts
+COPY observability/ /tmp/observability/
+RUN pip install --no-cache-dir /tmp/observability
 
 EXPOSE 8000
 

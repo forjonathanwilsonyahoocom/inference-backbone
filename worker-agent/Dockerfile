@@ -1,5 +1,5 @@
 # --- Stage 1: Build virtual environment ---
-FROM python:3.12-slim as compiler
+FROM python:3.12-slim AS compiler
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app/
 
@@ -13,11 +13,11 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 RUN python -m playwright install chromium
 
 # Now install everything else — this is the layer that actually changes often
-COPY ./requirements.txt /app/requirements.txt
+COPY ./worker-agent/requirements.txt /app/requirements.txt
 RUN pip install -Ur requirements.txt
 
 # --- Stage 2: Final Runtime ---
-FROM python:3.12-slim as runner
+FROM python:3.12-slim AS runner
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app/
 
@@ -30,6 +30,11 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 
 RUN python -m playwright install-deps chromium
 
-COPY ./app/ .
+COPY ./worker-agent/app/ .
+COPY contracts/ /tmp/contracts/
+RUN pip install --no-cache-dir /tmp/contracts
+COPY observability/ /tmp/observability/
+RUN pip install --no-cache-dir /tmp/observability
+
 EXPOSE 8000
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
