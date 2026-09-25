@@ -19,7 +19,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 1,
   "links": [],
   "panels": [
     {
@@ -207,13 +206,47 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "{__name__=~\"worker_agent.*total\"}",
+          "expr": "{__name__=~\"worker_agent_operation.*total\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": true,
-          "legendFormat": "{{__name__}}",
+          "legendFormat": "{{operation}}",
           "range": true,
           "refId": "A",
+          "useBackend": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "{__name__=\"worker_agent_tool_call_total\"}",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": true,
+          "legendFormat": "{{tool_call}}",
+          "range": true,
+          "refId": "B",
+          "useBackend": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "{__name__=\"worker_agent_tool_call_failure_total\"}",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": true,
+          "legendFormat": "{{failure}}",
+          "range": true,
+          "refId": "C",
           "useBackend": false
         }
       ],
@@ -228,13 +261,13 @@
     "list": []
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Agent Metrics",
   "uid": "cfz92g6mds2dcf",
-  "version": 4,
+  "version": 5,
   "weekStart": ""
 }
