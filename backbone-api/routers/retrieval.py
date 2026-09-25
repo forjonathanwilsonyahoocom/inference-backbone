@@ -3,33 +3,51 @@ from fastapi.responses import FileResponse
 from fastapi import APIRouter
 from pathlib import Path
 
-
+# Base directory where artifacts are stored
 BASE_DIR = Path("/indexed-artifacts")
+
+# Allowed document types based on contracts
+allowed_doc_types = {"claim", "evidence", "evidence_chunk"}
 
 retrieval_router = APIRouter()
 
-@retrieval_router.get("/file/evidence/{event_id}")
-async def get_evidence_file(event_id: str):
-    store_path = BASE_DIR / "evidence"
-    file_path = store_path / f"{event_id}.json"
+@retrieval_router.get("/file/{doc_type}/{identifier}")
+async def get_document_file(doc_type: str, identifier: str):
+    """Return a single document file.
+
+    Parameters
+    ----------
+    doc_type: str
+        One of the allowed document types.
+    identifier: str
+        The filename (without extension) of the stored JSON.
+    """
+    if doc_type not in allowed_doc_types:
+        return {"error": f"unknown doc_type: {doc_type}"}
+
+    store_path = BASE_DIR / doc_type
+    file_path = store_path / f"{identifier}.json"
     if not file_path.exists():
         return {"error": "file not found"}
     return FileResponse(path=str(file_path), media_type="application/json")
 
 
-@retrieval_router.get("/list/evidence/{execution_id}")
-async def list_evidence_files(execution_id: str):
-    """Return a list of evidence event IDs for a given execution, ordered by iteration.
+@retrieval_router.get("/list/{doc_type}/{execution_id}")
+async def list_document_files(doc_type: str, execution_id: str):
+    """Return a list of document identifiers for a given execution.
 
-    The evidence files are stored under ``BASE_DIR / "evidence"`` and named
-    ``{execution_id}-{iteration}.json``.  This endpoint scans that directory,
-    extracts the iteration number, sorts the files, and returns a JSON payload
-    containing the ordered list of event IDs.
+    The function scans the directory ``BASE_DIR / doc_type`` for files named
+    ``{execution_id}-{iteration}.json`` and returns the sorted list of
+    identifiers.
     """
+    if doc_type not in allowed_doc_types:
+        return {"error": f"unknown doc_type: {doc_type}"}
+
     import re
-    evidence_dir = BASE_DIR / "evidence"
+    evidence_dir = BASE_DIR / doc_type
     if not evidence_dir.exists():
-        return {"error": "evidence directory not found"}
+        return {"error": f"{doc_type} directory not found"}
+
     pattern = re.compile(rf"^{re.escape(execution_id)}-(\d+)\.json$")
     files = []
     for f in evidence_dir.iterdir():
@@ -44,4 +62,3 @@ async def list_evidence_files(execution_id: str):
         "iterations": [int(name.split('-')[-1]) for name in event_ids],
         "event_ids": event_ids,
     }
-
