@@ -1,173 +1,69 @@
-@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix owl:  <http://www.w3.org/2002/07/owl#> .
-@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
-@prefix ex:   <http://mindbodyengineer.com/> .
-
-
-########################################
-# 1️⃣  Core Person vocabulary
-########################################
-
-ex:Person a owl:Class .
-ex:Developer a owl:Class ;
-    rdfs:subClassOf ex:Person .
-
-ex:hasProject a owl:ObjectProperty ;
-    rdfs:domain ex:Developer ;
-    rdfs:range ex:Project .
-
-ex:Project a owl:Class .
-
-# Inference rule: if a Developer has a Project, then that Project is a “Work”
-ex:hasProject o ex:isWork .
-
-
-
-########################################
-# 1️⃣  Core event vocabulary
-########################################
-
-ex:Event
-    a rdfs:Class ;
-    rdfs:label "Event" ;
-    rdfs:subClassOf rdfs:Resource .
-
-ex:CompletedEvent
-    a rdfs:Class ;
-    rdfs:label "Completed Event" ;
-    rdfs:subClassOf ex:Event .
-
-ex:hasResult
-    a rdf:Property ;
-    rdfs:domain ex:Event ;
-    rdfs:range ex:Result ;
-    rdfs:label "has result" .
-
-########################################
-# 2️⃣  Projects & experiments
-########################################
-
-ex:Project
-    a rdfs:Class ;
-    rdfs:label "Project" ;
-    rdfs:subClassOf ex:Event .
-
-ex:hasExperiment
-    a rdf:Property ;
-    rdfs:domain ex:Project ;
-    rdfs:range ex:Experiment ;
-    rdfs:label "has experiment" .
-
-ex:Experiment
-    a rdfs:Class ;
-    rdfs:label "Experiment" ;
-    rdfs:subClassOf ex:Event .
-
-########################################
-# 3️⃣  Results
-########################################
-
-ex:Result
-    a rdfs:Class ;
-    rdfs:label "Result" .
-
-ex:resultValue
-    a rdf:Property ;
-    rdfs:domain ex:Result ;
-    rdfs:range xsd:float ;
-    rdfs:label "result value" .
-
-########################################
-# 4️⃣  OWL restrictions & property chains
-########################################
-
-# Every Experiment that has *exactly one* Result is a CompletedEvent
-ex:Experiment
-    rdfs:subClassOf [
-        a owl:Restriction ;
-        owl:onProperty ex:hasResult ;
-        owl:cardinality 1 ;
-    ] .
-
-# Projects “inherit” outcomes from experiments
-ex:hasOutcome
-    a rdf:Property ;
-    rdfs:label "has outcome" ;
-    rdfs:subPropertyOf ex:hasResult .
-
-# Property chain: if a Project hasExperiment X, and X hasResult Y → Project hasOutcome Y
-[
-    a owl:ObjectProperty ;
-    owl:propertyChainAxiom ( ex:hasExperiment ex:hasResult ) ;
-    rdfs:subPropertyOf ex:hasOutcome ;
-] .
-
-########################################
-# 1️⃣  Hypothesis & status vocabulary
-########################################
-
-ex:Hypothesis
-    a rdfs:Class ;
-    rdfs:label "Hypothesis" ;
-    rdfs:subClassOf ex:Event .
-
-# 1.1  Status enumeration
-ex:HypothesisStatus
-    a rdfs:Class ;
-    rdfs:label "Hypothesis Status" .
-
-ex:Current
-    a ex:HypothesisStatus ;
-    rdfs:label "Current" .
-
-ex:Falsified
-    a ex:HypothesisStatus ;
-    rdfs:label "Falsified" .
-
-ex:Accepted
-    a ex:HypothesisStatus ;
-    rdfs:label "Accepted" .
-
-# 1.2  Status property
-ex:hasStatus
-    a rdf:Property ;
-    rdfs:domain ex:Hypothesis ;
-    rdfs:range ex:HypothesisStatus ;
-    rdfs:label "has hypothesis status" .
-
-########################################
-# 2️⃣  Linking to experiments
-########################################
-
-# A hypothesis can be tested by many experiments
-ex:hasExperiment
-    a rdf:Property ;
-    rdfs:domain ex:Hypothesis ;
-    rdfs:range ex:Experiment ;
-    rdfs:label "has experiment" .
-
-# Property chain: if a hypothesis hasExperiment X and X hasResult Y → hypothesis hasResult Y
-[
-    a owl:ObjectProperty ;
-    owl:propertyChainAxiom ( ex:hasExperiment ex:hasResult ) ;
-    rdfs:subPropertyOf ex:hasResult ;
-] .
-
-
-
-########################################
-# 1️⃣  Core Document vocabulary
-########################################
-ex:Document a owl:Class ;
-   rdfs:label "Document" ;
-   rdfs:subClassOf ex:Event .   # optional
-ex:hasFilePath a owl:DatatypeProperty ;
-   rdfs:domain ex:Document ;
-   rdfs:range xsd:string .
-ex:hasTitle a owl:DatatypeProperty ;
-   rdfs:domain ex:Document ;
-   rdfs:range xsd:string .
-ex:hasTag a owl:DatatypeProperty ;
-   rdfs:domain ex:Document ;
-   rdfs:range xsd:string .
+# Schema Documentation for GraphDB Projections
+#
+# This file contains only high‑level documentation about the RDF types that are
+# projected from the Python contracts in `contracts/inference_contracts`.
+# It is intentionally *not* a full OWL ontology – the actual triples are
+# generated at runtime by the projection code in `backbone-api/projections/graphdb`.
+#
+# The two core types are:
+#   * `ex:Claim` – a statement produced by the validator‑agent after an LLM
+#     has processed a human task and a worker‑agent response.
+#   * `ex:Evidence` – the tool‑call records that the worker‑agent produced
+#     while the LLM was issuing callbacks.
+#
+# Each type is represented as an RDF class with a set of object and datatype
+# properties that mirror the fields of the corresponding Python dataclass.
+# The projection code builds a Turtle document for each instance and POSTs it
+# to GraphDB via the client in `clients/graphdb_client.py`.
+#
+# The following sections describe the intent of each property.  The actual
+# property URIs are defined in the `EX` namespace (http://mindbodyengineer.com/).
+#
+# ---------------------------------------------------------------------------
+# Claim
+# ---------------------------------------------------------------------------
+#   ex:hasClaimId          – unique identifier for the claim.
+#   ex:hasClaimNumber      – human‑readable claim number.
+#   ex:hasImportance       – numeric importance score.
+#   ex:hasExecutionId      – ID of the LLM execution that produced the claim.
+#   ex:hasContent          – the textual claim.
+#   ex:hasContentHash      – hash of the content for deduplication.
+#   ex:observedAt          – timestamp when the claim was observed.
+#   ex:retrievedAt         – timestamp when the claim was retrieved from the LLM.
+#   ex:hasEmbeddingModel   – name of the embedding model used.
+#   ex:hasEmbeddingTask    – task identifier for the embedding.
+#   ex:hasValidatorVersion – version of the validator that produced the claim.
+#   ex:hasSchemaVersion    – version of the claim schema.
+#
+# ---------------------------------------------------------------------------
+# Evidence
+# ---------------------------------------------------------------------------
+#   ex:hasEvidenceId       – unique identifier for the evidence.
+#   ex:hasExecutionId      – ID of the worker execution that produced the evidence.
+#   ex:hasEventId          – ID of the event that triggered the evidence.
+#   ex:hasEvidenceType     – type of evidence (e.g., "tool_call", "log", ...).
+#   ex:hasContent          – textual content of the evidence.
+#   ex:hasContentHash      – hash of the content.
+#   ex:hasSourceType       – type of source (e.g., "tool", "LLM", ...).
+#   ex:hasSourceName       – human‑readable name of the source.
+#   ex:hasSourceUrl        – URL of the source, if applicable.
+#   ex:observedAt          – timestamp when the evidence was observed.
+#   ex:retrievedAt         – timestamp when the evidence was retrieved.
+#   ex:hasExtractionMethod – method used to extract the evidence.
+#   ex:hasParentEvidence   – object property pointing to other Evidence nodes.
+#   ex:hasWorkerVersion    – version of the worker that produced the evidence.
+#   ex:hasSchemaVersion    – version of the evidence schema.
+#
+# ---------------------------------------------------------------------------
+# Notes
+# ---------------------------------------------------------------------------
+# * All timestamps are stored as ISO‑8601 strings.
+# * Hashes are stored as plain strings; the projection code ensures they are
+#   present before serialisation.
+# * The `ex:hasParentEvidence` property is used to model a chain of evidence
+#   (e.g., a tool call that produced another tool call).
+# * No additional OWL restrictions or property chains are defined here – the
+#   projection logic is intentionally simple and stateless.
+#
+# ---------------------------------------------------------------------------
+# End of documentation.
