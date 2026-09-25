@@ -8,7 +8,7 @@
 - `worker-agent/` contains the worker agent service.
 - `validator-agent/` contains the validator service.
 - `tests/` contains repository-level tests.
-- `jupyter/` contains exploratory notebooks.
+- `jupyter/` contains user material.
 
 ## Shared packages
 
@@ -35,11 +35,34 @@ Run tests with:
 
 If no relevant tests exist, do not create tests merely to satisfy a workflow.
 
+## Development environment
+
+Agents develop and test directly in the repository's Python virtual environment.
+
+Agents must not use Docker or Docker Compose.
+
+Shared Python packages are installed editable:
+
+    pip install -e ./contracts
+    pip install -e ./observability
+
+This means changes to `contracts/` and `observability/` are immediately visible
+to Python processes in the development environment.
+
 ## Docker
 
-Agents must not use Docker.
+Docker is a deployment/runtime concern and is maintained separately from the
+agent development workflow.
 
-Docker is used separately to build and run deployment images.
+Do not:
+- invoke docker or docker compose
+- modify Docker configuration merely to make tests run
+- add volume mounts to expose repository source to containers
+- create duplicate copies of shared packages inside service directories
+
+If application code cannot import a shared package during development,
+fix the development Python environment rather than introducing a Docker mount.
+
 
 ## Code changes
 
