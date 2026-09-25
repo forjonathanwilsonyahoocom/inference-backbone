@@ -1,11 +1,11 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "inference-backbone-contracts"
+name = "contracts"
 version = "0.1.0"
-description = "Shared data contracts for the inference backbone"
+description = "Shared contract definitions for the inference-backbone"
 requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.0",
@@ -14,7 +14,12 @@ dependencies = [
 [tool.setuptools]
 packages = [
     "contracts",
-    "contracts.inference_contracts",
     "contracts.general_contracts",
+    "contracts.inference_contracts",
 ]
+
+[tool.setuptools.package-dir]
+contracts = "."
+"contracts.general_contracts" = "general_contracts"
+"contracts.inference_contracts" = "inference_contracts"
 

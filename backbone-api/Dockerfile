@@ -8,9 +8,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the entire fastapi package
 COPY ./backbone-api .
-COPY contracts/ /tmp/contracts/
+COPY ./contracts/ /tmp/contracts/
 RUN pip install --no-cache-dir /tmp/contracts
-COPY observability/ /tmp/observability/
+COPY ./observability/ /tmp/observability/
 RUN pip install --no-cache-dir /tmp/observability
 
 EXPOSE 8000

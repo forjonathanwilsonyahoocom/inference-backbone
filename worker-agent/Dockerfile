@@ -31,9 +31,9 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 RUN python -m playwright install-deps chromium
 
 COPY ./worker-agent/app/ .
-COPY contracts/ /tmp/contracts/
+COPY ./contracts/ /tmp/contracts/
 RUN pip install --no-cache-dir /tmp/contracts
-COPY observability/ /tmp/observability/
+COPY ./observability/ /tmp/observability/
 RUN pip install --no-cache-dir /tmp/observability
 
 EXPOSE 8000

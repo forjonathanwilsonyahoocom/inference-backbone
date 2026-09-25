@@ -1,11 +1,11 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "inference-backbone-observability"
+name = "observability"
 version = "0.1.0"
-description = "Shared observability utilities for the inference backbone"
+description = "Metrics and telemetry helpers"
 requires-python = ">=3.10"
 dependencies = [
     "prometheus-client>=0.22.1",
@@ -15,3 +15,7 @@ dependencies = [
 packages = [
     "observability",
 ]
+
+[tool.setuptools.package-dir]
+observability = "."
+
