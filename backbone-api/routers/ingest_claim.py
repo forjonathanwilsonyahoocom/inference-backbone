@@ -30,7 +30,7 @@ async def claim_ingest(payload: Claim) -> Dict:
         # claim_id is required by Pydantic; it should be supplied by the caller
         # Persist to file
 
-        payload.source_url = f"http://backbone-api/file/claim/{payload.claim_id}.json"
+        payload.source_url = f"http://backbone-api:8000/file/claim/{payload.claim_id}.json"
 
         # Embed content
         async with OllamaEmbeddingProvider() as embedding_provider:

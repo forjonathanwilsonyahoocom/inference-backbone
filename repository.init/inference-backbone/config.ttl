@@ -14,8 +14,8 @@
        sr:sailImpl [
            sail:sailType "graphdb:Sail" ;
 
-           owlim:base-URL "http://backbone-api/" ;
-           owlim:defaultNS "http://backbone-api/" ;
+           owlim:base-URL "http://backbone-api:8000/" ;
+           owlim:defaultNS "http://backbone-api:8000/" ;
 
            owlim:repository-type "file-repository" ;
            owlim:ruleset "rdfsplus-optimized" ;   # RDFS inference (use “rdfplus” or “owlplus” for OWL DL)

@@ -89,7 +89,7 @@ def ingest_claims(execution_id: str, claims:  List[Dict]) -> List[Dict]:
   
     now = datetime.now(UTC).isoformat()
     for i, claim in enumerate(claims):
-        claim_id = f"{str(uuid.uuid4())}-{i}"
+        claim_id = f"{execution_id}-{i}"
         claim["claim_id"] = claim_id
         try:
             payload = Claim(
