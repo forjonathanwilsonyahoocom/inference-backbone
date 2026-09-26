@@ -68,8 +68,21 @@ exact shape:
 }}
 """
 
+
 # ---------------------------------------------------------------------------
-# Helper: send a tool result to the evidence ingestion endpoint
+# Helper: trigger supporting evidence to be fully ingested
+# ---------------------------------------------------------------------------
+
+def mark_supporting_evidence(identifier: str):
+    try:
+        resp = requests.get(f"http://backbone-api:8000/ingest/supporting_evidence/{identifier}", timeout=10)
+        resp.raise_for_status()
+    except Exception as e:
+        # Log but do not raise – evidence is observational
+        print(f"[Supporting evidence ingestion] failed for event_id {event_id}: {e}")
+
+# ---------------------------------------------------------------------------
+# Helper: send a claim result to the claim ingestion endpoint
 # ---------------------------------------------------------------------------
 
 def ingest_claims(execution_id: str, claims:  List[Dict]) -> List[Dict]:
@@ -208,6 +221,7 @@ def validate(req: ValidateRequest):
             if claim_id not in support_map:
                 support_map[claim_id] = {}
             if val > 0:
+                mark_supporting_evidence(event_id)
                 support_map[claim_id][event_id] = val
                 
     #use simple heuristic to determine overall support 
