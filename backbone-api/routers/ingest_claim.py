@@ -29,7 +29,7 @@ async def claim_ingest(payload: Claim) -> Dict:
     try:
         # claim_id is required by Pydantic; it should be supplied by the caller
         # Persist to file
-        file_id = str(f"{payload.execution_id}-{payload.claim_number}"
+        file_id = str(f"{payload.execution_id}-{payload.claim_number}")
         
         payload.source_url = f"http://backbone-api/file/claim/{file_id}.json"
 
