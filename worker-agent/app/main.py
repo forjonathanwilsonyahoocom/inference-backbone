@@ -199,6 +199,7 @@ def run_agent(
                     ToolEvent(
                         iteration=iteration + 1,
                         event_type="parse_error",
+                        model_name=MODEL_NAME,
                         args={},
                         result={"error": str(e), "raw_output": raw_content},
                     )
@@ -230,6 +231,7 @@ def run_agent(
             ToolEvent(
                 iteration=iteration + 1,
                 event_type="agent_response",
+                model_name=MODEL_NAME,
                 args={},
                 result=str(response)
             )
@@ -313,6 +315,7 @@ def run_agent(
             tool_result_event = ToolEvent(
                     iteration=iteration + 1,
                     event_type="tool_call_result",
+                    model_name=MODEL_NAME,
                     tool=tool_name,
                     args=tool_args,
                     result=tool_result

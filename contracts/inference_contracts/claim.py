@@ -13,6 +13,10 @@ class Claim(BaseModel):
     content: str
     content_hash: str | None = None
 
+    model_name: str
+    
+    source_url: str | None = None
+    
     observed_at: datetime
     retrieved_at: datetime
 

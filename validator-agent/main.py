@@ -96,6 +96,7 @@ def ingest_claims(execution_id: str, claims:  List[Dict]) -> List[Dict]:
                 claim_id=claim_id,
                 claim_number=i,
                 importance=float(claim["importance"]),
+                model_name=GEN_MODEL,
                 execution_id=execution_id,
                 content=claim["text"], 
                 observed_at=now,

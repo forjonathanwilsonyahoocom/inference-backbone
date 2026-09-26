@@ -43,6 +43,7 @@ EVIDENCE_FIELD_MAPPING: FieldMapping = [
     ("evidence_type", EX.hasEvidenceType, None),
     ("content", EX.hasContent, None),
     ("content_hash", EX.hasContentHash, None),
+    ("model_name", EX.hasModelName, None),
     ("source_type", EX.hasSourceType, None),
     ("source_name", EX.hasSourceName, None),
     ("source_url", EX.hasSourceUrl, None),

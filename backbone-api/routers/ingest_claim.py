@@ -29,13 +29,23 @@ async def claim_ingest(payload: Claim) -> Dict:
     try:
         # claim_id is required by Pydantic; it should be supplied by the caller
         # Persist to file
+        file_id = str(f"{payload.execution_id}-{payload.claim_number}"
+        
+        payload.source_url = f"http://backbone-api/file/claim/{file_id}.json"
+
+        # Embed content
+        async with OllamaEmbeddingProvider() as embedding_provider:
+            embedding = await embedding_provider.embed(payload.content)
+            payload.embedding_model = embedding_provider.model
+            
         file_path = write_to_file(
             content=payload,
             location="claim",
-            identifier=str(f"{payload.execution_id}-{payload.claim_number}"),
+            identifier=file_id),
         )
         print(f"[ingest] Persisted claim to {file_path}")
 
+        
         # Write to GraphDB
         await write_claim_to_graphdb(payload)
 
@@ -43,9 +53,6 @@ async def claim_ingest(payload: Claim) -> Dict:
         ensure_weaviate_collection("Claim")
         claim_collection = weaviate_client.collections.use("Claim")
 
-        # Embed content
-        async with OllamaEmbeddingProvider() as embedding_provider:
-            embedding = await embedding_provider.embed(payload.content)
 
         # Insert into Weaviate
         weaviate_obj = claim_collection.data.insert(

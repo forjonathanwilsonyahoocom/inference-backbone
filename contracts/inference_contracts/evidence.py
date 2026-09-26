@@ -13,6 +13,8 @@ class Evidence(BaseModel):
     content: str
     content_hash: str | None = None
 
+    model_name: str
+    
     source_type: str
     source_name: str | None = None
     source_url: str | None = None

@@ -40,6 +40,8 @@ CLAIM_FIELD_MAPPING: FieldMapping = [
     ("execution_id", EX.hasExecutionId, None),
     ("content", EX.hasContent, None),
     ("content_hash", EX.hasContentHash, None),
+    ("model_name", EX.hasModelName, None),
+    ("source_url", EX.hasSourceUrl, None),
     ("observed_at", EX.observedAt, lambda dt: dt.isoformat()),
     ("retrieved_at", EX.retrievedAt, lambda dt: dt.isoformat()),
     ("embedding_model", EX.hasEmbeddingModel, None),

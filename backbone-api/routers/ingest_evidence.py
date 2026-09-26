@@ -26,6 +26,8 @@ async def evidence_file_ingest(payload: Evidence) -> Dict:
     try:
 
         payload.content_hash = context_based_id(payload.content)
+        
+        payload.source_url = f"http://backbone-api/file/evidence/{payload.event_id}.json"
                 
         file_path = write_to_file(
                         content=payload,
@@ -82,7 +84,7 @@ async def evidence_ingest(identifier: str) -> Dict:
                     embedding_task="document",
                 )
                 embedding = await embedding_provider.embed(raw_chunk)
-
+                typed_chunk.embedding_model = embedding_provider.model
                 chunk_ids.append(
                     evidence_chunk_collection.data.insert(
                         properties=typed_chunk.model_dump(), vector=embedding

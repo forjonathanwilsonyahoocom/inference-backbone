@@ -9,6 +9,7 @@ from contracts.inference_contracts.evidence import Evidence
 class ToolEvent(BaseModel):
     iteration: int
     event_type: str
+    model_name: str
     tool: Optional[str] = None
     args: Dict[str, Any] = Field(default_factory=dict)
     result: Any = None
@@ -27,6 +28,7 @@ def ingest_tool_event(execution_id: str, tool_event: ToolEvent) -> None:
             evidence_id=str(uuid.uuid4()),
             execution_id=execution_id,
             event_id=f"{execution_id}-{tool_event.iteration}",
+            model_name=tool_event.model_name,
             evidence_type=tool_event.tool,          # e.g. "web_search", "read_file"
             content=str(tool_event.result), 
             source_type=tool_event.event_type,
