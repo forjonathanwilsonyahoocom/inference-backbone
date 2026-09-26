@@ -31,7 +31,7 @@ from projections.graphdb.turtle import build_node_turtle, FieldMapping, EX
 
 def claim_iri(claim_id: str) -> URIRef:
     """Single source of truth for the Claim IRI convention."""
-    return URIRef(f"{EX}claim/{claim_id}")
+    return URIRef(f"{EX}file/claim/{claim_id}")
 
 CLAIM_FIELD_MAPPING: FieldMapping = [
     ("claim_id", EX.hasClaimId, None),

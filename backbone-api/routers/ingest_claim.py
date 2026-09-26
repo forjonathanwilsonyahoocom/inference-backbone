@@ -29,9 +29,8 @@ async def claim_ingest(payload: Claim) -> Dict:
     try:
         # claim_id is required by Pydantic; it should be supplied by the caller
         # Persist to file
-        file_id = str(f"{payload.execution_id}-{payload.claim_number}")
-        
-        payload.source_url = f"http://backbone-api/file/claim/{file_id}.json"
+
+        payload.source_url = f"http://backbone-api/file/claim/{payload.claim_id}.json"
 
         # Embed content
         async with OllamaEmbeddingProvider() as embedding_provider:
@@ -41,7 +40,7 @@ async def claim_ingest(payload: Claim) -> Dict:
         file_path = write_to_file(
             content=payload,
             location="claim",
-            identifier=file_id),
+            identifier=payload.claim_id),
         
         print(f"[ingest] Persisted claim to {file_path}")
 

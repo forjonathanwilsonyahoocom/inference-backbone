@@ -28,7 +28,7 @@ from rdflib.term import Identifier
 from contracts.inference_contracts.evidence import Evidence
 from clients.graphdb_client import post_turtle
 
-EX = Namespace("http://mindbodyengineer.com/")
+EX = Namespace("http://backbone-api/")
 
 # (attr_name, predicate, optional transform)
 # transform(value) -> either a raw python value (wrapped in Literal)
