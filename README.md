@@ -223,6 +223,13 @@ currently only implemented for worker agent
 ### grafana visualization of metrics
 currently only one dashboard is init for worker agent as shown above
 
+if you want the links shown below to work for you outside the docker network, you will have to add a /etc/hosts entry
+```bash
+[your ip] backbone-api
+```
+
+![graph db links](./readme/graphdb_link.png)
+
 ## planned:
 
 An intelligent, autonomous retrieval and ingestion infrastructure designed for agentic workflows.
