@@ -217,18 +217,19 @@ as implemented uses nomic embeddings for indexing
 ### graphdb ingest of claims and evidence
 while ingest works, there are no edges formed yet and the schema in the repo init is only a sketch
 
-### prometheus metrics
-currently only implemented for worker agent
-
-### grafana visualization of metrics
-currently only one dashboard is init for worker agent as shown above
-
 if you want the links shown below to work for you outside the docker network, you will have to add a /etc/hosts entry
 ```bash
 [your ip] backbone-api
 ```
 
 ![graph db links](./readme/graphdb_link.png)
+
+### prometheus metrics
+currently only implemented for worker agent
+
+### grafana visualization of metrics
+currently only one dashboard is init for worker agent as shown above
+
 
 ## planned:
 
