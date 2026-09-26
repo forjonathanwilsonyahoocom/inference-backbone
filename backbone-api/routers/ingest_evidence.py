@@ -18,11 +18,11 @@ ingest_evidence_router = APIRouter()
 
 @ingest_evidence_router.post("/ingest/evidence")
 async def evidence_file_ingest(payload: Evidence) -> Dict:
-"""
-/ingest/evidence endpoint takes evidence and persists to file after generating content hash
-this evidence has not been validated as supporting 
-any claims yet so it does not get indexed into weaviate or graphdb
-"""
+    """
+    /ingest/evidence endpoint takes evidence and persists to file after generating content hash
+    this evidence has not been validated as supporting 
+    any claims yet so it does not get indexed into weaviate or graphdb
+    """
     try:
 
         payload.content_hash = context_based_id(payload.content)
@@ -45,12 +45,12 @@ any claims yet so it does not get indexed into weaviate or graphdb
 
 @ingest_evidence_router.get("/ingest/supporting_evidence/{identifier}")
 async def evidence_ingest(identifier: str) -> Dict:
-"""
-when evidence is found to support a claim we ingest/index into graphdb and weaviate
-this keeps our graph as sparse as possible, we can always collect the original 
-un-supporting evidence from the files, we collect from the retrieval route func
-to assert we are ingesting the original evidence doc 
-"""
+    """
+    when evidence is found to support a claim we ingest/index into graphdb and weaviate
+    this keeps our graph as sparse as possible, we can always collect the original 
+    un-supporting evidence from the files, we collect from the retrieval route func
+    to assert we are ingesting the original evidence doc 
+    """
 
     weaviate_client = get_weaviate_client()
         
