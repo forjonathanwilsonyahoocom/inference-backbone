@@ -5,3 +5,4 @@ __pycache__/
 worker-agent-workspace/
 datasets/
 .Trash*/
+**/*.egg-info/
