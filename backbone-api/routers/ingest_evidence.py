@@ -11,7 +11,7 @@ from util.embedding_provider import OllamaEmbeddingProvider
 from util.file_persistence import write_to_file
 from util.identity import context_based_id
 from clients.weaviate import get_weaviate_client, ensure_weaviate_collection
-from routers.retrieval import get_document_file
+from routers.retrieval import load_document
 
 ingest_evidence_router = APIRouter()
 
@@ -57,10 +57,10 @@ async def evidence_ingest(identifier: str) -> Dict:
     weaviate_client = get_weaviate_client()
         
     try:
-        file_resp = await get_document_file("evidence", identifier)
+        file_resp = await load_document("evidence", identifier)
         
         print(file_resp)
-        payload = Evidence.model_validate_json(file_resp.json())
+        payload = Evidence.model_validate_json(file_resp)
 
         await write_evidence_to_graphdb(payload)
 

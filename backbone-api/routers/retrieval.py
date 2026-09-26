@@ -1,19 +1,46 @@
 # inference-backbone/backbone-api/routers/retrieval.py
-from fastapi.responses import FileResponse
-from fastapi import APIRouter
+
+import json
 from pathlib import Path
+
+import anyio
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 
 # Base directory where artifacts are stored
 BASE_DIR = Path("/indexed-artifacts")
 
 # Allowed document types based on contracts
-allowed_doc_types = {"claim", "evidence", "evidence_chunk"}
+ALLOWED_DOC_TYPES = {"claim", "evidence"}
 
 retrieval_router = APIRouter()
 
+def find_document_path(doc_type: str, identifier: str) -> Path | None:
+    if doc_type not in ALLOWED_DOC_TYPES:
+        return None
+
+    # identifier must be a filename stem, not a path
+    if (
+        not identifier
+        or "/" in identifier
+        or "\\" in identifier
+        or identifier in {".", ".."}
+    ):
+        return None
+
+    file_path = BASE_DIR / doc_type / f"{identifier}.json"
+
+    try:
+        file_path.resolve().relative_to(BASE_DIR.resolve())
+    except ValueError:
+        return None
+
+    return file_path if file_path.is_file() else None
+
+
 @retrieval_router.get("/file/{doc_type}/{identifier}")
 async def get_document_file(doc_type: str, identifier: str):
-    """Return a single document file.
+    """Return a single document file for external callers.
 
     Parameters
     ----------
@@ -22,15 +49,57 @@ async def get_document_file(doc_type: str, identifier: str):
     identifier: str
         The filename (without extension) of the stored JSON.
     """
-    if doc_type not in allowed_doc_types:
-        return {"error": f"unknown doc_type: {doc_type}"}
+    
+    if doc_type not in ALLOWED_DOC_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown doc_type: {doc_type}",
+        )
 
-    store_path = BASE_DIR / doc_type
-    file_path = store_path / f"{identifier}.json"
-    if not file_path.exists():
-        return {"error": "file not found"}
-    return FileResponse(path=str(file_path), media_type="application/json")
+    file_path = find_document_path(doc_type, identifier)
 
+    if file_path is None:
+        raise HTTPException(
+            status_code=404,
+            detail="File not found",
+        )
+
+    return FileResponse(
+        path=file_path,
+        media_type="application/json",
+    )
+
+
+async def load_document(doc_type: str, identifier: str) -> dict:
+    """Return a single document file for internal callers.
+
+    Parameters
+    ----------
+    doc_type: str
+        One of the allowed document types.
+    identifier: str
+        The filename (without extension) of the stored JSON.
+    """
+
+    if doc_type not in ALLOWED_DOC_TYPES:
+        raise ValueError(f"Unknown doc_type: {doc_type}")
+
+    file_path = find_document_path(doc_type, identifier)
+
+    if file_path is None:
+        raise FileNotFoundError(
+            f"Document not found: {doc_type}/{identifier}"
+        )
+
+    async with await anyio.open_file(
+        file_path,
+        mode="r",
+        encoding="utf-8",
+    ) as file:
+        contents = await file.read()
+
+    return json.loads(contents)
+    
 
 @retrieval_router.get("/list/{doc_type}/{execution_id}")
 async def list_document_files(doc_type: str, execution_id: str):
@@ -40,7 +109,7 @@ async def list_document_files(doc_type: str, execution_id: str):
     ``{execution_id}-{iteration}.json`` and returns the sorted list of
     identifiers.
     """
-    if doc_type not in allowed_doc_types:
+    if doc_type not in ALLOWED_DOC_TYPES:
         return {"error": f"unknown doc_type: {doc_type}"}
 
     import re
