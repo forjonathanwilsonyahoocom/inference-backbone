@@ -59,8 +59,7 @@ async def evidence_ingest(identifier: str) -> Dict:
     try:
         file_resp = await load_document("evidence", identifier)
         
-        print(file_resp)
-        payload = Evidence.model_validate_json(file_resp)
+        payload = Evidence.model_validate(file_resp)
 
         await write_evidence_to_graphdb(payload)
 
