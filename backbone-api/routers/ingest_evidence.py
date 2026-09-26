@@ -57,7 +57,7 @@ async def evidence_ingest(identifier: str) -> Dict:
     weaviate_client = get_weaviate_client()
         
     try:
-        document = get_document_file("evidence", identifier)
+        document = await get_document_file("evidence", identifier)
         payload = Evidence.model_validate_json(document)
 
         await write_evidence_to_graphdb(payload)
