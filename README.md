@@ -215,7 +215,7 @@ the validator also handles calling the backbone-api endpoints to ingest the clai
 as implemented uses nomic embeddings for indexing
 
 ### graphdb ingest of claims and evidence
-while ingest works, there are no edges formed yet and the schema in the repo init is only a sketch
+while ingest works, there are no edges formed yet
 
 if you want the links shown below to work for you outside the docker network, you will have to add a /etc/hosts entry
 ```bash
