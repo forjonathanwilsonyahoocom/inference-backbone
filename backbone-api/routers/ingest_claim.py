@@ -42,7 +42,7 @@ async def claim_ingest(payload: Claim) -> Dict:
             content=payload,
             location="claim",
             identifier=file_id),
-        )
+        
         print(f"[ingest] Persisted claim to {file_path}")
 
         
