@@ -66,6 +66,7 @@ async def validate(req: ValidateRequest):
     llm = create_llms(config)
     
     result = await handle_validation(
+        config=config,
         metrics=METRICS,
         llm = llm, 
         claims_map = req.claims_map,

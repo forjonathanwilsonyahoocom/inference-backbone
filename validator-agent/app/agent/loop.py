@@ -54,7 +54,7 @@ async def handle_claims_extraction(config: dict, metrics: MetricsWrapper, llm: C
     metrics.emit(operation_metric_labeler({"operation" : "claims_ingested"}))
     return result
     
-async def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map: dict, execution_id: str):
+async def handle_validation(config: dict, metrics: MetricsWrapper, llm: ChatOllama, claims_map: dict, execution_id: str):
 
     support_metric_labeler = metrics.get_counter_message_labeler("support", "agent examined evidence")
     operation_metric_labeler = metrics.get_counter_message_labeler("operation", "agent general activity")
