@@ -42,16 +42,16 @@ class ValidateRequest(BaseModel):
 app = FastAPI()
 
 @app.get("/health")
-def health():
+async def health():
     return {"status": "ok"}
 
 @app.post("/extract_claims")
-def extract_claims(req: ClaimsRequest):
+async def extract_claims(req: ClaimsRequest):
     config = get_ollama_config()
     llm = create_llms(config)
     
     user_content = f"TASK:\n{req.task_description}\n\nFINAL RESPONSE:\n{req.final_response}"
-    result = handle_claims_extraction(
+    result = await handle_claims_extraction(
         metrics=METRICS,
         llm = llm, 
         user_content = user_content,
@@ -60,16 +60,17 @@ def extract_claims(req: ClaimsRequest):
     return result
     
 @app.post("/validate")
-def validate(req: ValidateRequest):
+async def validate(req: ValidateRequest):
     config = get_ollama_config()
     llm = create_llms(config)
     
-    result = handle_validation(
+    result = await handle_validation(
         metrics=METRICS,
         llm = llm, 
         claims_map = req.claims_map,
         execution_id = req.execution_id
     )
+    return result
 
 
 # FastAPI startup hook

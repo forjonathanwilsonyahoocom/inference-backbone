@@ -8,7 +8,7 @@ from typing import Dict, List
 from langchain_ollama import ChatOllama
 
 
-def build_evidence_text(e: dict) -> str:
+async def build_evidence_text(e: dict) -> str:
     try:
         iteration = int(e.get('event_id').split('-')[-1])
         tool = e.get('evidence_type', 'Nothing') #this will be the name of the tool called
@@ -27,24 +27,32 @@ def parse_json_response(raw: str) -> dict:
         text = text[text.find("{"): text.rfind("}") + 1]
     return json.loads(text)
     
-def handle_claims_extraction(config: dict, metrics: MetricsWrapper, llm: ChatOllama, user_content: str, execution_id: str) -> Dict:
+async def handle_claims_extraction(config: dict, metrics: MetricsWrapper, llm: ChatOllama, user_content: str, execution_id: str) -> Dict:
+    failure_metric_labeler = metrics.get_counter_message_labeler("error", "encountered error")
+    operation_metric_labeler = METRICS.get_counter_message_labeler("operation", "agent general activity")
     messages = [SystemMessage(content=CLAIM_EXTRACTION_PROMPT), HumanMessage(content=user_content)]
     result = None
     last_error = None
     for _ in range(3):
         try:
-            response = llm.invoke(messages)
+            response = await llm.invoke(messages)
             result = parse_json_response(response.content)
+            metrics.emit(operation_metric_labeler({"operation" : "claims_extracted"}))
             break
         except Exception as exc:
+            metrics.emit(failure_metric_labeler({"failure" : "parsing error"}))
             last_error = str(exc)
     if result is None:
+        metrics.emit(failure_metric_labeler({"failure" : "could not extract claims"}))
         return {"error": f"Claim extraction failed after retries: {last_error}"}
+   
     
-    result["claims"] = ingest_claims(config, execution_id, result["claims"])
+    result["claims"] = await ingest_claims(config, execution_id, result["claims"])
+
+    metrics.emit(operation_metric_labeler({"operation" : "claims_ingested"}))
     return result
     
-def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map: dict, execution_id: str):
+async def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map: dict, execution_id: str):
 
     support_metric_labeler = METRICS.get_counter_message_labeler("support", "agent exained evidence")
     operation_metric_labeler = METRICS.get_counter_message_labeler("operation", "agent general activity")
@@ -52,13 +60,13 @@ def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map: dict
     token_gauge = metrics.get_gauge_func("tokens_in_play", "tokens in current context")
     
     try:
-        events = fetch_evidence_events(execution_id)
+        events = await fetch_evidence_events(execution_id)
     except Exception as exc:
         return {"error": f"Failed to fetch evidence: {exc}"}
     validation_results = []
     for e in events:
         metrics.emit(operation_metric_labeler({"operation" : "iterate"}))
-        evidence_text = build_evidence_text(e)
+        evidence_text = await build_evidence_text(e)
         user_content = f"CLAIMS:\n{claims_map}\n\nEVIDENCE_ITEM:\n{evidence_text}"
         messages = [SystemMessage(content=VALIDATION_PROMPT), HumanMessage(content=user_content)]
         result = None
@@ -66,7 +74,7 @@ def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map: dict
         for _ in range(3):
             try:
                 metrics.emit(operation_metric_labeler({"operation" : "invoke_attempt"}))
-                response = llm.invoke(messages)
+                response = await llm.invoke(messages)
                 metrics.emit(token_gauge(response.usage_metadata.get("input_tokens", 0) ))
                 result = parse_json_response(response.content)
                 break
@@ -97,7 +105,7 @@ def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map: dict
                 
         #ingest supporting evidence only once
         for id in is_supporting.keys():
-            promote_supporting_evidence(id)
+            await promote_supporting_evidence(id)
                 
     #use simple heuristic to determine overall support 
     claim_scores = []

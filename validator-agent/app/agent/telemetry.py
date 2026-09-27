@@ -1,30 +1,29 @@
-import requests
-from typing import Dict, List
-from contracts.inference_contracts.claim import Claim
+import httpx
 from datetime import datetime, UTC
+from typing import List, Dict
+from contracts.inference_contracts.claim import Claim
 # ---------------------------------------------------------------------------
 # Helper: trigger supporting evidence to be fully ingested
 # ---------------------------------------------------------------------------
 
-def promote_supporting_evidence(identifier: str):
-    try:
-        resp = requests.get(f"http://backbone-api:8000/ingest/supporting_evidence/{identifier}", timeout=10)
-        resp.raise_for_status()
-    except Exception as e:
-        # Log but do not raise – evidence is observational
-        print(f"[Supporting evidence ingestion] failed for event_id {event_id}: {e}")
+async def promote_supporting_evidence(identifier: str):
+    async with httpx.AsyncClient(timeout=10) as client:
+        try:
+            await client.get(f"{settings.backbone_api}/ingest/supporting_evidence/{identifier}")
+        except Exception as e:
+            print(f"[Supporting evidence ingestion] failed for event_id {identifier}: {e}")
 
 # ---------------------------------------------------------------------------
 # Helper: send a claim result to the claim ingestion endpoint
 # ---------------------------------------------------------------------------
 
-def ingest_claims(config: dict, execution_id: str, claims:  List[Dict]) -> List[Dict]:
-  
+async def ingest_claims(config: dict, execution_id: str, claims:  List[Dict]) -> List[Dict]:
     now = datetime.now(UTC).isoformat()
-    for i, claim in enumerate(claims):
-        claim_id = f"{execution_id}-{i}"
-        claim["claim_id"] = claim_id
-        try:
+    async with httpx.AsyncClient(timeout=10) as client:
+        for i, claim in enumerate(claims):
+            claim_id = f"{execution_id}-{i}"
+            claim["claim_id"] = claim_id
+            
             payload = Claim(
                 claim_id=claim_id,
                 claim_number=i,
@@ -37,34 +36,32 @@ def ingest_claims(config: dict, execution_id: str, claims:  List[Dict]) -> List[
                 embedding_task="document", #this seems like a meaningless field
                 validator_version="1.0.1",
             )
-            resp = requests.post("http://backbone-api:8000/ingest/claim", json=payload.model_dump(mode="json"), timeout=10)
-            resp.raise_for_status()
-        except Exception as e:
-            # Log but do not raise – evidence is observational
-            print(f"[Claim ingestion] failed for claim {claim}: {e}")
+            try:
+                await client.post(
+                    f"{settings.backbone_api}/ingest/claim",
+                    json=payload.model_dump(mode="json"),
+                )
+            except Exception as e:
+                print(f"[Claim ingestion] failed for claim {claim_id}: {e}")
     return claims
-
-
-
-def fetch_evidence_events(execution_id: str) -> list[dict]:
+    
+async def fetch_evidence_events(execution_id: str) -> List[Dict]:
     base_url = "http://backbone-api:8000"
-    list_resp = requests.get(f"{base_url}/list/evidence/{execution_id}")
-    if list_resp.status_code != 200:
-        raise RuntimeError(f"Failed to list evidence for {execution_id}: {list_resp.text}")
-    list_data = list_resp.json()
-    event_ids = list_data.get("event_ids") or []
-    if not event_ids:
-        event_ids = list_data if isinstance(list_data, list) else []
-    events = []
-    for eid in event_ids:
-        file_resp = requests.get(f"{base_url}/file/evidence/{eid}")
-        if file_resp.status_code != 200:
-            continue
-        try:
-            ev = file_resp.json()
-            events.append(ev)
-        except Exception:
-            continue
-    return events
+    async with httpx.AsyncClient(timeout=10) as client:
+        list_resp = await client.get(f"{base_url}/list/evidence/{execution_id}")
+        if list_resp.status_code != 200:
+            raise RuntimeError(f"Failed to list evidence for {execution_id}: {list_resp.text}")
+        list_data = list_resp.json()
+        event_ids = list_data.get("event_ids") or (list_data if isinstance(list_data, list) else [])
+        events = []
+        for eid in event_ids:
+            file_resp = await client.get(f"{settings.backbone_api}/file/evidence/{eid}")
+            if file_resp.status_code != 200:
+                continue
+            try:
+                events.append(file_resp.json())
+            except Exception:
+                continue
+        return events
 
 
