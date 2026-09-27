@@ -3,7 +3,7 @@ from prompts.extraction import CLAIM_EXTRACTION_PROMPT
 from prompts.validation import VALIDATION_PROMPT
 from agent.telemetry import promote_supporting_evidence, ingest_claims, fetch_evidence_events
 from observability.metrics import MetricsWrapper
-
+import json
 from typing import Dict, List
 from langchain_ollama import ChatOllama
 
