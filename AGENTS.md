@@ -3,12 +3,19 @@
 ## Repository structure
 
 - `contracts/` contains shared Python data contracts.
-- `observability/` contains shared observability utilities.
+- `observability/` contains shared observability wrapper for python prometheus client.
 - `backbone-api/` contains the Backbone API service.
 - `worker-agent/` contains the worker agent service.
 - `validator-agent/` contains the validator service.
 - `tests/` contains repository-level tests.
 - `jupyter/` contains user material.
+- `readme/` contains images for the readme doc.
+- `repository.init/` contains startup hints for graphdb.
+- `grafana/` contains monitoring material.
+- `prometheus/` contains monitoring material.
+- `dev/` contains agent environment setup scripts and a test runner.
+- `.venv/` if present indicates that the dev/setup.sh script has been run.
+- 
 
 ## Shared packages
 
