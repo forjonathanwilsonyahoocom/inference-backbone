@@ -15,4 +15,6 @@ scrape_configs:
     static_configs:
       - targets: ["worker-agent:8080"]
         labels: { service: worker }
+      - targets: ["validator-agent:8080"]
+        labels: { service: validator }
 
