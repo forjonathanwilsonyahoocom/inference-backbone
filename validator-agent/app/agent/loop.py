@@ -137,7 +137,7 @@ async def handle_validation(config: dict, metrics: MetricsWrapper, llm: ChatOlla
     
     metrics.emit(support_metric_labeler({"support" : overall}))
         
-    link_claims_to_evidence(config, support_map)
+    await link_claims_to_evidence(config, support_map)
     metrics.emit(operation_metric_labeler({"operation" : "linked"}))
     
     metrics.emit(operation_metric_labeler({"operation" : "completed"}))
