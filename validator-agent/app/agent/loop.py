@@ -29,7 +29,7 @@ def parse_json_response(raw: str) -> dict:
     
 async def handle_claims_extraction(config: dict, metrics: MetricsWrapper, llm: ChatOllama, user_content: str, execution_id: str) -> Dict:
     failure_metric_labeler = metrics.get_counter_message_labeler("error", "encountered error")
-    operation_metric_labeler = METRICS.get_counter_message_labeler("operation", "agent general activity")
+    operation_metric_labeler = metrics.get_counter_message_labeler("operation", "agent general activity")
     messages = [SystemMessage(content=CLAIM_EXTRACTION_PROMPT), HumanMessage(content=user_content)]
     result = None
     last_error = None
