@@ -61,6 +61,10 @@ async def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map
     failure_metric_labeler = metrics.get_counter_message_labeler("error", "encountered error")
     token_gauge = metrics.get_gauge_func("tokens_in_play", "tokens in current context")
     
+    claims_lookup = {}
+    for c in claims_map['claims']:
+        claims_lookup[c['claim_id']] = c
+        
     try:
         events = await fetch_evidence_events(execution_id)
     except Exception as exc:
@@ -96,14 +100,17 @@ async def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map
         is_supporting = {}
         for claim_id, support_obj in support.items():
             val = support_obj.get("supported", 0)
-            if claim_id not in support_map:
-                support_map[claim_id] = {}
-            if val > 0:
-                is_supporting[evidence_id] = True
-                support_map[claim_id][evidence_id] = val
-                metrics.emit(support_metric_labeler({"support" : "supporting considered"}))
+            if claim_id in claims_lookup:
+                if claim_id not in support_map:
+                    support_map[claim_id] = {}
+                if val > 0:
+                    is_supporting[evidence_id] = True
+                    support_map[claim_id][evidence_id] = val
+                    metrics.emit(support_metric_labeler({"support" : "supporting considered"}))
+                else:
+                    metrics.emit(support_metric_labeler({"support" : "un-supporting considered"}))
             else:
-                metrics.emit(support_metric_labeler({"support" : "un-supporting considered"}))
+                metrics.emit(support_metric_labeler({"support" : "unknown claim id ref"}))
                 
         #ingest supporting evidence only once
         for id in is_supporting.keys():
