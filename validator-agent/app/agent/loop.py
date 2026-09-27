@@ -1,7 +1,7 @@
 from langchain_core.messages import SystemMessage, HumanMessage
 from prompts.extraction import CLAIM_EXTRACTION_PROMPT
 from prompts.validation import VALIDATION_PROMPT
-from agent.telemetry import promote_supporting_evidence, ingest_claims, fetch_evidence_events
+from agent.telemetry import promote_supporting_evidence, ingest_claims, fetch_evidence_events, link_claims_to_evidence
 from observability.metrics import MetricsWrapper
 import json
 from typing import Dict, List
@@ -137,6 +137,9 @@ async def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map
     
     metrics.emit(support_metric_labeler({"support" : overall}))
         
+    link_claims_to_evidence(config, support_map)
+    metrics.emit(operation_metric_labeler({"operation" : "linked"}))
+    
     metrics.emit(operation_metric_labeler({"operation" : "completed"}))
     
     return {"support_map": support_map,

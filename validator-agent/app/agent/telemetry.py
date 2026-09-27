@@ -2,6 +2,8 @@ import httpx
 from datetime import datetime, UTC
 from typing import List, Dict
 from contracts.inference_contracts.claim import Claim
+from contracts.inference_contracts.claim_evidence_edge import ClaimEvidenceEdge
+
 # ---------------------------------------------------------------------------
 # Helper: trigger supporting evidence to be fully ingested
 # ---------------------------------------------------------------------------
@@ -13,6 +15,29 @@ async def promote_supporting_evidence(identifier: str):
             await client.get(f"{base_url}/ingest/supporting_evidence/{identifier}")
         except Exception as e:
             print(f"[Supporting evidence ingestion] failed for evidence_id {identifier}: {e}")
+            
+
+async def link_claims_to_evidence(config: dict, support_map: dict):
+    now = datetime.now(UTC).isoformat()
+    base_url = "http://backbone-api:8000"
+    async with httpx.AsyncClient(timeout=10) as client:
+        for claim_id, supporting in support_map.items():
+            for evidence_id, support in supporting.items():
+                payload = ClaimEvidenceEdge(
+                    claim_id=claim_id,
+                    evidence_id=evidence_id,
+                    support=support,
+                    model_name=config['model'],
+                    observed_at=now,
+                    retrieved_at=now,
+                )
+                try:
+                    await client.post(
+                        f"{base_url}/ingest/claim_evidence_edge",
+                        json=payload.model_dump(mode="json"),
+                    )
+                except Exception as e:
+                    print(f"[Claim ingestion] failed for edge {payload}: {e}")
 
 # ---------------------------------------------------------------------------
 # Helper: send a claim result to the claim ingestion endpoint
