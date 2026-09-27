@@ -52,6 +52,7 @@ async def extract_claims(req: ClaimsRequest):
     
     user_content = f"TASK:\n{req.task_description}\n\nFINAL RESPONSE:\n{req.final_response}"
     result = await handle_claims_extraction(
+        config=config,
         metrics=METRICS,
         llm = llm, 
         user_content = user_content,
