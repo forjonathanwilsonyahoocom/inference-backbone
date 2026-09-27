@@ -27,7 +27,7 @@ def parse_json_response(raw: str) -> dict:
         text = text[text.find("{"): text.rfind("}") + 1]
     return json.loads(text)
     
-def handle_claims_extraction(metrics: MetricsWrapper, llm: ChatOllama, user_content: str, execution_id: str) -> Dict:
+def handle_claims_extraction(config: dict, metrics: MetricsWrapper, llm: ChatOllama, user_content: str, execution_id: str) -> Dict:
     messages = [SystemMessage(content=CLAIM_EXTRACTION_PROMPT), HumanMessage(content=user_content)]
     result = None
     last_error = None
@@ -41,7 +41,7 @@ def handle_claims_extraction(metrics: MetricsWrapper, llm: ChatOllama, user_cont
     if result is None:
         return {"error": f"Claim extraction failed after retries: {last_error}"}
     
-    result["claims"] = ingest_claims(execution_id, result["claims"])
+    result["claims"] = ingest_claims(config, execution_id, result["claims"])
     return result
     
 def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map: dict, execution_id: str):

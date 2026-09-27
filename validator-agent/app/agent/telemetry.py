@@ -18,7 +18,7 @@ def promote_supporting_evidence(identifier: str):
 # Helper: send a claim result to the claim ingestion endpoint
 # ---------------------------------------------------------------------------
 
-def ingest_claims(execution_id: str, claims:  List[Dict]) -> List[Dict]:
+def ingest_claims(config: dict, execution_id: str, claims:  List[Dict]) -> List[Dict]:
   
     now = datetime.now(UTC).isoformat()
     for i, claim in enumerate(claims):
@@ -29,7 +29,7 @@ def ingest_claims(execution_id: str, claims:  List[Dict]) -> List[Dict]:
                 claim_id=claim_id,
                 claim_number=i,
                 importance=float(claim["importance"]),
-                model_name=GEN_MODEL,
+                model_name=config['model'],
                 execution_id=execution_id,
                 content=claim["text"], 
                 observed_at=now,
