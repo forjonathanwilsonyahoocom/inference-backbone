@@ -7,9 +7,10 @@ from contracts.inference_contracts.claim import Claim
 # ---------------------------------------------------------------------------
 
 async def promote_supporting_evidence(identifier: str):
+    base_url = "http://backbone-api:8000"
     async with httpx.AsyncClient(timeout=10) as client:
         try:
-            await client.get(f"{settings.backbone_api}/ingest/supporting_evidence/{identifier}")
+            await client.get(f"{base_url}/ingest/supporting_evidence/{identifier}")
         except Exception as e:
             print(f"[Supporting evidence ingestion] failed for event_id {identifier}: {e}")
 
@@ -19,6 +20,7 @@ async def promote_supporting_evidence(identifier: str):
 
 async def ingest_claims(config: dict, execution_id: str, claims:  List[Dict]) -> List[Dict]:
     now = datetime.now(UTC).isoformat()
+    base_url = "http://backbone-api:8000"
     async with httpx.AsyncClient(timeout=10) as client:
         for i, claim in enumerate(claims):
             claim_id = f"{execution_id}-{i}"
@@ -38,7 +40,7 @@ async def ingest_claims(config: dict, execution_id: str, claims:  List[Dict]) ->
             )
             try:
                 await client.post(
-                    f"{settings.backbone_api}/ingest/claim",
+                    f"{base_url}/ingest/claim",
                     json=payload.model_dump(mode="json"),
                 )
             except Exception as e:
@@ -55,7 +57,7 @@ async def fetch_evidence_events(execution_id: str) -> List[Dict]:
         event_ids = list_data.get("event_ids") or (list_data if isinstance(list_data, list) else [])
         events = []
         for eid in event_ids:
-            file_resp = await client.get(f"{settings.backbone_api}/file/evidence/{eid}")
+            file_resp = await client.get(f"{base_url}/file/evidence/{eid}")
             if file_resp.status_code != 200:
                 continue
             try:
