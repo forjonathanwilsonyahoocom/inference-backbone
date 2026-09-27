@@ -27,12 +27,12 @@ async def evidence_file_ingest(payload: Evidence) -> Dict:
 
         payload.content_hash = context_based_id(payload.content)
         
-        payload.source_url = f"http://backbone-api:8000/file/evidence/{payload.event_id}.json"
+        payload.source_url = f"http://backbone-api:8000/file/evidence/{payload.evidence_id}.json"
                 
         file_path = write_to_file(
                         content=payload,
                         location="evidence",
-                        identifier=payload.event_id,
+                        identifier=payload.evidence_id,
                     )
                     
         print(f"[ingest] Persisted evidence to {file_path}")
@@ -78,7 +78,6 @@ async def evidence_ingest(identifier: str) -> Dict:
                     chunk_id=context_based_id(raw_chunk),
                     execution_id=payload.execution_id,
                     evidence_id=payload.evidence_id,
-                    event_id=payload.event_id,
                     content=raw_chunk,
                     chunk_index=idx,
                     chunk_count=len(raw_chunks),

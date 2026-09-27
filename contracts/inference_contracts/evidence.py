@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field
 class Evidence(BaseModel):
     evidence_id: str
     execution_id: str
-    event_id: str
 
     evidence_type: str
     content: str

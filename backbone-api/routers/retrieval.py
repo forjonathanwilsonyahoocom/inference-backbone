@@ -125,9 +125,8 @@ async def list_document_files(doc_type: str, execution_id: str):
             iteration = int(m.group(1))
             files.append((iteration, f.name))
     files.sort(key=lambda x: x[0])
-    event_ids = [name.split(".")[0] for _, name in files]
+    evidence_ids = [name.split(".")[0] for _, name in files]
     return {
         "execution_id": execution_id,
-        "iterations": [int(name.split('-')[-1]) for name in event_ids],
-        "event_ids": event_ids,
+        "evidence_ids": evidence_ids,
     }

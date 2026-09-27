@@ -1,6 +1,5 @@
 from datetime import datetime, UTC
 import json
-import uuid
 import requests
 from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field
@@ -25,9 +24,8 @@ def ingest_tool_event(execution_id: str, tool_event: ToolEvent) -> None:
         now = datetime.now(UTC).isoformat()
 
         payload = Evidence(
-            evidence_id=str(uuid.uuid4()),
+            evidence_id=f"{execution_id}-{tool_event.iteration}",
             execution_id=execution_id,
-            event_id=f"{execution_id}-{tool_event.iteration}",
             model_name=tool_event.model_name,
             evidence_type=tool_event.tool,          # e.g. "web_search", "read_file"
             content=str(tool_event.result), 

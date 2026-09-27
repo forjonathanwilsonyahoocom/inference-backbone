@@ -40,7 +40,6 @@
 # ---------------------------------------------------------------------------
 #   ex:hasEvidenceId       – unique identifier for the evidence.
 #   ex:hasExecutionId      – ID of the worker execution that produced the evidence.
-#   ex:hasEventId          – ID of the event that triggered the evidence.
 #   ex:hasEvidenceType     – type of evidence (e.g., "tool_call", "log", ...).
 #   ex:hasContent          – textual content of the evidence.
 #   ex:hasContentHash      – hash of the content.

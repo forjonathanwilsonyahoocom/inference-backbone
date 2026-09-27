@@ -12,7 +12,7 @@ async def promote_supporting_evidence(identifier: str):
         try:
             await client.get(f"{base_url}/ingest/supporting_evidence/{identifier}")
         except Exception as e:
-            print(f"[Supporting evidence ingestion] failed for event_id {identifier}: {e}")
+            print(f"[Supporting evidence ingestion] failed for evidence_id {identifier}: {e}")
 
 # ---------------------------------------------------------------------------
 # Helper: send a claim result to the claim ingestion endpoint
@@ -54,9 +54,9 @@ async def fetch_evidence_events(execution_id: str) -> List[Dict]:
         if list_resp.status_code != 200:
             raise RuntimeError(f"Failed to list evidence for {execution_id}: {list_resp.text}")
         list_data = list_resp.json()
-        event_ids = list_data.get("event_ids") or (list_data if isinstance(list_data, list) else [])
+        evidence_ids = list_data.get("evidence_ids") or (list_data if isinstance(list_data, list) else [])
         events = []
-        for eid in event_ids:
+        for eid in evidence_ids:
             file_resp = await client.get(f"{base_url}/file/evidence/{eid}")
             if file_resp.status_code != 200:
                 continue

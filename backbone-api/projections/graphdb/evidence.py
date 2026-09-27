@@ -29,17 +29,16 @@ from projections.graphdb.turtle import build_node_turtle, FieldMapping, EX
 
 # --- Evidence projection -----------------------------------------------
 
-def evidence_iri(event_id: str) -> URIRef:
+def evidence_iri(evidence_id: str) -> URIRef:
     """Single source of truth for the Evidence IRI convention, since
     parent_evidence_ids also needs to build IRIs for other Evidence
     nodes, not just the node currently being written."""
-    return URIRef(f"{EX}file/evidence/{event_id}")
+    return URIRef(f"{EX}file/evidence/{evidence_id}")
 
 
 EVIDENCE_FIELD_MAPPING: FieldMapping = [
     ("evidence_id", EX.hasEvidenceId, None),
     ("execution_id", EX.hasExecutionId, None),
-    ("event_id", EX.hasEventId, None),
     ("evidence_type", EX.hasEvidenceType, None),
     ("content", EX.hasContent, None),
     ("content_hash", EX.hasContentHash, None),
@@ -70,7 +69,7 @@ def evidence_to_turtle(evidence: Any, graph: Graph | None = None) -> str:
     None here, that field is silently skipped, not an error.
     """
     g = graph if graph is not None else Graph()
-    node_iri = evidence_iri(evidence.event_id)
+    node_iri = evidence_iri(evidence.evidence_id)
     build_node_turtle(g, node_iri, EX.Evidence, evidence, EVIDENCE_FIELD_MAPPING)
     return g.serialize(format="turtle")
 

@@ -10,7 +10,7 @@ from langchain_ollama import ChatOllama
 
 async def build_evidence_text(e: dict) -> str:
     try:
-        iteration = int(e.get('event_id').split('-')[-1])
+        iteration = int(e.get('evidence_id').split('-')[-1])
         tool = e.get('evidence_type', 'Nothing') #this will be the name of the tool called
         result = str(e.get('content', 'None' )) #this is the result of the tool call
         metadata = str(e.get('metadata')) #includes args to tool
@@ -86,11 +86,11 @@ async def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map
         if result is None:
             metrics.emit(failure_metric_labeler({"failure" : "gave up"}))
             result = {"error": f"Validation failed after retries: {last_error}"}
-        validation_results.append({"event_id" : e["event_id"], "result" : result})
+        validation_results.append({"evidence_id" : e["evidence_id"], "result" : result})
         # Build support map in desired format
     support_map = {}
     for vr in validation_results:
-        event_id = vr.get("event_id")
+        evidence_id = vr.get("evidence_id")
         result = vr.get("result", {})
         support = result.get("support_map", {})
         is_supporting = {}
@@ -99,8 +99,8 @@ async def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map
             if claim_id not in support_map:
                 support_map[claim_id] = {}
             if val > 0:
-                is_supporting[event_id] = True
-                support_map[claim_id][event_id] = val
+                is_supporting[evidence_id] = True
+                support_map[claim_id][evidence_id] = val
                 metrics.emit(support_metric_labeler({"support" : "supporting considered"}))
             else:
                 metrics.emit(support_metric_labeler({"support" : "un-supporting considered"}))
