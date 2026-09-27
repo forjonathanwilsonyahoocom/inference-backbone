@@ -60,8 +60,10 @@ async def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map
     operation_metric_labeler = metrics.get_counter_message_labeler("operation", "agent general activity")
     failure_metric_labeler = metrics.get_counter_message_labeler("error", "encountered error")
     token_gauge = metrics.get_gauge_func("tokens_in_play", "tokens in current context")
-    
+    is_supporting = {}
     claims_lookup = {}
+    support_map = {}
+    
     for c in claims_map['claims']:
         claims_lookup[c['claim_id']] = c
         
@@ -69,7 +71,9 @@ async def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map
         events = await fetch_evidence_events(execution_id)
     except Exception as exc:
         return {"error": f"Failed to fetch evidence: {exc}"}
+        
     validation_results = []
+    
     for e in events:
         metrics.emit(operation_metric_labeler({"operation" : "iterate"}))
         evidence_text = await build_evidence_text(e)
@@ -90,14 +94,14 @@ async def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map
         if result is None:
             metrics.emit(failure_metric_labeler({"failure" : "gave up"}))
             result = {"error": f"Validation failed after retries: {last_error}"}
-        validation_results.append({"evidence_id" : e["evidence_id"], "result" : result})
-        # Build support map in desired format
-    support_map = {}
-    for vr in validation_results:
+            
+        vr = {"evidence_id" : e["evidence_id"], "result" : result}
+        
+        # add to support map in desired format
         evidence_id = vr.get("evidence_id")
         result = vr.get("result", {})
         support = result.get("support_map", {})
-        is_supporting = {}
+        
         for claim_id, support_obj in support.items():
             val = support_obj.get("supported", 0)
             if claim_id in claims_lookup:
@@ -111,10 +115,10 @@ async def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map
                     metrics.emit(support_metric_labeler({"support" : "un-supporting considered"}))
             else:
                 metrics.emit(support_metric_labeler({"support" : "unknown claim id ref"}))
-                
-        #ingest supporting evidence only once
-        for id in is_supporting.keys():
-            await promote_supporting_evidence(id)
+            
+    #ingest supporting evidence only once
+    for id in is_supporting.keys():
+        await promote_supporting_evidence(id)
                 
     #use simple heuristic to determine overall support 
     claim_scores = []
@@ -125,7 +129,7 @@ async def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map
         else:
             claim_scores.append(0)
     overall = "unsupported"
-    avg_overall = sum(claim_scores) / len(claim_scores)
+    avg_overall = sum(claim_scores) / max(1, len(claim_scores))
     if avg_overall > 0.8:
         overall = "supported"
     elif avg_overall > 0.4:
@@ -134,5 +138,6 @@ async def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map
     metrics.emit(support_metric_labeler({"support" : overall}))
         
     metrics.emit(operation_metric_labeler({"operation" : "completed"}))
+    
     return {"support_map": support_map,
             "overall_verdict": overall}
