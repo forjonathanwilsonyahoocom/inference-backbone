@@ -30,12 +30,14 @@ def parse_json_response(raw: str) -> dict:
 async def handle_claims_extraction(config: dict, metrics: MetricsWrapper, llm: ChatOllama, user_content: str, execution_id: str) -> Dict:
     failure_metric_labeler = metrics.get_counter_message_labeler("error", "encountered error")
     operation_metric_labeler = metrics.get_counter_message_labeler("operation", "agent general activity")
+    token_gauge = metrics.get_gauge_func("tokens_in_play", "tokens in current context")
     messages = [SystemMessage(content=CLAIM_EXTRACTION_PROMPT), HumanMessage(content=user_content)]
     result = None
     last_error = None
     for _ in range(3):
         try:
-            response = await llm.invoke(messages)
+            response = await llm.ainvoke(messages)
+            metrics.emit(token_gauge(response.usage_metadata.get("input_tokens", 0) ))
             result = parse_json_response(response.content)
             metrics.emit(operation_metric_labeler({"operation" : "claims_extracted"}))
             break
@@ -74,7 +76,7 @@ async def handle_validation(metrics: MetricsWrapper, llm: ChatOllama, claims_map
         for _ in range(3):
             try:
                 metrics.emit(operation_metric_labeler({"operation" : "invoke_attempt"}))
-                response = await llm.invoke(messages)
+                response = await llm.ainvoke(messages)
                 metrics.emit(token_gauge(response.usage_metadata.get("input_tokens", 0) ))
                 result = parse_json_response(response.content)
                 break
