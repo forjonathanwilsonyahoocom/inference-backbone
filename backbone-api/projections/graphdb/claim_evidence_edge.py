@@ -33,7 +33,7 @@ def claim_evidence_edge_iri(evidence_id: str, claim_id: str) -> URIRef:
     """Single source of truth for the ClaimEvidenceEdge IRI convention.
     We use a deterministic URI that encodes both evidence and claim ids.
     """
-    return URIRef(f"{EX}edge/claim_evidence/{evidence_id}/{claim_id}")
+    return URIRef(f"{EX}claim_evidence_edge/{evidence_id}_{claim_id}")
 
 # Define the mapping from ClaimEvidenceEdge attributes to RDF predicates.
 # We reuse predicates that already exist for Claim and Evidence where
