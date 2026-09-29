@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Query
 import httpx
+import os
 
 GRAPHDB_URL = os.getenv("GRAPHDB_URL", "http://graphdb:7200/repositories/inference-backbone")
 
