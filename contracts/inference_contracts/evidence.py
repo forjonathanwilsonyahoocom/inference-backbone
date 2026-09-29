@@ -16,7 +16,7 @@ class Evidence(BaseModel):
     model_name: str
     
     source_type: str
-    source_name: str | None = Non
+    source_name: str | None = None
     
     observed_at: datetime
     retrieved_at: datetime

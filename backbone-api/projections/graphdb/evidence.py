@@ -35,7 +35,7 @@ def evidence_iri(evidence_id: str) -> URIRef:
 EVIDENCE_FIELD_MAPPING: FieldMapping = [
     ("evidence_id", EX.hasEvidenceId, None),
     ("execution_id", EX.hasExecutionId, None),
-    ("iteration", EX.hasIteration, None)
+    ("iteration", EX.hasIteration, None),
     ("evidence_type", EX.hasEvidenceType, None),
     ("content", EX.hasContent, None),
     ("content_hash", EX.hasContentHash, None),
