@@ -7,6 +7,7 @@ from contracts.inference_contracts.evidence import Evidence
 
 class ToolEvent(BaseModel):
     iteration: int
+    event_number: int,
     event_type: str
     model_name: str
     tool: Optional[str] = None
@@ -24,8 +25,9 @@ def ingest_tool_event(execution_id: str, tool_event: ToolEvent) -> None:
         now = datetime.now(UTC).isoformat()
 
         payload = Evidence(
-            evidence_id=f"{execution_id}-{tool_event.iteration}",
+            evidence_id=f"{execution_id}-{tool_event.event_number}",
             execution_id=execution_id,
+            iteration=tool_event.iteration,
             model_name=tool_event.model_name,
             evidence_type=tool_event.tool,          # e.g. "web_search", "read_file"
             content=str(tool_event.result), 

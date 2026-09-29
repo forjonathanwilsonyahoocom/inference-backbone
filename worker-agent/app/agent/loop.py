@@ -81,10 +81,20 @@ def run_agent(
     ]
     events: list[ToolEvent] = []
     iteration = 0
-        
+    event_counter = 0
     recent_steps = deque(maxlen=12)
     step_counts = {}
 
+    # centralize tool event accumulation details
+    # using local state
+    def add_tool_event(te: ToolEvent):
+        event_counter = event_counter + 1
+        te.event_number = event_counter
+        events.append(te)
+        if te.event_type!="parse_error":
+            ingest_tool_event(execution_id, te)
+
+        
     while iteration < max_iterations:
         iteration = iteration + 1
         if verbose:
@@ -120,9 +130,9 @@ def run_agent(
                 raw_content = str(e)
 
                 print("ResponseError ", raw_content)
-                events.append(
+                add_tool_event(
                     ToolEvent(
-                        iteration=iteration + 1,
+                        iteration=iteration,
                         event_type="parse_error",
                         model_name=config['model'],
                         args={},
@@ -152,16 +162,6 @@ def run_agent(
 
         messages.append(response)
 
-        events.append(
-            ToolEvent(
-                iteration=iteration + 1,
-                event_type="agent_response",
-                model_name=config['model'],
-                args={},
-                result=str(response)
-            )
-        )
-
         print("there are currently ",len(messages), " messages in the context")
         
         if verbose:
@@ -177,9 +177,22 @@ def run_agent(
             metrics.emit(operation_metric_labeler({"operation" : "completed"}))
             return {"condition" : "no tool calls",
                     "final_response": response.content,
-                    "iterations": iteration + 1,
+                    "iterations": iteration,
                     "events": events,
                     "execution_id" : execution_id}
+                    
+        
+        if response.content:
+            add_tool_event(
+                ToolEvent(
+                    iteration=iteration,
+                    event_type="agent_response",
+                    model_name=config['model'],
+                    args={},
+                    result=str(response)
+                )
+            )
+
 
         for tool_call in tool_calls:
             tool_name = tool_call["name"]
@@ -237,18 +250,17 @@ def run_agent(
                         f"Tool error: {type(exc).__name__}: {exc}"
                     )
 
-            tool_result_event = ToolEvent(
-                    iteration=iteration + 1,
+            add_tool_event(
+                ToolEvent(
+                    iteration=iteration,
                     event_type="tool_call_result",
                     model_name=config['model'],
                     tool=tool_name,
                     args=tool_args,
-                    result=tool_result
+                    result=tool_result,
                 )
-            events.append(tool_result_event)
+            )
             
-            ingest_tool_event(execution_id, tool_result_event)
-
             if verbose:
                 print(f"Executing: {tool_name}({str(tool_args)[:200]})")
                 print(str(tool_result)[:200])
@@ -315,7 +327,7 @@ def run_agent(
     metrics.emit(operation_metric_labeler({"operation" : "ran out of turns"}))
     return {"condition" : f"Agent stopped after {max_iterations} iterations. The workspace may contain partial results.",
             "final_response": response.content,
-            "iterations": iteration + 1,
+            "iterations": iteration,
             "events": events,
             "execution_id" : execution_id}
 
