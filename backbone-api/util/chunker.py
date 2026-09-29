@@ -20,7 +20,7 @@ from __future__ import annotations
 from typing import List
 
 
-def chunk_text(content: str, max_size: int = 4000, overlap: int = 400) -> List[str]:
+def chunk_text(content: str, max_size: int = 1000, overlap: int = 200) -> List[str]:
     """Split *content* into overlapping chunks.
 
     Parameters
