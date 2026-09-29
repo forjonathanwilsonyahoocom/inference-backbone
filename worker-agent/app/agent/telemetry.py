@@ -27,6 +27,7 @@ def ingest_tool_event(execution_id: str, tool_event: ToolEvent) -> None:
         payload = Evidence(
             evidence_id=f"{execution_id}-{tool_event.instance_number}",
             execution_id=execution_id,
+            instance_number=instance_number,
             iteration=tool_event.iteration,
             model_name=tool_event.model_name,
             evidence_type=tool_event.tool,          # e.g. "web_search", "read_file"
