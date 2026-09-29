@@ -90,7 +90,7 @@ def run_agent(
     def add_tool_event(te: ToolEvent):
         nonlocal event_counter
         event_counter = event_counter + 1
-        te.event_number = event_counter
+        te.instance_number = event_counter
         events.append(te)
         if te.event_type!="parse_error":
             ingest_tool_event(execution_id, te)

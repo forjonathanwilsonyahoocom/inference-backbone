@@ -2,46 +2,32 @@ from fastapi import APIRouter
 from contracts.inference_contracts.evidence_chunk import EvidenceChunk
 from contracts.general_contracts.comms import SearchRequest
 from typing import List, Dict
-from weaviate.classes.query import MetadataQuery
+from weaviate.classes.query import MetadataQuery, Filter
 from util.embedding_provider import OllamaEmbeddingProvider
 from clients.weaviate import get_weaviate_client
-from weaviate.classes.query import WhereFilter, WhereFilterOperator
 
 #-------------------------------------------------------
 # helper functions
 #-------------------------------------------------------
-def build_where_filter(payload: SearchRequest) -> Optional[WhereFilter]:
+def build_where_filter(payload: SearchRequest) -> Optional[List[Filter]]:
     """Return a Weaviate WhereFilter that matches the optional metadata."""
     filters = []
 
     if payload.execution_id:
         filters.append(
-            WhereFilter(
-                path=["execution_id"],
-                operator=WhereFilterOperator.Equal,
-                valueString=payload.execution_id,
-            )
+            Filter.by_property("execution_id").equal(payload.execution_id)
         )
 
-    if payload.event_number is not None:
-        # We store the evidence_id as f"{execution_id}-{event_number}"
-        # so we can use a “Like” filter to match the prefix.
+    if payload.instance_number:
         filters.append(
-            WhereFilter(
-                path=["evidence_id"],
-                operator=WhereFilterOperator.Like,
-                valueString=f"{payload.execution_id}-{payload.event_number}%",
-            )
+            Filter.by_property("instance_number").equal(payload.instance_number)
         )
-
+        
     if not filters:
         return None
 
     # Combine with AND
-    return WhereFilter(
-        operator=WhereFilterOperator.And,
-        operands=filters,
-    )
+    return Filter.all_of(filters)
     
 
 #-------------------------------------------------------
@@ -60,7 +46,7 @@ async def evidence_chunk_search(payload: SearchRequest) -> List[Dict]:
             near_vector=query_vector,
             limit=payload.limit,
             return_metadata=MetadataQuery(distance=True),
-            where=build_where_filter(payload),
+            filters=build_where_filter(payload),
         )
 
         return [
@@ -83,7 +69,7 @@ async def claim_search(payload: SearchRequest) -> List[Dict]:
             near_vector=query_vector,
             limit=payload.limit,
             return_metadata=MetadataQuery(distance=True),
-            where=build_where_filter(payload),
+            filters=build_where_filter(payload),
         )
 
         return [

@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 class Evidence(BaseModel):
     evidence_id: str
     execution_id: str
+    instance_number: int # numbering within the execution
     iteration: int
 
     evidence_type: str

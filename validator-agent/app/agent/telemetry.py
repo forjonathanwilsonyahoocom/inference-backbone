@@ -53,7 +53,7 @@ async def ingest_claims(config: dict, execution_id: str, claims:  List[Dict]) ->
             
             payload = Claim(
                 claim_id=claim_id,
-                claim_number=i,
+                instance_number=i,
                 importance=float(claim["importance"]),
                 model_name=config['model'],
                 execution_id=execution_id,
