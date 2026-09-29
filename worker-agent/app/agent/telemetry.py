@@ -10,9 +10,9 @@ class ToolEvent(BaseModel):
     instance_number: int | None = None
     event_type: str
     model_name: str
-    tool: Optional[str] = None
+    tool: str | None = "no_tool"
     args: Dict[str, Any] = Field(default_factory=dict)
-    result: Any = None
+    result: Any = "no_result"
     
 # ---------------------------------------------------------------------------
 # Helper: send a tool result to the evidence ingestion endpoint
