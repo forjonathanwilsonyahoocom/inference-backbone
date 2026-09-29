@@ -7,7 +7,7 @@ from contracts.inference_contracts.evidence import Evidence
 
 class ToolEvent(BaseModel):
     iteration: int
-    event_number: int
+    event_number: int | None = None
     event_type: str
     model_name: str
     tool: Optional[str] = None
