@@ -26,9 +26,7 @@ async def evidence_file_ingest(payload: Evidence) -> Dict:
     try:
 
         payload.content_hash = context_based_id(payload.content)
-        
-        payload.source_url = f"http://backbone-api:8000/file/evidence/{payload.evidence_id}.json"
-                
+                        
         file_path = write_to_file(
                         content=payload,
                         location="evidence",
@@ -38,7 +36,8 @@ async def evidence_file_ingest(payload: Evidence) -> Dict:
         print(f"[ingest] Persisted evidence to {file_path}")
 
         return {
-            "parent_id": payload.content_hash
+            "content_hash": payload.content_hash,
+            "file_path" : file_path,
         }
 
     except Exception as e:
@@ -81,7 +80,6 @@ async def evidence_ingest(identifier: str) -> Dict:
                     content=raw_chunk,
                     chunk_index=idx,
                     chunk_count=len(raw_chunks),
-                    embedding_task="document",
                 )
                 embedding = await embedding_provider.embed(raw_chunk)
                 typed_chunk.embedding_model = embedding_provider.model
@@ -92,7 +90,7 @@ async def evidence_ingest(identifier: str) -> Dict:
                 )
 
         return {
-            "parent_id": payload.content_hash,
+            "content_hash": payload.content_hash,
             "chunk_count": len(raw_chunks),
             "chunks": chunk_ids,
         }

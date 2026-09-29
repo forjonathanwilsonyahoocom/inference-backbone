@@ -9,10 +9,8 @@ Design notes:
 - field_mapping is an ordered list of (attr_name, predicate, transform)
   tuples, not a dict, so field order is stable/readable and diffable.
 - transform may return a plain Python value (gets wrapped in Literal)
-  OR an rdflib term (URIRef/BNode/Literal) directly -- this is how
-  relational fields like parent_evidence_ids point at other nodes
-  instead of being flattened into literals.
-- List-valued attributes (e.g. parent_evidence_ids) fall out of the
+  OR an rdflib term (URIRef/BNode/Literal) directly.
+- List-valued attributes fall out of the
   same loop as scalars; no special-casing needed in build_node_turtle.
 - None values are skipped, not written as empty literals.
 """

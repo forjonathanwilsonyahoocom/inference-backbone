@@ -5,53 +5,16 @@
 # It is intentionally *not* a full OWL ontology – the actual triples are
 # generated at runtime by the projection code in `backbone-api/projections/graphdb`.
 #
-# The two core types are:
-#   * `ex:Claim` – a statement produced by the validator‑agent after an LLM
-#     has processed a human task and a worker‑agent response.
-#   * `ex:Evidence` – the tool‑call records that the worker‑agent produced
-#     while the LLM was issuing callbacks.
+# The core types are described in inference-backbone/contracts/inference_contracts
+# types ending in *_chunk.py are only present in weaviate, not graphdb
+#
+# further notes on weaviate, only types with "content" field are indexed in weaviate
+# embedding on the content field is the vector
 #
 # Each type is represented as an RDF class with a set of object and datatype
 # properties that mirror the fields of the corresponding Python dataclass.
 # The projection code builds a Turtle document for each instance and POSTs it
 # to GraphDB via the client in `clients/graphdb_client.py`.
-#
-# The following sections describe the intent of each property.  The actual
-# property URIs are defined in the `EX` namespace (http://mindbodyengineer.com/).
-#
-# ---------------------------------------------------------------------------
-# Claim
-# ---------------------------------------------------------------------------
-#   ex:hasClaimId          – unique identifier for the claim.
-#   ex:hasClaimNumber      – human‑readable claim number.
-#   ex:hasImportance       – numeric importance score.
-#   ex:hasExecutionId      – ID of the LLM execution that produced the claim.
-#   ex:hasContent          – the textual claim.
-#   ex:hasContentHash      – hash of the content for deduplication.
-#   ex:observedAt          – timestamp when the claim was observed.
-#   ex:retrievedAt         – timestamp when the claim was retrieved from the LLM.
-#   ex:hasEmbeddingModel   – name of the embedding model used.
-#   ex:hasEmbeddingTask    – task identifier for the embedding.
-#   ex:hasValidatorVersion – version of the validator that produced the claim.
-#   ex:hasSchemaVersion    – version of the claim schema.
-#
-# ---------------------------------------------------------------------------
-# Evidence
-# ---------------------------------------------------------------------------
-#   ex:hasEvidenceId       – unique identifier for the evidence.
-#   ex:hasExecutionId      – ID of the worker execution that produced the evidence.
-#   ex:hasEvidenceType     – type of evidence (e.g., "tool_call", "log", ...).
-#   ex:hasContent          – textual content of the evidence.
-#   ex:hasContentHash      – hash of the content.
-#   ex:hasSourceType       – type of source (e.g., "tool", "LLM", ...).
-#   ex:hasSourceName       – human‑readable name of the source.
-#   ex:hasSourceUrl        – URL of the source, if applicable.
-#   ex:observedAt          – timestamp when the evidence was observed.
-#   ex:retrievedAt         – timestamp when the evidence was retrieved.
-#   ex:hasExtractionMethod – method used to extract the evidence.
-#   ex:hasParentEvidence   – object property pointing to other Evidence nodes.
-#   ex:hasWorkerVersion    – version of the worker that produced the evidence.
-#   ex:hasSchemaVersion    – version of the evidence schema.
 #
 # ---------------------------------------------------------------------------
 # Notes
@@ -59,8 +22,6 @@
 # * All timestamps are stored as ISO‑8601 strings.
 # * Hashes are stored as plain strings; the projection code ensures they are
 #   present before serialisation.
-# * The `ex:hasParentEvidence` property is used to model a chain of evidence
-#   (e.g., a tool call that produced another tool call).
 # * No additional OWL restrictions or property chains are defined here – the
 #   projection logic is intentionally simple and stateless.
 #

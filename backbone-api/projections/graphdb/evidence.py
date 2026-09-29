@@ -9,10 +9,8 @@ Design notes:
 - field_mapping is an ordered list of (attr_name, predicate, transform)
   tuples, not a dict, so field order is stable/readable and diffable.
 - transform may return a plain Python value (gets wrapped in Literal)
-  OR an rdflib term (URIRef/BNode/Literal) directly -- this is how
-  relational fields like parent_evidence_ids point at other nodes
-  instead of being flattened into literals.
-- List-valued attributes (e.g. parent_evidence_ids) fall out of the
+  OR an rdflib term (URIRef/BNode/Literal) directly.
+- List-valued attributes fall out of the
   same loop as scalars; no special-casing needed in build_node_turtle.
 - None values are skipped, not written as empty literals.
 """
@@ -30,27 +28,23 @@ from projections.graphdb.turtle import build_node_turtle, FieldMapping, EX
 # --- Evidence projection -----------------------------------------------
 
 def evidence_iri(evidence_id: str) -> URIRef:
-    """Single source of truth for the Evidence IRI convention, since
-    parent_evidence_ids also needs to build IRIs for other Evidence
-    nodes, not just the node currently being written."""
+    """Single source of truth for the Evidence IRI convention"""
     return URIRef(f"{EX}file/evidence/{evidence_id}")
 
 
 EVIDENCE_FIELD_MAPPING: FieldMapping = [
     ("evidence_id", EX.hasEvidenceId, None),
     ("execution_id", EX.hasExecutionId, None),
+    ("iteration", EX.hasIteration, None)
     ("evidence_type", EX.hasEvidenceType, None),
     ("content", EX.hasContent, None),
     ("content_hash", EX.hasContentHash, None),
     ("model_name", EX.hasModelName, None),
     ("source_type", EX.hasSourceType, None),
     ("source_name", EX.hasSourceName, None),
-    ("source_url", EX.hasSourceUrl, None),
     ("observed_at", EX.observedAt, lambda dt: dt.isoformat()),
     ("retrieved_at", EX.retrievedAt, lambda dt: dt.isoformat()),
     ("extraction_method", EX.hasExtractionMethod, None),
-    # relation, not a literal -- points at another Evidence node
-    ("parent_evidence_ids", EX.hasParentEvidence, evidence_iri),
     ("worker_version", EX.hasWorkerVersion, None),
     ("schema_version", EX.hasSchemaVersion, None),
     # metadata (dict[str, Any]) intentionally omitted for v1 -- no

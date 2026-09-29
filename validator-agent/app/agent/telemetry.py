@@ -60,7 +60,6 @@ async def ingest_claims(config: dict, execution_id: str, claims:  List[Dict]) ->
                 content=claim["text"], 
                 observed_at=now,
                 retrieved_at=now,
-                embedding_task="document", #this seems like a meaningless field
                 validator_version="1.0.1",
             )
             try:

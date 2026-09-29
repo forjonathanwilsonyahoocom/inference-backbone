@@ -12,5 +12,4 @@ class EvidenceChunk(BaseModel):
     chunk_count: int
 
     embedding_model: str | None = None
-    embedding_task: str
 

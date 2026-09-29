@@ -9,10 +9,8 @@ Design notes:
 - field_mapping is an ordered list of (attr_name, predicate, transform)
   tuples, not a dict, so field order is stable/readable and diffable.
 - transform may return a plain Python value (gets wrapped in Literal)
-  OR an rdflib term (URIRef/BNode/Literal) directly -- this is how
-  relational fields like parent_evidence_ids point at other nodes
-  instead of being flattened into literals.
-- List-valued attributes (e.g. parent_evidence_ids) fall out of the
+  OR an rdflib term (URIRef/BNode/Literal) directly.
+- List-valued attributes fall out of the
   same loop as scalars; no special-casing needed in build_node_turtle.
 - None values are skipped, not written as empty literals.
 """
@@ -41,11 +39,9 @@ CLAIM_FIELD_MAPPING: FieldMapping = [
     ("content", EX.hasContent, None),
     ("content_hash", EX.hasContentHash, None),
     ("model_name", EX.hasModelName, None),
-    ("source_url", EX.hasSourceUrl, None),
     ("observed_at", EX.observedAt, lambda dt: dt.isoformat()),
     ("retrieved_at", EX.retrievedAt, lambda dt: dt.isoformat()),
     ("embedding_model", EX.hasEmbeddingModel, None),
-    ("embedding_task", EX.hasEmbeddingTask, None),
     ("validator_version", EX.hasValidatorVersion, None),
     ("schema_version", EX.hasSchemaVersion, None),
     # metadata omitted for now
