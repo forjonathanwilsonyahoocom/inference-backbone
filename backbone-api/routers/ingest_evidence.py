@@ -17,12 +17,16 @@ ingest_evidence_router = APIRouter()
 
 
 @ingest_evidence_router.post("/ingest/evidence")
-async def evidence_file_ingest(payload: Evidence) -> Dict:
+async def evidence_preliminary_ingest(payload: Evidence) -> Dict:
     """
     /ingest/evidence endpoint takes evidence and persists to file after generating content hash
+    content is chunked and vector indexed into weaviate to allow immediate recall by agent 
     this evidence has not been validated as supporting 
-    any claims yet so it does not get indexed into weaviate or graphdb
+    any claims yet so it does not get indexed into graphdb
     """
+
+    weaviate_client = get_weaviate_client()
+    
     try:
 
         payload.content_hash = context_based_id(payload.content)
@@ -34,33 +38,6 @@ async def evidence_file_ingest(payload: Evidence) -> Dict:
                     )
                     
         print(f"[ingest] Persisted evidence to {file_path}")
-
-        return {
-            "content_hash": payload.content_hash,
-            "file_path" : file_path,
-        }
-
-    except Exception as e:
-        print("evidence_ingest FAILURE", e)
-        raise
-
-@ingest_evidence_router.get("/ingest/supporting_evidence/{identifier}")
-async def evidence_ingest(identifier: str) -> Dict:
-    """
-    when evidence is found to support a claim we ingest/index into graphdb and weaviate
-    this keeps our graph as sparse as possible, we can always collect the original 
-    un-supporting evidence from the files, we collect from the retrieval route func
-    to assert we are ingesting the original evidence doc 
-    """
-
-    weaviate_client = get_weaviate_client()
-        
-    try:
-        file_resp = await load_document("evidence", identifier)
-        
-        payload = Evidence.model_validate(file_resp)
-
-        await write_evidence_to_graphdb(payload)
 
         ensure_weaviate_collection("EvidenceChunk")
         
@@ -94,6 +71,7 @@ async def evidence_ingest(identifier: str) -> Dict:
             "content_hash": payload.content_hash,
             "chunk_count": len(raw_chunks),
             "chunks": chunk_ids,
+            "file_path" : file_path,
         }
 
     except Exception as e:
@@ -102,3 +80,29 @@ async def evidence_ingest(identifier: str) -> Dict:
     finally:
         # ---- 2️⃣  Close the Weaviate client ----
         weaviate_client.close()
+
+
+@ingest_evidence_router.get("/ingest/supporting_evidence/{identifier}")
+async def supporting_evidence_ingest(identifier: str) -> Dict:
+    """
+    when evidence is found to support a claim we ingest/index into graphdb
+    this keeps our graph as sparse as possible, we can always collect the original 
+    un-supporting evidence from the files or chunked from weaviate, 
+    we collect from the retrieval route func
+    to assert we are ingesting the original evidence doc 
+    """
+
+    try:
+        file_resp = await load_document("evidence", identifier)
+        
+        payload = Evidence.model_validate(file_resp)
+
+        await write_evidence_to_graphdb(payload)
+
+        return {
+            "content_hash": payload.content_hash,
+        }
+
+    except Exception as e:
+        print("evidence_ingest FAILURE", e)
+        raise
