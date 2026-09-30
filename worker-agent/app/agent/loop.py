@@ -8,7 +8,6 @@ from pydantic import BaseModel
 from ollama import ResponseError 
 from collections import deque
 
-from toolbox.compressors import get_compressor
 from langchain_core.messages import (
     AIMessage,
     HumanMessage,
@@ -217,12 +216,7 @@ def run_agent(
                 try:
                     metrics.emit(tool_call_metric_labeler({"tool_call" : tool_name}))
                     tool_result = selected_tool.invoke(tool_args)
-                    # compress the result before further processing
-                    compressor = get_compressor(tool_name)
-                    compressed_result = compressor(tool_result)
-                    tool_result = compressed_result
-                    # Ingest the tool result into evidence
-                    
+    
                     step_fingerprint = (
                         tool_call_fingerprint(tool_name, tool_args),
                         result_fingerprint(tool_result),

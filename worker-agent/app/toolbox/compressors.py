@@ -121,7 +121,31 @@ COMPRESSORS: Dict[str, Callable[[Any], Any]] = {
 
 # Helper to get a compressor or identity
 
+
+
 def get_compressor(tool_name: str) -> Callable[[Any], Any]:
     return COMPRESSORS.get(tool_name, lambda x: x)
 
+"""
+possible use:
+
+from toolbox.compressors import get_compressor
+
+                    # compress the result before further processing
+                    compressor = get_compressor(tool_name)
+                    compressed_result = compressor(tool_result)
+                    tool_result = compressed_result
+                    # Ingest the tool result into evidence
+                    
+
+
+"""
+
+
+
+
+
 """End of compressors.py"""
+
+
+
