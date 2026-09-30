@@ -5,7 +5,8 @@ from typing import List, Dict
 
 @tool
 def search_evidence(query: str, limit: int = 8, instance_number: int | None = None) -> List[Dict]:
-    """Search evidence chunks in the backbone API.
+    """Search chunked content from previous iterations.
+    use when previous iteration details have been compressed away
 
     Parameters
     ----------
@@ -19,7 +20,9 @@ def search_evidence(query: str, limit: int = 8, instance_number: int | None = No
     Returns
     -------
     List[Dict]
-        List of evidence chunk objects returned by the API.
+        List of chunks from previous iterations.
+        result chunks will include the instance_number, use the
+        instance_number as a filter to focus on a single iteration
     """
     payload = {
         "query": query,

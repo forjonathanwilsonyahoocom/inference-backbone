@@ -14,7 +14,7 @@ def write_file(path: str, content: Any, overwrite: bool = False) -> str:
         • a mapping → pretty‑printed JSON (unless it contains a single string)
         • a string → written verbatim (real newlines, no `\\n`)
 
-    Returns a human‑readable status message.
+    Returns a status message.
     """
 
     file_path = safe_path(path)

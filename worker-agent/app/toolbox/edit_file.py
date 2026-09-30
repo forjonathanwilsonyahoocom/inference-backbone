@@ -5,11 +5,12 @@ from toolbox.util import safe_path, WORKSPACE
 @tool
 def edit_file(path: str, old_text: str, new_text: str) -> str:
     """
-    Edit a UTF-8 text file by replacing one exact occurrence of old_text
-    with new_text.
+    Edit a UTF-8 text file by replacing old_text with new_text.
+    
+    provide an exact old_text match and a precise new_text replacement.
 
     The file must already exist. The replacement is intentionally limited
-    to one occurrence so the agent cannot accidentally modify multiple
+    to one occurrence so we cannot accidentally modify multiple
     unrelated sections.
     """
     file_path = safe_path(path)
