@@ -7,6 +7,8 @@ from typing import Any, Tuple, List
 from pydantic import BaseModel
 from ollama import ResponseError 
 from collections import deque
+
+from toolbox.compressors import get_compressor
 from langchain_core.messages import (
     AIMessage,
     HumanMessage,
@@ -216,7 +218,6 @@ def run_agent(
                     metrics.emit(tool_call_metric_labeler({"tool_call" : tool_name}))
                     tool_result = selected_tool.invoke(tool_args)
                     # compress the result before further processing
-                    from ..toolbox.compressors import get_compressor
                     compressor = get_compressor(tool_name)
                     compressed_result = compressor(tool_result)
                     tool_result = compressed_result
