@@ -1,4 +1,5 @@
 import json
+import os
 import uuid
 from observability.metrics import MetricsWrapper
 import hashlib
@@ -75,6 +76,8 @@ def run_agent(
     token_gauge = metrics.get_gauge_func("tokens_in_play", "tokens in current context")
     
     execution_id = str(uuid.uuid4())
+    # expose execution id for tools that need it
+    os.environ["CURRENT_EXECUTION_ID"] = execution_id
     messages = [
         SystemMessage(content=SYSTEM_PROMPT),
         HumanMessage(content=user_request),

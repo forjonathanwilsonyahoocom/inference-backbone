@@ -16,6 +16,7 @@ from observability.metrics import MetricsWrapper
 from toolbox.web_search import web_search
 from toolbox.web_fetch import web_fetch
 from toolbox.search_file import search_file
+from toolbox.search_evidence import search_evidence
 from toolbox.list_files import list_files
 from toolbox.read_file import read_file
 from toolbox.write_file import write_file
@@ -52,7 +53,7 @@ def create_llms(config: dict) -> Tuple[ChatOllama, ChatOllama]:
 
 def get_toolchain(llm: ChatOllama) -> Tuple[dict, ChatOllama]:
     TOOLS = [list_files, read_file, write_file, edit_file,
-             search_file, run_command, web_search, web_fetch]
+             search_file, search_evidence, run_command, web_search, web_fetch]
     llm_with_tools = llm.bind_tools(TOOLS)
     TOOLS_BY_NAME = {tool.name: tool for tool in TOOLS}
     return TOOLS_BY_NAME, llm_with_tools
