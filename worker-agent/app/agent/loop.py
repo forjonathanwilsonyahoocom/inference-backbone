@@ -3,7 +3,7 @@ import os
 import uuid
 from observability.metrics import MetricsWrapper
 import hashlib
-from typing import Any, Tuple, List
+from typing import Any, List, Optional, Dict
 from pydantic import BaseModel
 from ollama import ResponseError 
 
@@ -26,8 +26,6 @@ from agent.telemetry import ingest_tool_event, ToolEvent
 # ------------------------------------------------------------------
 # 0️⃣  Helpers
 # ------------------------------------------------------------------
-SUMMARY_TAG = "__DISTILLED_SUMMARY__"  # sentinel prefix, not inferred from position/type
-
 def canonical_json(value: Any) -> str:
     return json.dumps(
         value,
@@ -43,15 +41,12 @@ class Iteration(BaseModel):
     model_response_compressed: Any = None
     tool_call_result: Any = None
     tool_call_result_compressed: Any = None
-    tool_call_fingerprint: str = None
-    result_fingerprint: str = None
+    tool_call_fingerprint: Optional[str] = None
+    result_fingerprint: Optional[str] = None
     stagnant_count: int = 0
     
 def make_summary_message(facts: dict) -> HumanMessage:
-    return HumanMessage(content=SUMMARY_TAG + json.dumps(facts, indent=2))
-
-def is_summary_message(msg: BaseMessage) -> bool:
-    return isinstance(msg, HumanMessage) and msg.content.startswith(SUMMARY_TAG)
+    return HumanMessage(content=f"Summary of earlier work (already done, do not repeat):\n{json.dumps(facts, indent=2)}")
 
 def tool_call_fingerprint(tool_name: str, args: dict) -> str:
     payload = {
@@ -69,7 +64,7 @@ def result_fingerprint(result: Any) -> str:
 def estimate_tokens(content: Any) -> int:
     return max(1, len(str(content)) // 4)
     
-def get_distillation(distillation_llm: ChatOllama, distill_these: List[Any]) -> List[HumanMessage]:
+def get_distillation(metrics: MetricsWrapper, distillation_llm: ChatOllama, distill_these: List[Any]) -> List[HumanMessage]:
     print("Starting distill")
     conv_text = "\n".join(
         msg.content if isinstance(msg.content, str) else str(msg.content)
@@ -109,7 +104,7 @@ def get_distillation(distillation_llm: ChatOllama, distill_these: List[Any]) -> 
     else:
         return [make_summary_message({"message_summary_failed" : "oldest messages have been truncated"})]
 
-def derive_message_list(distillation_llm: ChatOllama, permanent: List[BaseMessage], history: List[Iteration]) -> List[Any]:
+def derive_message_list(metrics: MetricsWrapper, distillation_llm: ChatOllama, permanent: List[BaseMessage], history: List[Iteration]) -> List[Any]:
     """Build the message list to send to the LLM.
 
     * ``permanent`` – system + user + any permanent messages.
@@ -128,7 +123,7 @@ def derive_message_list(distillation_llm: ChatOllama, permanent: List[BaseMessag
     
     list_to_add_to = send_to_llm
     for iteration in reversed(history):
-        fp = (iteration.tool_call_fingerprint, result_fingerprint)
+        fp = (iteration.tool_call_fingerprint, iteration.result_fingerprint)
         if fp in seen_fingerprints:
             # Skip earlier duplicate
             continue
@@ -170,7 +165,7 @@ def derive_message_list(distillation_llm: ChatOllama, permanent: List[BaseMessag
     
     if len(send_to_distill) > 0:
         send_to_distill.reverse()
-        distilled = get_distillation(send_to_distill)
+        distilled = get_distillation(metrics, distillation_llm, send_to_distill)
         
 
     send_to_llm.reverse()
@@ -185,7 +180,7 @@ def run_agent(
     user_request: str,
     max_iterations: int = 150,
     verbose: bool = False,
-) -> str:
+) -> Dict:
     operation_metric_labeler = metrics.get_counter_message_labeler(
         "operation", "agent general activity"
     )
@@ -223,68 +218,38 @@ def run_agent(
     while iteration < max_iterations:
         iteration = iteration + 1
         this_iteration = Iteration(
-            iteration=iteration,
-            compressed=False,
+            iteration=iteration
         )
         if verbose:
-            print(f"\n--- iteration {iteration + 1} ---")
+            print(f"\n--- iteration {iteration} ---")
             
         metrics.emit(operation_metric_labeler({"operation" : "iterate"}))
         
         tool_calls = []
         response = {}
+        send_to_llm = derive_message_list(metrics, distillation_llm, permanent_messages, full_thread_history)
+        retry_notes: list[BaseMessage] = []
         for retry in range(10):
             
-            send_to_llm = derive_message_list(distillation_llm, permanent_messages, full_thread_history)
             try:
-                response = llm_with_tools.invoke(send_to_llm)
+                response = llm_with_tools.invoke(send_to_llm + retry_notes)
 
                 this_iteration.model_response = response
                 
                 tool_calls = response.tool_calls or []
-                content = response.content or ""
-                
-                if len(tool_calls) == 1 or len(content.strip()) > 4:
-                    break #continue 
-                else:
-                    #this fake tool call insertion is just to keep the derivation consistant
-                    this_iteration.model_response.tool_calls = [{"id" : str(uuid.uuid4()), "name" : "no_valid_call_was_made"}]
-                    this_iteration.tool_call_result = "Your response was empty or unusable.  Return one valid tool call or content only."
-                    
-                    #NOTE this may result in multiple iteration objects with no fingerprints for the same iteration
-                    #that is ok since the derived list will only keep the most recent of those 
-                    full_thread_history.append(this_iteration)
-
+                content = (response.content or "").strip()
+                if len(tool_calls) == 1 or (not tool_calls and len(content) > 4):
+                    break
+                retry_notes += [response, HumanMessage("Your response was empty or invalid. Return exactly one tool call, or a final answer as content only.")]
             except ResponseError as e:
-                raw_content = str(e)
-
-                print("ResponseError ", raw_content)
-                add_tool_event(
-                    ToolEvent(
-                        iteration=iteration,
-                        event_type="parse_error",
-                        model_name=config['model'],
-                        args={},
-                        result={"error": str(e), "raw_output": raw_content},
-                    )
-                )
-                
-                metrics.emit(failure_metric_labeler({"failure" : "parsing error"}))
-
-                this_iteration.tool_call_result = HumanMessage(
-                        content=(
-                            "Last response failed tool-call parsing.\n"
-                            f"Error: {e}\n"
-                            "Return exactly one valid tool call."
-                        )
-                    )
-                #NOTE this may result in multiple iteration objects with no fingerprints for the same iteration
-                #that is ok since the derived list will only keep the most recent of those 
-                full_thread_history.append(this_iteration)
+                retry_notes.append(HumanMessage(f"Last response failed tool-call parsing: {e}. Return exactly one valid tool call."))
         else:
-            # Ten retries failed.
-            print("Model failed to produce a valid response after 10 retries")
-            
+            return {"condition": "model failed after 10 retries", 
+                    "final_response": getattr(response, "content", "failure after retries"),
+                    "iterations": iteration,
+                    "events": events,
+                    "execution_id" : execution_id}
+                    
         if verbose:
             if response.content:
                 print("Assistant:", response.content[:2000])
@@ -309,52 +274,69 @@ def run_agent(
             )
         )
 
-        for tool_call in tool_calls:
-            #NOTE there will only be one tool call per the current rules
-            tool_name = tool_call["name"]
-            tool_args = tool_call.get("args", {})
+        tool_call = tool_calls[0]
+        #NOTE there will only be one tool call per the current rules
+        tool_name = tool_call["name"]
+        tool_args = tool_call.get("args", {})
 
-            selected_tool = tools.get(tool_name)
+        selected_tool = tools.get(tool_name)
 
-            if selected_tool is None:
-                this_iteration.tool_call_result= f"Unknown tool: {tool_name}"
-                metrics.emit(failure_metric_labeler({"failure" : f"unknown tool {tool_name}"}))
-            else:
-                try:
-                    metrics.emit(tool_call_metric_labeler({"tool_call" : tool_name}))
-                    tool_result = selected_tool.invoke(tool_args)
-                    this_iteration.tool_call_result = tool_result
-                    this_iteration.tool_call_fingerprint= tool_call_fingerprint(tool_name, tool_args)
-                    this_iteration.result_fingerprint=result_fingerprint(tool_result)
-                    step_fingerprint = (
-                        this_iteration.tool_call_fingerprint,
-                        this_iteration.result_fingerprint,
-                    )
-
-                    step_counts[step_fingerprint] = step_counts.get(step_fingerprint, 0) + 1
-                    this_iteration.stagnant_count=step_counts[step_fingerprint]
-                    
-                except Exception as exc:
-                    this_iteration.tool_call_result = f"Tool error: {type(exc).__name__}: {exc}"
-
-            
-            add_tool_event(
-                ToolEvent(
-                    iteration=iteration,
-                    event_type="tool_call_result",
-                    model_name=config['model'],
-                    tool=tool_name,
-                    args=tool_args,
-                    result=tool_result,
-                )
+        if selected_tool is None:
+            this_iteration.tool_call_result= f"Unknown tool: {tool_name} available tools: {tools.keys()}"
+            this_iteration.result_fingerprint = result_fingerprint(this_iteration.tool_call_result)
+            this_iteration.tool_call_fingerprint = tool_call_fingerprint(tool_name, {})
+            step_fingerprint = (
+                this_iteration.tool_call_fingerprint,
+                this_iteration.result_fingerprint,
             )
-            
-            print(f"Executing: {tool_name}({str(tool_args)[:50]})")
 
+            step_counts[step_fingerprint] = step_counts.get(step_fingerprint, 0) + 1
+            this_iteration.stagnant_count=step_counts[step_fingerprint]
+            metrics.emit(failure_metric_labeler({"failure" : f"unknown tool {tool_name}"}))
+        else:
+            try:
+                metrics.emit(tool_call_metric_labeler({"tool_call" : tool_name}))
+                tool_result = selected_tool.invoke(tool_args)
+                this_iteration.tool_call_result = tool_result
+                this_iteration.tool_call_fingerprint= tool_call_fingerprint(tool_name, tool_args)
+                this_iteration.result_fingerprint=result_fingerprint(tool_result)
+                step_fingerprint = (
+                    this_iteration.tool_call_fingerprint,
+                    this_iteration.result_fingerprint,
+                )
+
+                step_counts[step_fingerprint] = step_counts.get(step_fingerprint, 0) + 1
+                this_iteration.stagnant_count=step_counts[step_fingerprint]
+                
+            except Exception as exc:
+                this_iteration.tool_call_result = f"Tool error: {type(exc).__name__}: {exc}"
+                this_iteration.tool_call_fingerprint=tool_call_fingerprint(tool_name, tool_args)
+                this_iteration.result_fingerprint = result_fingerprint(this_iteration.tool_call_result)
+                step_fingerprint = (
+                    this_iteration.tool_call_fingerprint,
+                    this_iteration.result_fingerprint,
+                )
+                step_counts[step_fingerprint] = step_counts.get(step_fingerprint, 0) + 1
+                this_iteration.stagnant_count=step_counts[step_fingerprint]
+                metrics.emit(failure_metric_labeler({"failure" : f"execution failure {tool_name}"}))
+
+        
+        add_tool_event(
+            ToolEvent(
+                iteration=iteration,
+                event_type="tool_call_result",
+                model_name=config['model'],
+                tool=tool_name,
+                args=tool_args,
+                result=this_iteration.tool_call_result,
+            )
+        )
+        
+        print(f"Executing: {tool_name}({str(tool_args)[:50]})")
 
         full_thread_history.append(this_iteration)
             
-        metrics.emit(token_gauge(response.usage_metadata.get("input_tokens", 0) ))
+        metrics.emit(token_gauge(getattr(response, "usage_metadata", {}).get("input_tokens", 0)))
 
     metrics.emit(operation_metric_labeler({"operation" : "ran out of turns"}))
     return {"condition" : f"Agent stopped after {max_iterations} iterations. The workspace may contain partial results.",

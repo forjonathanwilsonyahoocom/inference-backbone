@@ -46,7 +46,7 @@ def create_llms(config: dict) -> Tuple[ChatOllama, ChatOllama]:
     distill_llm = ChatOllama(
         model=config["distill_model"],
         base_url=config["base_url"],
-        temperature=0.01,
+        temperature=0,
         num_predict=5000,
     )
     return llm, distill_llm
