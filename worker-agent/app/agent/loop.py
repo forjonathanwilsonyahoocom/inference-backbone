@@ -7,6 +7,7 @@ from typing import Any, List, Optional, Dict
 from pydantic import BaseModel
 from ollama import ResponseError 
 
+
 from langchain_core.messages import (
     AIMessage,
     HumanMessage,
@@ -45,25 +46,25 @@ class Iteration(BaseModel):
     result_fingerprint: Optional[str] = None
     stagnant_count: int = 0
 
-class Compaction:
+class Compaction(BaseModel):
     summary: List[dict] | None = []
+    fallback: str = ""
     upto: int = 0          # history[:upto] is folded into summary
 
 
-def make_summary_message(current_compaction: Compaction, possible_fallback=None) -> str:
-    merged = current_compaction.summary[0]
-    for s in current_compaction.summary[1:]:
-        for k, i in s.items():
-            if not isinstance(i, List):
-                i = [i]
-            if k in merged:
-                existing = merged[k]
-                if not isinstance(existing, List):
-                    existing = [existing]
-                merged[k] = existing + i
-            else:
-                merged[k] = i
-    return f"Summary of earlier work (already done, do not repeat):\n{json.dumps(merged, indent=2)}\n{possible_fallback or ''}"
+def merge_summaries(entries: List[dict]) -> dict:
+    merged: Dict[str, list] = {}
+    for entry in entries:
+        for k, v in entry.items():
+            bucket = merged.setdefault(k, [])
+            bucket.extend(x for x in (v if isinstance(v, list) else [v]) if x not in bucket)
+    return merged
+    
+def make_summary_message(compact: Compaction) -> List[HumanMessage]:
+    if not compact.summary and not compact.fallback:
+        return []
+    body = json.dumps(merge_summaries(compact.summary), indent=2) if compact.summary else ""
+    return [HumanMessage(content=f"Summary of earlier work (already done, do not repeat):\n{body}\n{compact.fallback}")]
     
 def tool_call_fingerprint(tool_name: str, args: dict) -> str:
     payload = {
@@ -81,26 +82,16 @@ def result_fingerprint(result: Any) -> str:
 def estimate_tokens(content: Any) -> int:
     return max(1, len(str(content)) // 4)
 
-def fallback_mechanical_summary(distill_these: List[Any]) -> str:
-    fallback = []
-    for msg in distill_these:
-        tool_args = ""
-        tool_args = ""
-        if isinstance(msg, (HumanMessage, AIMessage, ToolMessage)):
-            tool_calls = getattr(msg, "tool_calls", [])
-            if len(tool_calls) > 0:
-                tool_calls=tool_calls[0]
-            else:
-                tool_calls = None
-            
-            if tool_calls is not None:
-                tool_name = tool_call["name"]
-                tool_args = str(tool_call.get("args", ""))[:50]
-                
-            content = getattr(msg, "content", "")[:50]
-            fallback.append(f"""{"content: " + content if len(content) > 0 else ""}{" tool_name: " + tool_name if len(tool_name) > 0 else ""}{"tool_args: " + tool_args if len(tool_args) > 0 else ""}""")
-            
-    return "\n".join(fallback)
+def fallback_mechanical_summary(msgs: List[BaseMessage]) -> str:
+    lines = []
+    for m in msgs:
+        if isinstance(m, AIMessage):
+            for tc in m.tool_calls or []:
+                lines.append(f"call {tc['name']}({str(tc.get('args', ''))[:80]})")
+        elif isinstance(m, ToolMessage):
+            lines.append(f"result: {str(m.content)[:150]}")
+     
+    return "\n".join(lines)
         
 
 def get_distillation(metrics: MetricsWrapper, 
@@ -128,6 +119,7 @@ def get_distillation(metrics: MetricsWrapper,
                 raw = raw.strip("`")
                 raw = raw[raw.find("{"):raw.rfind("}") + 1]
             facts = json.loads(raw)
+            if not isinstance(facts, dict): raise ValueError
             distilled = True
 
             metrics.emit(metrics.get_counter_message("distillation_success", "distillation agent worked"))
@@ -138,15 +130,26 @@ def get_distillation(metrics: MetricsWrapper,
             print(f"Distillation JSON parse failed: {exc}")
             print(f"Raw model output (truncated): {raw_content[:300]}")
 
-    print("Distilled")
-    print(facts_json)
+    print(f"Distilled: {distilled}")
 
     if distilled:
         compact.upto = upto
         compact.summary.append(facts)
-        return compact, make_summary_message(compact)
+        compact.fallback = ""
     else:
-        return compact, make_summary_message(compact, fallback_mechanical_summary(distill_these)) #this could be replaced with a mechanical summary
+        compact.fallback = fallback_mechanical_summary(distill_these)
+    
+    print(compact.fallback)
+    
+    return compact 
+        
+HIGH, LOW = 15_000, 8_000
+
+def iter_tokens(it: Iteration) -> int:
+    r = it.tool_call_result_compressed or it.tool_call_result
+    m = it.model_response_compressed or it.model_response
+    return (estimate_tokens(r) + estimate_tokens(getattr(m, "content", ""))
+            + estimate_tokens(getattr(m, "tool_calls", "")))
 
 def derive_message_list(metrics: MetricsWrapper, 
                         distillation_llm: ChatOllama, 
@@ -163,8 +166,10 @@ def derive_message_list(metrics: MetricsWrapper,
     seen_fingerprints = set()
     send_to_llm = []
     send_to_distill = []
+        
+    live_total = sum(iter_tokens(i) for i in history if i.iteration > compact.upto)
+    token_quota = LOW if live_total > HIGH else float("inf")
     
-    token_quota = 15000
     upto: int = 0
     list_to_add_to = send_to_llm
     last_upto = compact.upto
@@ -187,8 +192,8 @@ def derive_message_list(metrics: MetricsWrapper,
         
         try:
             #we add these backwards because we are building from the end of the list
+            token_quota -= iter_tokens(iteration) 
             if iteration.tool_call_result_compressed is not None:
-                token_quota = token_quota - estimate_tokens(iteration.tool_call_result_compressed)
                 list_to_add_to.append(
                     ToolMessage(
                         content=str(iteration.tool_call_result_compressed),
@@ -196,7 +201,6 @@ def derive_message_list(metrics: MetricsWrapper,
                     )
                 )
             else:
-                token_quota = token_quota - estimate_tokens(iteration.tool_call_result)
                 list_to_add_to.append(
                     ToolMessage(
                         content=str(iteration.tool_call_result),
@@ -205,24 +209,20 @@ def derive_message_list(metrics: MetricsWrapper,
                 )
 
             if iteration.model_response_compressed is not None:
-                token_quota = token_quota - estimate_tokens(iteration.model_response_compressed)
                 list_to_add_to.append(iteration.model_response_compressed)
             else:
-                token_quota = token_quota - estimate_tokens(iteration.model_response)
                 list_to_add_to.append(iteration.model_response)
         except Exception as e:
             print(e)
             print(iteration)
             raise
-    distilled = []
     
     if len(send_to_distill) > 0:
         send_to_distill.reverse()
-        compact, distilled = get_distillation(metrics, distillation_llm, compact, upto, send_to_distill)
+        compact = get_distillation(metrics, distillation_llm, compact, upto, send_to_distill)
         
-
     send_to_llm.reverse()
-    return compact, permanent + distilled + send_to_llm
+    return compact, permanent + make_summary_message(compact) + send_to_llm
     
 def run_agent(
     metrics: MetricsWrapper,
@@ -336,46 +336,32 @@ def run_agent(
 
         selected_tool = tools.get(tool_name)
 
-        if selected_tool is None:
-            this_iteration.tool_call_result= f"Unknown tool: {tool_name} available tools: {tools.keys()}"
-            this_iteration.result_fingerprint = result_fingerprint(this_iteration.tool_call_result)
-            this_iteration.tool_call_fingerprint = tool_call_fingerprint(tool_name, {})
-            step_fingerprint = (
-                this_iteration.tool_call_fingerprint,
-                this_iteration.result_fingerprint,
-            )
+        # an unknown tool is unknown regardless of args
+        fp_args = tool_args if selected_tool is not None else {}
+        call_fp = tool_call_fingerprint(tool_name, fp_args)
 
-            step_counts[step_fingerprint] = step_counts.get(step_fingerprint, 0) + 1
-            this_iteration.stagnant_count=step_counts[step_fingerprint]
-            metrics.emit(failure_metric_labeler({"failure" : f"unknown tool {tool_name}"}))
+        if selected_tool is None:
+            result = f"Unknown tool: {tool_name}. Available: {list(tools)}"
+            metrics.emit(failure_metric_labeler({"failure": f"unknown tool {tool_name}"}))
         else:
             try:
-                metrics.emit(tool_call_metric_labeler({"tool_call" : tool_name}))
-                tool_result = selected_tool.invoke(tool_args)
-                this_iteration.tool_call_result = tool_result
-                this_iteration.tool_call_fingerprint= tool_call_fingerprint(tool_name, tool_args)
-                this_iteration.result_fingerprint=result_fingerprint(tool_result)
-                step_fingerprint = (
-                    this_iteration.tool_call_fingerprint,
-                    this_iteration.result_fingerprint,
-                )
-
-                step_counts[step_fingerprint] = step_counts.get(step_fingerprint, 0) + 1
-                this_iteration.stagnant_count=step_counts[step_fingerprint]
-                
+                metrics.emit(tool_call_metric_labeler({"tool_call": tool_name}))
+                result = selected_tool.invoke(tool_args)
             except Exception as exc:
-                this_iteration.tool_call_result = f"Tool error: {type(exc).__name__}: {exc}"
-                this_iteration.tool_call_fingerprint=tool_call_fingerprint(tool_name, tool_args)
-                this_iteration.result_fingerprint = result_fingerprint(this_iteration.tool_call_result)
-                step_fingerprint = (
-                    this_iteration.tool_call_fingerprint,
-                    this_iteration.result_fingerprint,
-                )
-                step_counts[step_fingerprint] = step_counts.get(step_fingerprint, 0) + 1
-                this_iteration.stagnant_count=step_counts[step_fingerprint]
-                metrics.emit(failure_metric_labeler({"failure" : f"execution failure {tool_name}"}))
+                result = f"Tool error: {type(exc).__name__}: {exc}"
+                metrics.emit(failure_metric_labeler({"failure": f"execution failure {tool_name}"}))
 
-        
+        this_iteration.tool_call_result=result
+        this_iteration.result_fingerprint = result_fingerprint(this_iteration.tool_call_result)
+        this_iteration.tool_call_fingerprint = call_fp
+        step_fingerprint = (
+            this_iteration.tool_call_fingerprint,
+            this_iteration.result_fingerprint,
+        )
+        step_counts[step_fingerprint] = step_counts.get(step_fingerprint, -1) + 1
+        this_iteration.stagnant_count=step_counts[step_fingerprint]
+                
+            
         add_tool_event(
             ToolEvent(
                 iteration=iteration,
