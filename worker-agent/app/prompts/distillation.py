@@ -8,15 +8,14 @@ the next iteration will use your distillation to guide work and manage token con
 
 you will be given everything about to be truncated from the thread context
 
-distill this information to infer the progress of the thread and help shape the direction of the tool enabled agent
+distill this information down to infer the progress of the thread and help shape the direction of the tool enabled agent
 
 output **only** a single JSON object with these top‑level keys:
-  - artifacts:   [{ "id":"", "type":"", "value":"" }]  #only keep important parts of artifacts, not whole files
+  - artifacts:   [{ "id":"<inferred label>", "type":"<file/web_fetch/llm_intent>", "value":"<snippet from messages>" }]  #only keep important parts of artifacts, not whole files
   - claims:      [{ "statement":"", "source":"", "confidence":0‑1 }] #claims based on agent tools not the human prompt
-  - understandings:[{ "concept":"", "detail":""}]
-  - hypotheses:  [{ "hypothesis":"", "status":"pending/confirmed/ruled‑out", "confidence":0‑1 }]
-  - completed_steps:   [{ "step":"", "result":""}] #try to prevent looping
-  - todo_steps:   [{ "step":"", "deadline":"during_this_execution/report_for_future"}] #intent
+  - understandings:[{ "concept":"<some inferred name>", "detail":"<as these messages support>"}]
+  - hypotheses:  [{ "hypothesis":"<some inferred hypothesis>", "status":"pending/confirmed/ruled‑out", "confidence":0‑1 }]
+  - completed_steps:   [{ "step":"<some inferred name>", "result":"<based on the messages>"}] #try to prevent looping
 
 If a key has no entries, use an empty array.
 **Do NOT** wrap the output in Markdown or quotes around keys.
