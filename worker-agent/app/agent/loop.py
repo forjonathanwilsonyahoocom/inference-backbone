@@ -47,7 +47,7 @@ class Iteration(BaseModel):
     stagnant_count: int = 0
 
 class Compaction(BaseModel):
-    summary: List[dict] | None = []
+    summary: List[dict] = []
     fallback: str = ""
     upto: int = 0          # history[:upto] is folded into summary
 
@@ -93,35 +93,48 @@ def fallback_mechanical_summary(msgs: List[BaseMessage]) -> str:
      
     return "\n".join(lines)
         
+def clip(value: Any, limit: int = 2000) -> str:
+    s = str(value)
+    return s if len(s) <= limit else s[:limit] + f"...[truncated {len(s) - limit} chars]"
+
+def distillation_assembly(msgs: List[BaseMessage]) -> str:
+    lines = []
+    for m in msgs:
+        if isinstance(m, AIMessage):
+            if m.content:
+                lines.append(f"LLM States: {clip(m.content)}")
+            for tc in m.tool_calls or []:
+                lines.append(f"call {tc['name']}({clip(tc.get('args', ''))})")
+        elif isinstance(m, ToolMessage):
+            lines.append(f"result: {clip(m.content)}")
+    return "\n".join(lines)
 
 def get_distillation(metrics: MetricsWrapper, 
                      distillation_llm: ChatOllama, 
                      compact: Compaction,
                      upto: int,
-                     distill_these: List[Any]) -> List[HumanMessage]:
+                     distill_these: List[Any]) -> Compaction:
     print("Starting distill")
-    conv_text = "\n".join(
-        msg.content if isinstance(msg.content, str) else str(msg.content)
-        for msg in distill_these
-        if isinstance(msg, (HumanMessage, AIMessage, ToolMessage))
-    )
+    
+    conv_text = distillation_assembly(distill_these)
+    
     distillation_messages = [
         SystemMessage(content=DISTILLATION_PROMPT),
         HumanMessage(content=conv_text),
     ]
-    distilled = False
-    facts_json = None
+    facts = None
     for _ in range(3):
+        facts_json = None
         try:
             facts_json = distillation_llm.invoke(distillation_messages)
             raw = facts_json.content.strip()
             if raw.startswith("```"):
                 raw = raw.strip("`")
                 raw = raw[raw.find("{"):raw.rfind("}") + 1]
-            facts = json.loads(raw)
-            if not isinstance(facts, dict): raise ValueError
-            distilled = True
-
+            parsed = json.loads(raw)
+            if not isinstance(parsed, dict):
+                raise ValueError(f"expected a JSON object, got {type(parsed).__name__}")
+            facts = parsed
             metrics.emit(metrics.get_counter_message("distillation_success", "distillation agent worked"))
             break
         except Exception as exc:
@@ -130,9 +143,9 @@ def get_distillation(metrics: MetricsWrapper,
             print(f"Distillation JSON parse failed: {exc}")
             print(f"Raw model output (truncated): {raw_content[:300]}")
 
-    print(f"Distilled: {distilled}")
+    print(f"Distilled: {facts}")
 
-    if distilled:
+    if facts is not None:
         compact.upto = upto
         compact.summary.append(facts)
         compact.fallback = ""
@@ -192,26 +205,21 @@ def derive_message_list(metrics: MetricsWrapper,
         
         try:
             #we add these backwards because we are building from the end of the list
-            token_quota -= iter_tokens(iteration) 
-            if iteration.tool_call_result_compressed is not None:
-                list_to_add_to.append(
-                    ToolMessage(
-                        content=str(iteration.tool_call_result_compressed),
-                        tool_call_id=iteration.model_response.tool_calls[0]["id"],
-                    )
+            token_quota -= iter_tokens(iteration)
+            tool_content = f"{iteration.tool_call_result_compressed or iteration.tool_call_result}"
+            
+            #only add stagnant nudge if this is sent to the llm, indicated by upto == 0
+            if iteration.stagnant_count >= 2 and upto == 0:
+                tool_content += f"\n **NOTE**: this call has been used for the same result {iteration.stagnant_count + 1} times, \n **history is de-duplicated**\n do you need to continue calling this?"
+                
+            list_to_add_to.append(
+                ToolMessage(
+                    content=tool_content,
+                    tool_call_id=iteration.model_response.tool_calls[0]["id"],
                 )
-            else:
-                list_to_add_to.append(
-                    ToolMessage(
-                        content=str(iteration.tool_call_result),
-                        tool_call_id=iteration.model_response.tool_calls[0]["id"],
-                    )
-                )
+            )
 
-            if iteration.model_response_compressed is not None:
-                list_to_add_to.append(iteration.model_response_compressed)
-            else:
-                list_to_add_to.append(iteration.model_response)
+            list_to_add_to.append(iteration.model_response_compressed or iteration.model_response) 
         except Exception as e:
             print(e)
             print(iteration)
@@ -222,6 +230,7 @@ def derive_message_list(metrics: MetricsWrapper,
         compact = get_distillation(metrics, distillation_llm, compact, upto, send_to_distill)
         
     send_to_llm.reverse()
+        
     return compact, permanent + make_summary_message(compact) + send_to_llm
     
 def run_agent(
