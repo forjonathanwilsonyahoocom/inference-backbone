@@ -44,10 +44,27 @@ class Iteration(BaseModel):
     tool_call_fingerprint: Optional[str] = None
     result_fingerprint: Optional[str] = None
     stagnant_count: int = 0
-    
-def make_summary_message(facts: dict) -> HumanMessage:
-    return HumanMessage(content=f"Summary of earlier work (already done, do not repeat):\n{json.dumps(facts, indent=2)}")
 
+class Compaction:
+    summary: List[dict] | None = []
+    upto: int = 0          # history[:upto] is folded into summary
+
+
+def make_summary_message(current_compaction: Compaction, possible_fallback=None) -> str:
+    merged = current_compaction.summary[0]
+    for s in current_compaction.summary[1:]:
+        for k, i in s.items():
+            if not isinstance(i, List):
+                i = [i]
+            if k in merged:
+                existing = merged[k]
+                if not isinstance(existing, List):
+                    existing = [existing]
+                merged[k] = existing + i
+            else:
+                merged[k] = i
+    return f"Summary of earlier work (already done, do not repeat):\n{json.dumps(merged, indent=2)}\n{possible_fallback or ''}"
+    
 def tool_call_fingerprint(tool_name: str, args: dict) -> str:
     payload = {
         "tool": tool_name,
@@ -63,8 +80,34 @@ def result_fingerprint(result: Any) -> str:
 
 def estimate_tokens(content: Any) -> int:
     return max(1, len(str(content)) // 4)
-    
-def get_distillation(metrics: MetricsWrapper, distillation_llm: ChatOllama, distill_these: List[Any]) -> List[HumanMessage]:
+
+def fallback_mechanical_summary(distill_these: List[Any]) -> str:
+    fallback = []
+    for msg in distill_these:
+        tool_args = ""
+        tool_args = ""
+        if isinstance(msg, (HumanMessage, AIMessage, ToolMessage)):
+            tool_calls = getattr(msg, "tool_calls", [])
+            if len(tool_calls) > 0:
+                tool_calls=tool_calls[0]
+            else:
+                tool_calls = None
+            
+            if tool_calls is not None:
+                tool_name = tool_call["name"]
+                tool_args = str(tool_call.get("args", ""))[:50]
+                
+            content = getattr(msg, "content", "")[:50]
+            fallback.append(f"""{"content: " + content if len(content) > 0 else ""}{" tool_name: " + tool_name if len(tool_name) > 0 else ""}{"tool_args: " + tool_args if len(tool_args) > 0 else ""}""")
+            
+    return "\n".join(fallback)
+        
+
+def get_distillation(metrics: MetricsWrapper, 
+                     distillation_llm: ChatOllama, 
+                     compact: Compaction,
+                     upto: int,
+                     distill_these: List[Any]) -> List[HumanMessage]:
     print("Starting distill")
     conv_text = "\n".join(
         msg.content if isinstance(msg.content, str) else str(msg.content)
@@ -95,20 +138,22 @@ def get_distillation(metrics: MetricsWrapper, distillation_llm: ChatOllama, dist
             print(f"Distillation JSON parse failed: {exc}")
             print(f"Raw model output (truncated): {raw_content[:300]}")
 
-
     print("Distilled")
     print(facts_json)
 
     if distilled:
-        return [make_summary_message(facts)]
+        compact.upto = upto
+        compact.summary.append(facts)
+        return compact, make_summary_message(compact)
     else:
-        return [make_summary_message({"message_summary_failed" : "oldest messages have been truncated"})]
+        return compact, make_summary_message(compact, fallback_mechanical_summary(distill_these)) #this could be replaced with a mechanical summary
 
-def derive_message_list(metrics: MetricsWrapper, distillation_llm: ChatOllama, permanent: List[BaseMessage], history: List[Iteration]) -> List[Any]:
+def derive_message_list(metrics: MetricsWrapper, 
+                        distillation_llm: ChatOllama, 
+                        compact: Compaction, 
+                        permanent: List[BaseMessage],
+                        history: List[Iteration]) -> List[Any]:
     """Build the message list to send to the LLM.
-
-    * ``permanent`` – system + user + any permanent messages.
-    * ``history`` – list of ``Iteration`` objects.
 
     The function walks the history in reverse (most recent first) and
     emits the latest non‑duplicate iteration.  Duplicates are detected
@@ -120,17 +165,25 @@ def derive_message_list(metrics: MetricsWrapper, distillation_llm: ChatOllama, p
     send_to_distill = []
     
     token_quota = 15000
-    
+    upto: int = 0
     list_to_add_to = send_to_llm
+    last_upto = compact.upto
     for iteration in reversed(history):
+    
+        #only send to distill what has not yet been compacted
+        if iteration.iteration <= last_upto:
+            break
+            
         fp = (iteration.tool_call_fingerprint, iteration.result_fingerprint)
         if fp in seen_fingerprints:
             # Skip earlier duplicate
             continue
+            
         seen_fingerprints.add(fp)
         
-        if token_quota < 0:
+        if token_quota < 0 and upto == 0:
             list_to_add_to = send_to_distill
+            upto = iteration.iteration
         
         try:
             #we add these backwards because we are building from the end of the list
@@ -165,11 +218,11 @@ def derive_message_list(metrics: MetricsWrapper, distillation_llm: ChatOllama, p
     
     if len(send_to_distill) > 0:
         send_to_distill.reverse()
-        distilled = get_distillation(metrics, distillation_llm, send_to_distill)
+        compact, distilled = get_distillation(metrics, distillation_llm, compact, upto, send_to_distill)
         
 
     send_to_llm.reverse()
-    return permanent + distilled + send_to_llm
+    return compact, permanent + distilled + send_to_llm
     
 def run_agent(
     metrics: MetricsWrapper,
@@ -204,6 +257,8 @@ def run_agent(
     
     full_thread_history: List[Iteration]  = []#model message list is derived from this
     
+    current_compaction: Compaction = Compaction()
+    
     # centralize tool event accumulation / ingest call details
     # using local state
     def add_tool_event(te: ToolEvent):
@@ -227,7 +282,7 @@ def run_agent(
         
         tool_calls = []
         response = {}
-        send_to_llm = derive_message_list(metrics, distillation_llm, permanent_messages, full_thread_history)
+        current_compaction, send_to_llm = derive_message_list(metrics, distillation_llm, current_compaction, permanent_messages, full_thread_history)
         retry_notes: list[BaseMessage] = []
         for retry in range(10):
             
