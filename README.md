@@ -25,10 +25,10 @@ Prompt → Worker Agent → (Ingest → GraphDB / Weaviate) → Inference → Va
 ### Observability
 
 Metrics are exposed via Prometheus and visualized in Grafana. Key metrics include:
-- Inference latency
-- Query throughput
-- machine utilization
+- Inference token counts
+- Tool Call throughput
 - Telemetry event counts
+- machine utilization (available but not viz)
 
 ---
 
