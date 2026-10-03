@@ -3,7 +3,7 @@ from langchain_ollama import ChatOllama
 from langchain_core.messages import ToolMessage, BaseMessage
 from typing import Any, List
 from agent.models import Iteration, Compaction
-from agent.compaction import make_summary_message 
+from agent.compaction import make_summary_message, get_distillation
 
 HIGH, LOW = 15_000, 8_000
 
