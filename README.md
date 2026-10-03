@@ -1,5 +1,7 @@
 # inference-backbone
 
+![Sweet image from https://freegen.app/ after having duck.ai cinematize a prompt made by local agent system using gpt-oss:20b](./readme/freegen_inference_backbone.png)
+
 ## Overview
 
 `inference-backbone` is a self‑sustaining compute backbone that **powers a human + AI ecosystem**. It orchestrates data ingestion, semantic enrichment, vector similarity, and inference across a distributed knowledge‑graph stack.
