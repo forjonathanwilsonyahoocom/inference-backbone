@@ -59,7 +59,14 @@ async def evidence_preliminary_ingest(payload: Evidence) -> Dict:
                     chunk_index=idx,
                     chunk_count=len(raw_chunks),
                 )
-                embedding = await embedding_provider.embed(raw_chunk)
+                # Embed only the center part of the chunk to avoid overlapping context
+                # If the chunk is shorter than twice the overlap, embed the whole chunk
+                overlap = 200  # same as chunker default
+                if len(raw_chunk) > 2 * overlap:
+                    center_chunk = raw_chunk[overlap : len(raw_chunk) - overlap]
+                else:
+                    center_chunk = raw_chunk
+                embedding = await embedding_provider.embed(center_chunk)
                 typed_chunk.embedding_model = embedding_provider.model
                 chunk_ids.append(
                     evidence_chunk_collection.data.insert(
