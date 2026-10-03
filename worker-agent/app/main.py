@@ -1,4 +1,3 @@
-import json
 import os
 import uuid
 
@@ -41,13 +40,11 @@ def create_llms(config: dict) -> Tuple[ChatOllama, ChatOllama]:
         model=config["model"],
         base_url=config["base_url"],
         temperature=0.01,
-        num_ctx=40960,
     )
     distill_llm = ChatOllama(
         model=config["distill_model"],
         base_url=config["base_url"],
-        temperature=0,
-        num_predict=5000,
+        temperature=0.01,
     )
     return llm, distill_llm
 
@@ -74,7 +71,8 @@ def startup_event():
 class AgentRequest(BaseModel):
     request: str
     max_iterations: int = 150
-    verbose: bool = False
+    execution_id: str = str(uuid.uuid4())
+    verbose: bool = False    
 
 @app.post("/run")
 async def run_agent_endpoint(req: AgentRequest):
@@ -89,6 +87,7 @@ async def run_agent_endpoint(req: AgentRequest):
         llm_with_tools=llm_with_tools,
         distillation_llm=distill_llm,
         user_request=req.request,
+        execution_id=req.execution_id,
         max_iterations=req.max_iterations,
         verbose=req.verbose,
     )

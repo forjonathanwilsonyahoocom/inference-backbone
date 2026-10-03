@@ -1,5 +1,7 @@
 # inference-backbone
 
+![Sweet image from https://freegen.app/ after having duck.ai cinematize a prompt made by local agent system using gpt-oss:20b](./readme/freegen_inference_backbone.jpg)
+
 ## Overview
 
 `inference-backbone` is a self‑sustaining compute backbone that **powers a human + AI ecosystem**. It orchestrates data ingestion, semantic enrichment, vector similarity, and inference across a distributed knowledge‑graph stack.
@@ -204,12 +206,13 @@ relies on http callable LLM that handles tool calls, all tests have been done wi
 * run_command
 * web_search
 * web_fetch
+* search_evidence
 
 ### worker-agent context management
 as the workers context reaches a threshold, it is distilled and truncated to compress the context
 
 ### validator agent extracts claims and examines tool calls as evidence of claim support
-the validator also handles calling the backbone-api endpoints to ingest the claims
+the validator also handles calling the backbone-api endpoints to ingest the claims, then adds graph links from claims to supporting evidence
 
 ### weaviate ingest of claims and evidence
 as implemented uses nomic embeddings for indexing
@@ -225,10 +228,10 @@ if you want the links shown below to work for you outside the docker network, yo
 ![graph db links](./readme/graphdb_link.png)
 
 ### prometheus metrics
-currently only implemented for worker agent
+currently only implemented for worker agent and validator agent
 
 ### grafana visualization of metrics
-currently only one dashboard is init for worker agent as shown above
+currently only one dashboard is init for worker agent and validator as shown above
 
 
 ## planned:
