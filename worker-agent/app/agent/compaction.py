@@ -3,6 +3,7 @@ from observability.metrics import MetricsWrapper
 from agent.models import Compaction
 from prompts.distillation import DISTILLATION_PROMPT
 from langchain_ollama import ChatOllama
+import json
 
 from langchain_core.messages import (
     AIMessage,

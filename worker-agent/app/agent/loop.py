@@ -1,4 +1,3 @@
-import json
 import os
 from observability.metrics import MetricsWrapper
 from typing import Any, List, Optional, Dict
