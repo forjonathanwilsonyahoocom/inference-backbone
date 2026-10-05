@@ -11,6 +11,12 @@ def estimate_tokens(content: Any) -> int:
     return max(1, len(str(content)) // 4)
     
 def iter_tokens(it: Iteration) -> int:
+    """
+        note that iter tokens defaults to the compressed values,
+        this is only used for the count of tokens sent to the
+        worker llm, when we switch to assembling distillation llm 
+        message, we do not keep track of tokens
+    """
     r = it.tool_call_result_compressed or it.tool_call_result
     m = it.model_response_compressed or it.model_response
     return (estimate_tokens(r) + estimate_tokens(getattr(m, "content", ""))
@@ -38,6 +44,8 @@ def derive_message_list(metrics: MetricsWrapper,
     upto: int = 0
     list_to_add_to = send_to_llm
     last_upto = compact.upto
+    primary_result_attribute = "tool_call_result_compressed"
+    primary_response_attribute = "model_response_compressed"
     for iteration in reversed(history):
     
         #only send to distill what has not yet been compacted
@@ -54,11 +62,14 @@ def derive_message_list(metrics: MetricsWrapper,
         if token_quota < 0 and upto == 0:
             list_to_add_to = send_to_distill
             upto = iteration.iteration
+            #distillation LLM gets original uncompressed content
+            primary_result_attribute = "tool_call_result"
+            primary_response_attribute = "model_response"
         
         try:
             #we add these backwards because we are building from the end of the list
             token_quota -= iter_tokens(iteration)
-            tool_content = f"{iteration.tool_call_result_compressed or iteration.tool_call_result}"
+            tool_content = f"{getattr(iteration, primary_result_attribute, iteration.tool_call_result)}"
             
             #only add stagnant nudge if this is sent to the llm, indicated by upto == 0
             if iteration.stagnant_count >= 2 and upto == 0:
@@ -71,7 +82,7 @@ def derive_message_list(metrics: MetricsWrapper,
                 )
             )
 
-            list_to_add_to.append(iteration.model_response_compressed or iteration.model_response) 
+            list_to_add_to.append(getattr(iteration, primary_response_attribute, iteration.model_response)) 
         except Exception as e:
             print(e)
             print(iteration)
