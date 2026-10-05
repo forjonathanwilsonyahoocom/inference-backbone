@@ -145,6 +145,7 @@ def run_agent(
             result = f"Unknown tool: {tool_name}. Available: {list(tools)}"
             metrics.emit(failure_metric_labeler({"failure": f"unknown tool {tool_name}"}))
         else:
+            this_iteration.tool_name = tool_name
             try:
                 metrics.emit(tool_call_metric_labeler({"tool_call": tool_name}))
                 result = selected_tool.invoke(tool_args)

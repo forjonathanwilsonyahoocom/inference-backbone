@@ -73,6 +73,7 @@ def derive_message_list(metrics: MetricsWrapper,
             
             #only add stagnant nudge if this is sent to the llm, indicated by upto == 0
             if iteration.stagnant_count >= 2 and upto == 0:
+                metrics.emit(metrics.get_counter_message("stagnation_warning_issued", "distillation agent worked"))
                 tool_content += f"\n **NOTE**: this call has been used for the same result {iteration.stagnant_count + 1} times, \n **history is de-duplicated**\n do you need to continue calling this?"
                 
             list_to_add_to.append(
