@@ -109,7 +109,7 @@ def compress_web_fetch(result: Any, limit: int) -> Dict[str, Any]:
     return {"preview": result[:limit]}
 
 # Mapping from tool name to compressor callable
-COMPRESSORS: Dict[str, Callable[[Any], Any]] = {
+COMPRESSORS: Dict[str, Callable[[Any, int], Any]] = {
     "read_file": compress_read_file,
     "write_file": compress_write_file,
     "edit_file": compress_edit_file,
@@ -122,10 +122,8 @@ COMPRESSORS: Dict[str, Callable[[Any], Any]] = {
 
 # Helper to get a compressor or identity
 
-
-
 def get_compressor(tool_name: str) -> Callable[[Any], Any]:
-    return COMPRESSORS.get(tool_name, lambda x: x)
+    return COMPRESSORS.get(tool_name, lambda x, y: x)
 
 """End of compressors.py"""
 
