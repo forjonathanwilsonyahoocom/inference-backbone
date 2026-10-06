@@ -2,6 +2,7 @@ from typing import Dict, Any, List
 from observability.metrics import MetricsWrapper
 from agent.models import Compaction
 from prompts.distillation import DISTILLATION_PROMPT
+from prompts.distillation_schema import AgentState
 from langchain_ollama import ChatOllama
 import json
 
@@ -71,20 +72,18 @@ def get_distillation(metrics: MetricsWrapper,
     for _ in range(3):
         facts_json = None
         try:
-            facts_json = distillation_llm.invoke(distillation_messages)
-            raw = facts_json.content.strip()
-            if raw.startswith("```"):
-                raw = raw.strip("`")
-                raw = raw[raw.find("{"):raw.rfind("}") + 1]
-            parsed = json.loads(raw)
-            if not isinstance(parsed, dict):
-                raise ValueError(f"expected a JSON object, got {type(parsed).__name__}")
-            facts = parsed
+            agent_state_facts = distillation_llm.invoke(distillation_messages)
+            if not isinstance(agent_state_facts, AgentState):
+                raise ValueError(f"expected a AgentState object, got {type(agent_state_facts).__name__}")
+            facts_dict = agent_state_facts.model_dump()
+            if not isinstance(facts_dict, dict):
+                raise ValueError(f"expected a dict from AgentState.model_dump(), got {type(facts_dict).__name__}")
+            facts = facts_dict
             metrics.emit(metrics.get_counter_message("distillation_success", "distillation agent worked"))
             break
         except Exception as exc:
             metrics.emit(metrics.get_counter_message("distillation_failure", "distillation agent crashes"))
-            raw_content = facts_json.content if facts_json else "(no response)"
+            raw_content = str(agent_state_facts) if agent_state_facts else "(no response)"
             print(f"Distillation JSON parse failed: {exc}")
             print(f"Raw model output (truncated): {raw_content[:300]}")
 

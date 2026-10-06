@@ -175,7 +175,7 @@ def run_agent(
             )
         )
         
-        print(f"Executing: {tool_name}({str(tool_args)[:50]})")
+        print(f"Executing: {tool_name}({str(tool_args)[:150]})")
 
         full_thread_history.append(this_iteration)
             
