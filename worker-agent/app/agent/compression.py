@@ -14,15 +14,16 @@ from typing import Any, Dict, List, Optional
 
 from langchain_core.messages import AIMessage
 
-from .models import Iteration
-from .toolbox.compressors import get_compressor
+from observability.metrics import MetricsWrapper
+from agent.models import Iteration
+from toolbox.compressors import get_compressor
 
 # ---------------------------------------------------------------------------
 # Tiered compression limits
 # ---------------------------------------------------------------------------
 # (min_age, char_limit) – age 0 is the newest iteration.
 # The tiers are intentionally simple; they can be tuned by the user.
-TIERS: List[tuple[int, int]] = [(8, 600), (3, 3000)]
+TIERS: List[tuple[int, int]] = [(8, 600), (3, 3000), (0, None)]
 
 
 def limit_for_age(age: int) -> Optional[int]:
@@ -40,7 +41,7 @@ def limit_for_age(age: int) -> Optional[int]:
 # Helper: clip a string to a limit, keeping head and tail.
 # ---------------------------------------------------------------------------
 
-def clip_mid(value: Any, limit: int) -> str:
+def clip_mid(metrics: MetricsWrapper, value: Any, limit: int) -> str:
     """Return a clipped representation of ``value``.
 
     The function keeps the first 70 % of the string as a *head* and the
@@ -53,13 +54,14 @@ def clip_mid(value: Any, limit: int) -> str:
     head = int(limit * 0.7)
     tail = max(1, limit - head)
     omitted = len(s) - limit
+    metrics.emit(metrics.get_counter_message("compression_amount", "reduced by this many chars", value=omitted))
     return f"{s[:head]}...[{omitted} chars omitted]...{s[-tail:]}"
 
 # ---------------------------------------------------------------------------
 # Compress an AIMessage – content and tool‑call arguments.
 # ---------------------------------------------------------------------------
 
-def compress_response(resp: AIMessage, limit: int) -> AIMessage:
+def compress_response(metrics: MetricsWrapper, resp: AIMessage, limit: int) -> AIMessage:
     """Return a compressed copy of ``resp``.
 
     The function keeps the same structure but clips the ``content`` and
@@ -72,7 +74,7 @@ def compress_response(resp: AIMessage, limit: int) -> AIMessage:
             {
                 "id": tc["id"],
                 "name": tc["name"],
-                "args": clip_mid(tc.get("args", {}), limit),
+                "args": clip_mid(metrics, tc.get("args", {}), limit),
                 "type": "tool_call",
             }
         )
@@ -82,7 +84,7 @@ def compress_response(resp: AIMessage, limit: int) -> AIMessage:
 # Main compression routine
 # ---------------------------------------------------------------------------
 
-def compress_history(history: List[Iteration], upto: int) -> int:
+def compress_history(metrics: MetricsWrapper, history: List[Iteration], upto: int) -> int:
     """Compress the *raw* fields of ``history``.
 
     Parameters
@@ -114,7 +116,7 @@ def compress_history(history: List[Iteration], upto: int) -> int:
 
         # Re‑compress from the raw values – never mutate the originals.
         it.tool_call_result_compressed = get_compressor(it.tool_name)(it.tool_call_result)
-        it.model_response_compressed = compress_response(it.model_response, limit)
+        it.model_response_compressed = compress_response(metrics, it.model_response, limit)
         it.compression_limit = limit
         changed += 1
 
@@ -124,15 +126,15 @@ def compress_history(history: List[Iteration], upto: int) -> int:
 # Expose a small helper for the loop to call.
 # ---------------------------------------------------------------------------
 
-def compress_and_log(metrics, history, upto):
+def compress_and_log(metrics: MetricsWrapper, history: List[Iteration], upto: int):
     """Convenience wrapper that logs the number of compressed items.
 
     The function is intentionally thin – the heavy lifting is done by
     :func:`compress_history`.
     """
-    changed = compress_history(history, upto)
+    changed = compress_history(metrics, history, upto)
     if changed:
-        metrics.emit(metrics.get_counter_message("compression_changed", f"compressed {changed} iterations"))
+        metrics.emit(metrics.get_counter_message("compression_changed", f"compressed iteration count", value=changed))
     return changed
 
 # End of compression.py

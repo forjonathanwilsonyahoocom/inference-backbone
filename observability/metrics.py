@@ -62,10 +62,11 @@ class MetricsWrapper:
             print(e)
         
 
-    def get_counter_message(self, name, description):
+    def get_counter_message(self, name, description, value=1):
         return {"type": "counter",
                 "name": name,
-                "description": description}
+                "description": description,
+                "value" : value}
 
 
     def get_gauge_func(self, name, description):
@@ -80,11 +81,12 @@ class MetricsWrapper:
     def get_counter_message_labeler(self, name, description):
         # call the function with a map of labels.
         # the labels NAMES must be the same for all calls to the same counter
-        def labeler(labels):
+        def labeler(labels, value=1):
             return {"type": "counter",
                     "name": name,
                     "description": description,
-                    "labels": labels}
+                    "labels": labels,
+                    "value" : value}
 
         return labeler
 

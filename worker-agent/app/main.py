@@ -22,6 +22,8 @@ from toolbox.write_file import write_file
 from toolbox.edit_file import edit_file
 from toolbox.run_command import run_command
 
+from prompts.distillation_schema import AgentState
+
 METRICS = None #this global is instantiated during app startup, a reference is sent to the agent runtime
 
 def init_metrics() -> MetricsWrapper:
@@ -78,6 +80,7 @@ class AgentRequest(BaseModel):
 async def run_agent_endpoint(req: AgentRequest):
     config = get_ollama_config()
     llm, distill_llm = create_llms(config)
+    distill_llm_typed = distill_llm.with_structured_output(AgentState)
     tools, llm_with_tools = get_toolchain(llm)
     
     result = run_agent(
@@ -85,7 +88,7 @@ async def run_agent_endpoint(req: AgentRequest):
         config=config,
         tools=tools,
         llm_with_tools=llm_with_tools,
-        distillation_llm=distill_llm,
+        distillation_llm=distill_llm_typed,
         user_request=req.request,
         execution_id=req.execution_id,
         max_iterations=req.max_iterations,
