@@ -15,6 +15,23 @@ WORKSPACE = WORKSPACE.resolve()
 print(WORKSPACE)
 
 
+
+def clip_mid(value: Any, limit: int) -> str:
+    """Return a clipped representation of ``value``.
+
+    The function keeps the first 70 % of the string as a *head* and the
+    remainder as a *tail*.  The omitted portion is indicated with a
+    ``...[N chars omitted]...`` marker.
+    """
+    s = value if isinstance(value, str) else str(value)
+    if len(s) <= limit:
+        return s
+    head = int(limit * 0.7)
+    tail = max(1, limit - head)
+    omitted = len(s) - limit
+    return f"{s[:head]}...[{omitted} chars omitted]...{s[-tail:]}"
+    
+
 def safe_path(relative_path: str) -> Path:
     """
     Resolve a user-provided path inside WORKSPACE.

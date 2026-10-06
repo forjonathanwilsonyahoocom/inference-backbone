@@ -1,13 +1,25 @@
 from langchain_core.tools import tool
-import subprocess
+import json
 import os
-from toolbox.util import WORKSPACE
+import subprocess
+
+from toolbox.util import safe_path, clip_mid
+
+
+COMMAND_OUTPUT_LIMIT = 2000
+
 
 @tool
-def run_command(command: str) -> str:
+def run_command(command: str, cwd: str = ".") -> str:
     """
-    Run a non-interactive shell command inside the project workspace.
-    Use this for formatting, tests, compilation, and inspection.
+    Run a non-interactive shell command in a workspace-relative directory.
+
+    Use this for tests, formatting, compilation, inspection, and other
+    non-interactive development commands.
+
+    cwd must be relative to the workspace root. Use "." to run from the
+    workspace root. The resolved working directory is included in the
+    result.
     """
     blocked_fragments = [
         "rm -rf",
@@ -21,15 +33,25 @@ def run_command(command: str) -> str:
     ]
 
     normalized = command.lower().replace(" ", "")
+
     for fragment in blocked_fragments:
         if fragment.replace(" ", "") in normalized:
-            return f"Blocked potentially destructive command: {command}"
+            return json.dumps({
+                "command": command,
+                "cwd": cwd,
+                "exit_code": None,
+                "stdout": "",
+                "stderr": "",
+                "error": f"Blocked potentially destructive command: {command}",
+            }, indent=2)
 
     try:
+        run_path = safe_path(cwd)
+
         result = subprocess.run(
             command,
             shell=True,
-            cwd=WORKSPACE,
+            cwd=run_path,
             capture_output=True,
             text=True,
             timeout=60,
@@ -39,19 +61,31 @@ def run_command(command: str) -> str:
             },
         )
 
-        output = (
-            f"exit_code: {result.returncode}\n"
-            f"stdout:\n{result.stdout}\n"
-            f"stderr:\n{result.stderr}"
-        )
-
-        if len(output) > 20_000:
-            output = output[:20_000] + "\n...[output truncated]"
-
-        return output
+        return json.dumps({
+            "command": command,
+            "cwd": run_path,
+            "exit_code": result.returncode,
+            "stdout": clip_mid(result.stdout, 1500),
+            "stderr": clip_mid(result.stderr, 4000),
+        }, indent=2)
 
     except subprocess.TimeoutExpired:
-        return "Command timed out after 60 seconds."
+        return json.dumps({
+            "command": command,
+            "cwd": cwd,
+            "exit_code": None,
+            "stdout": "",
+            "stderr": "",
+            "error": "Command timed out after 60 seconds.",
+        }, indent=2)
+
     except Exception as exc:
-        return f"Command failed to run: {type(exc).__name__}: {exc}"
+        return json.dumps({
+            "command": command,
+            "cwd": cwd,
+            "exit_code": None,
+            "stdout": "",
+            "stderr": "",
+            "error": f"{type(exc).__name__}: {exc}",
+        }, indent=2)
 
