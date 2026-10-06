@@ -113,6 +113,19 @@
           "legendFormat": "{{__name__}}",
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "{__name__=~\"worker_agent_compression.*total\"}",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{__name__}}",
+          "range": true,
+          "refId": "B"
         }
       ],
       "title": "Worker Tokens in play",
@@ -345,6 +358,23 @@
           "range": true,
           "refId": "C",
           "useBackend": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "{__name__=\"worker_agent_stagnation_warning_issued_total\"}",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": true,
+          "legendFormat": "stagnation",
+          "range": true,
+          "refId": "D",
+          "useBackend": false
         }
       ],
       "title": "Worker Agent Metrics",
@@ -493,13 +523,13 @@
     "list": []
   },
   "time": {
-    "from": "now-5m",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Agent Metrics",
   "uid": "cfz92g6mds2dcf",
-  "version": 7,
+  "version": 1,
   "weekStart": ""
 }

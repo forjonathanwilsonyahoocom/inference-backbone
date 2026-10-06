@@ -26,7 +26,6 @@ class MetricsWrapper:
         self.counters = {}
         self.service_name = service_name
         self.gauges = {}
-        self.gauge_avg = {}
         
     def emit(self, msg: Dict):
         try:
@@ -43,21 +42,12 @@ class MetricsWrapper:
                 self.counters[msg['name']] = c
             elif msg['type'] == "gauge":
                 c = self.gauges.get(msg['name'], "missing")
-                a = self.gauge_avg.get(msg['name'], {"total" : 0, "n" : 0})
                 if c == "missing":
                     c = Gauge(f"{self.service_name}_{ msg['name']}", msg['description'])
 
-                a["total"] = a["total"] + msg.get('value', 1)
-                a["n"] = a["n"] + 1
-                
-                c.set(a["total"]/a["n"])
-
-                if a["total"] > 60:
-                    a["total"] = a["total"] / 2
-                    a["n"] = a["n"] / 2
+                c.set(msg.get('value', 1))
 
                 self.gauges[msg['name']] = c
-                self.gauge_avg[msg['name']] = a
         except Exception as e:
             print(e)
         

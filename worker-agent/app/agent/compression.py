@@ -23,7 +23,7 @@ from toolbox.compressors import get_compressor
 # ---------------------------------------------------------------------------
 # (min_age, char_limit) – age 0 is the newest iteration.
 # The tiers are intentionally simple; they can be tuned by the user.
-TIERS: List[tuple[int, int]] = [(8, 600), (2, 3000)]
+TIERS: List[tuple[int, int]] = [(10, 600), (4, 1000)]
 
 
 def limit_for_age(age: int) -> Optional[int]:
@@ -77,7 +77,7 @@ def compress_response(metrics: MetricsWrapper, resp: AIMessage, limit: int) -> A
     The function keeps the same structure but clips the ``content`` and
     each tool‑call ``args`` using :func:`clip_mid`.
     """
-    compressed_content = clip_mid(resp.content, limit) if resp.content else ""
+    compressed_content = clip_mid(metrics, resp.content, limit) if resp.content else ""
     compressed_tool_calls = []
     for tc in resp.tool_calls or []:
         compressed_tool_calls.append(
