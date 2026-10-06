@@ -23,7 +23,7 @@ from toolbox.compressors import get_compressor
 # ---------------------------------------------------------------------------
 # (min_age, char_limit) – age 0 is the newest iteration.
 # The tiers are intentionally simple; they can be tuned by the user.
-TIERS: List[tuple[int, int]] = [(8, 600), (4, 1000), (2, 3000)]
+TIERS: List[tuple[int, int]] = [(8, 300), (4, 600), (2, 1000)]
 
 
 def limit_for_age(age: int) -> Optional[int]:

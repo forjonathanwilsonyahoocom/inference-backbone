@@ -6,7 +6,7 @@ from agent.models import Iteration, Compaction
 from agent.compaction import make_summary_message, get_distillation
 from agent.compression import compress_history
 
-HIGH, LOW = 12_000, 8_000
+HIGH, LOW = 15_000, 8_000
 
 def estimate_tokens(content: Any) -> int:
     return max(1, len(str(content)) // 4)
