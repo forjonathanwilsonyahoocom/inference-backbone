@@ -125,7 +125,7 @@ def compress_history(metrics: MetricsWrapper, history: List[Iteration], upto: in
             
         metrics.emit(metrics.get_counter_message("compression_compressed", "compression event"))
         # Re‑compress from the raw values – never mutate the originals.
-        it.tool_call_result_compressed = get_compressor(it.tool_name)(it.tool_call_result)
+        it.tool_call_result_compressed = get_compressor(it.tool_name)(it.tool_call_result, limit)
         it.model_response_compressed = compress_response(metrics, it.model_response, limit)
         it.compression_limit = limit
 
