@@ -23,7 +23,7 @@ from toolbox.compressors import get_compressor
 # ---------------------------------------------------------------------------
 # (min_age, char_limit) – age 0 is the newest iteration.
 # The tiers are intentionally simple; they can be tuned by the user.
-TIERS: List[tuple[int, int]] = [(8, 600), (3, 3000), (0, None)]
+TIERS: List[tuple[int, int]] = [(8, 600), (2, 3000)]
 
 
 def limit_for_age(age: int) -> Optional[int]:
@@ -61,6 +61,16 @@ def clip_mid(metrics: MetricsWrapper, value: Any, limit: int) -> str:
 # Compress an AIMessage – content and tool‑call arguments.
 # ---------------------------------------------------------------------------
 
+def compress_args(metrics: MetricsWrapper, v: Any, limit: int) -> Any:
+    """Returns NEW containers; never edits its input."""
+    if isinstance(v, str):
+        return clip_mid(metrics, v, limit)
+    if isinstance(v, dict):
+        return {k: compress_args(metrics, x, limit) for k, x in v.items()}
+    if isinstance(v, list):
+        return [compress_args(metrics, x, limit) for x in v]
+    return v
+    
 def compress_response(metrics: MetricsWrapper, resp: AIMessage, limit: int) -> AIMessage:
     """Return a compressed copy of ``resp``.
 
@@ -74,7 +84,7 @@ def compress_response(metrics: MetricsWrapper, resp: AIMessage, limit: int) -> A
             {
                 "id": tc["id"],
                 "name": tc["name"],
-                "args": clip_mid(metrics, tc.get("args", {}), limit),
+                "args": compress_args(metrics, tc.get("args", {}), limit),
                 "type": "tool_call",
             }
         )
@@ -84,7 +94,7 @@ def compress_response(metrics: MetricsWrapper, resp: AIMessage, limit: int) -> A
 # Main compression routine
 # ---------------------------------------------------------------------------
 
-def compress_history(metrics: MetricsWrapper, history: List[Iteration], upto: int) -> int:
+def compress_history(metrics: MetricsWrapper, history: List[Iteration], upto: int) ->  List[Iteration]:
     """Compress the *raw* fields of ``history``.
 
     Parameters
@@ -97,14 +107,13 @@ def compress_history(metrics: MetricsWrapper, history: List[Iteration], upto: in
 
     Returns
     -------
-    int
-        The number of iterations that were (re)compressed.
+    List[Iteration]
+        the history, compressed
     """
     if not history:
-        return 0
+        return history
 
     newest = history[-1].iteration
-    changed = 0
 
     for it in history:
         if it.iteration <= upto:
@@ -113,29 +122,14 @@ def compress_history(metrics: MetricsWrapper, history: List[Iteration], upto: in
         limit = limit_for_age(age)
         if limit is None or it.compression_limit == limit:
             continue
-
+            
+        metrics.emit(metrics.get_counter_message("compression_compressed", "compression event"))
         # Re‑compress from the raw values – never mutate the originals.
         it.tool_call_result_compressed = get_compressor(it.tool_name)(it.tool_call_result)
         it.model_response_compressed = compress_response(metrics, it.model_response, limit)
         it.compression_limit = limit
-        changed += 1
 
-    return changed
-
-# ---------------------------------------------------------------------------
-# Expose a small helper for the loop to call.
-# ---------------------------------------------------------------------------
-
-def compress_and_log(metrics: MetricsWrapper, history: List[Iteration], upto: int):
-    """Convenience wrapper that logs the number of compressed items.
-
-    The function is intentionally thin – the heavy lifting is done by
-    :func:`compress_history`.
-    """
-    changed = compress_history(metrics, history, upto)
-    if changed:
-        metrics.emit(metrics.get_counter_message("compression_changed", f"compressed iteration count", value=changed))
-    return changed
+    return history
 
 # End of compression.py
 
