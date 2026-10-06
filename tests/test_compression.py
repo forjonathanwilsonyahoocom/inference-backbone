@@ -1,10 +1,12 @@
 import importlib.util
+import sys
+sys.path.append("../../..")
 import pytest
 
 # Load compress_history and Iteration
 spec = importlib.util.spec_from_file_location(
     "compression_module",
-    "inference-backbone/worker-agent/app/agent/compression.py"
+    "worker-agent/app/agent/compression.py"
 )
 compression_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(compression_module)

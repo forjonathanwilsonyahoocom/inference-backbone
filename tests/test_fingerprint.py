@@ -1,9 +1,11 @@
 import importlib.util
+import sys
+sys.path.append("../worker-agent/app/agent")
 
 # Load fingerprint module
 spec = importlib.util.spec_from_file_location(
     "fingerprint",
-    "inference-backbone/worker-agent/app/agent/fingerprint.py",
+    "worker-agent/app/agent/fingerprint.py",
 )
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)

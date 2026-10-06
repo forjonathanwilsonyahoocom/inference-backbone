@@ -1,13 +1,15 @@
 import os
 import sys
 import importlib.util
+import sys
+sys.path.append("../agent")
 import types
 import pytest
 
 # Load run_agent from worker-agent module
 spec = importlib.util.spec_from_file_location(
     "loop_module",
-    os.path.join("inference-backbone", "worker-agent", "app", "agent", "loop.py")
+    "worker-agent/app/agent/loop.py"
 )
 loop_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(loop_module)
