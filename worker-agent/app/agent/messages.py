@@ -4,6 +4,7 @@ from langchain_core.messages import ToolMessage, BaseMessage
 from typing import Any, List
 from agent.models import Iteration, Compaction
 from agent.compaction import make_summary_message, get_distillation
+from agent.compression import compress_history
 
 HIGH, LOW = 15_000, 8_000
 
@@ -34,12 +35,16 @@ def derive_message_list(metrics: MetricsWrapper,
     via the ``step_fingerprint`` field.  For each iteration we emit
     the compressed version if present, otherwise the raw value.
     """
+    
+    stagnation_metric_labeler = metrics.get_counter_message_labeler("stagnation_warning", "the agent calls a tool on repeat")
     seen_fingerprints = set()
     send_to_llm = []
     send_to_distill = []
         
     live_total = sum(iter_tokens(i) for i in history if i.iteration > compact.upto)
     token_quota = LOW if live_total > HIGH else float("inf")
+    
+    history = compress_history(metrics, history, compact.upto)
     
     upto: int = 0
     list_to_add_to = send_to_llm
@@ -49,7 +54,7 @@ def derive_message_list(metrics: MetricsWrapper,
     for iteration in reversed(history):
     
         #only send to distill what has not yet been compacted
-        if iteration.iteration <= last_upto:
+        if iteration.iteration < last_upto:
             break
             
         fp = (iteration.tool_call_fingerprint, iteration.result_fingerprint)
@@ -69,11 +74,12 @@ def derive_message_list(metrics: MetricsWrapper,
         try:
             #we add these backwards because we are building from the end of the list
             token_quota -= iter_tokens(iteration)
-            tool_content = f"{getattr(iteration, primary_result_attribute, iteration.tool_call_result)}"
+            tool_content = f"{getattr(iteration, primary_result_attribute) or iteration.tool_call_result}"
             
             #only add stagnant nudge if this is sent to the llm, indicated by upto == 0
             if iteration.stagnant_count >= 2 and upto == 0:
-                tool_content += f"\n **NOTE**: this call has been used for the same result {iteration.stagnant_count + 1} times, \n **history is de-duplicated**\n do you need to continue calling this?"
+                metrics.emit(stagnation_metric_labeler({"tool_call" : iteration.tool_name}))
+                tool_content = f"**NOTE**: this call has been used for the same result {iteration.stagnant_count + 1} times, \n **history is de-duplicated**\n do you need to continue calling this? tool result follows:\n{tool_content}"
                 
             list_to_add_to.append(
                 ToolMessage(
@@ -82,7 +88,7 @@ def derive_message_list(metrics: MetricsWrapper,
                 )
             )
 
-            list_to_add_to.append(getattr(iteration, primary_response_attribute, iteration.model_response)) 
+            list_to_add_to.append(getattr(iteration, primary_response_attribute) or iteration.model_response) 
         except Exception as e:
             print(e)
             print(iteration)

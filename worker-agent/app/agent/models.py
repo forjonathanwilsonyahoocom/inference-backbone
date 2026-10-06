@@ -9,6 +9,8 @@ class Iteration(BaseModel):
     tool_call_result_compressed: Any = None
     tool_call_fingerprint: Optional[str] = None
     result_fingerprint: Optional[str] = None
+    compression_limit: Optional[int] = None
+    tool_name: Optional[str] = None
     stagnant_count: int = 0
 
 

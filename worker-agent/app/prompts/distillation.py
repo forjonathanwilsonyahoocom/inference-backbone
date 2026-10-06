@@ -23,5 +23,3 @@ your response must be less than 3000 chars
 Make sure the JSON is syntactically valid (no trailing commas, proper quoting).
 
 """
-
-
