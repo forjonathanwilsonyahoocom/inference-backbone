@@ -6,7 +6,7 @@ from agent.models import Iteration, Compaction
 from agent.compaction import make_summary_message, get_distillation
 from agent.compression import compress_history
 
-HIGH, LOW = 20_000, 15_000
+HIGH, LOW = 12_000, 8_000
 
 def estimate_tokens(content: Any) -> int:
     return max(1, len(str(content)) // 4)
@@ -35,6 +35,8 @@ def derive_message_list(metrics: MetricsWrapper,
     via the ``step_fingerprint`` field.  For each iteration we emit
     the compressed version if present, otherwise the raw value.
     """
+    
+    stagnation_metric_labeler = metrics.get_counter_message_labeler("stagnation_warning", "the agent calls a tool on repeat")
     seen_fingerprints = set()
     send_to_llm = []
     send_to_distill = []
@@ -76,7 +78,7 @@ def derive_message_list(metrics: MetricsWrapper,
             
             #only add stagnant nudge if this is sent to the llm, indicated by upto == 0
             if iteration.stagnant_count >= 2 and upto == 0:
-                metrics.emit(metrics.get_counter_message("stagnation_warning_issued", "messages with high stagnation count"))
+                metrics.emit(stagnation_metric_labeler({"tool_call" : iteration.tool_name}))
                 tool_content = f"**NOTE**: this call has been used for the same result {iteration.stagnant_count + 1} times, \n **history is de-duplicated**\n do you need to continue calling this? tool result follows:\n{tool_content}"
                 
             list_to_add_to.append(

@@ -366,15 +366,28 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "{__name__=\"worker_agent_stagnation_warning_issued_total\"}",
+          "expr": "{__name__=\"worker_agent_stagnation_warning_total\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": true,
-          "legendFormat": "stagnation",
+          "legendFormat": "stagnant_{{tool_call}}",
           "range": true,
           "refId": "D",
           "useBackend": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "{__name__=\"worker_agent_distillation_.*_total\"}",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "E"
         }
       ],
       "title": "Worker Agent Metrics",
@@ -523,13 +536,13 @@
     "list": []
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Agent Metrics",
   "uid": "cfz92g6mds2dcf",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }

@@ -95,6 +95,7 @@ def get_distillation(metrics: MetricsWrapper,
         compact.summary.append(facts)
         compact.fallback = ""
     else:
+        metrics.emit(metrics.get_counter_message("distillation_fallback", "distillation mechanical fallback"))
         compact.fallback = fallback_mechanical_summary(distill_these)
     
     print(compact.fallback)
