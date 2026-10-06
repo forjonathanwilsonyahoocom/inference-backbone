@@ -87,6 +87,8 @@ def run_agent(
         retry_notes: list[BaseMessage] = []
         for retry in range(10):
             
+            for x in send_to_llm:
+                print(f"about to send : {x}")
             try:
                 response = llm_with_tools.invoke(send_to_llm + retry_notes)
 
