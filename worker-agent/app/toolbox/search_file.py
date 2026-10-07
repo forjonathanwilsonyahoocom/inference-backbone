@@ -102,6 +102,9 @@ def compress_search_file(result: Any, limit: int) -> str:
         print(f"compress_search_file fails on {result}")
         return result
         
+    if len(parsed) == 0:
+        return str(result)
+        
     allowed_per = limit // len(parsed)
     
     return_list = []

@@ -49,6 +49,9 @@ def compress_search_evidence(result: Any, limit: int) -> str:
     if not isinstance(parsed, list):
         print(f"compress_search_evidence fails on {result}")
         return result
+    
+    if  len(parsed) == 0
+        return str(result)
         
     allowed_per = limit // len(parsed)
     
