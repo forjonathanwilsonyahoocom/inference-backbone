@@ -143,7 +143,7 @@ def run_agent(
             metrics.emit(failure_metric_labeler({"failure": f"unknown tool {tool_name}"}))
         else:
             this_iteration.tool_name = tool_name
-            if tool_name = "search_evidence":
+            if tool_name == "search_evidence":
                 tool_args["execution_id"] = execution_id
             try:
                 metrics.emit(tool_call_metric_labeler({"tool_call": tool_name}))
