@@ -1,6 +1,6 @@
 import json
 from langchain_core.tools import tool
-
+from typing import Any
 from toolbox.util import safe_path, WORKSPACE, EXCLUDED_DIRS
 from pathlib import Path
 
@@ -21,7 +21,7 @@ def search_file(path: str, query: str) -> str:
     Parameters
     ----------
     path : str
-        Path to the file or directory to search (relative to the workspace or absolute).
+        Path to the file or directory to search (relative to the workspace).
     query : str
         The exact text to look for (case‑sensitive).
 
@@ -67,7 +67,8 @@ def search_file(path: str, query: str) -> str:
         max_hits = 10
         for i, line in enumerate(content.splitlines(), start=1):
             if query in line:
-                matches.append({"file": str(file.relative_to(WORKSPACE)), "line": i, "text": line.strip()})
+                stripped = line.strip()
+                matches.append({"file": str(file.relative_to(WORKSPACE)), "line": i, "text": stripped})
                 if len(matches) >= max_hits:
                     break
         return matches
@@ -89,4 +90,28 @@ def search_file(path: str, query: str) -> str:
                 break
 
     return json.dumps(results, ensure_ascii=False, indent=2)
+
+
+
+
+def compress_search_file(result: Any, limit: int) -> str:
+    """retains the lines with hits but reduces size"""
+    
+    parsed = json.loads(result)
+    if not isinstance(parsed, list):
+        print(f"compress_search_file fails on {result}")
+        return result
+        
+    allowed_per = limit / len(parsed)
+    
+    return_list = []
+    
+    for hit in parsed:
+        compressed_line = hit["text"]
+        if len(compressed_line) > allowed_per:
+            compressed_line = compressed_line[:allowed_per] + f"...[truncated {len(compressed_line)  - allowed_per} chars]"
+        
+        return_list.append({"file": hit["file"], "line": hit["line"], "text": compressed_line})
+        
+    return json.dumps(return_list, ensure_ascii=False, indent=2)
 

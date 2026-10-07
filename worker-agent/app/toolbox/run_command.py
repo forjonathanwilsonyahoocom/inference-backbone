@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 
+from typing import Any
 from toolbox.util import safe_path, clip_mid
 
 
@@ -63,7 +64,7 @@ def run_command(command: str, cwd: str = ".") -> str:
 
         return json.dumps({
             "command": command,
-            "cwd": run_path,
+            "cwd": cwd,
             "exit_code": result.returncode,
             "stdout": clip_mid(result.stdout, 1500),
             "stderr": clip_mid(result.stderr, 4000),
@@ -88,4 +89,31 @@ def run_command(command: str, cwd: str = ".") -> str:
             "stderr": "",
             "error": f"{type(exc).__name__}: {exc}",
         }, indent=2)
+
+
+
+def compress_run_command(result: Any, limit: int) -> str:
+    """Return a truncated stdout/stderr and exit code.
+
+    Parameters
+    ----------
+    result: dict
+        Expected to contain ``stdout``, ``stderr`` and ``exit_code``.
+    """
+    try:
+        result = json.loads(str(result))
+    except Exception as e:
+        print(f"compress_run_command fails  with {e} \n on \n {result}")
+        return result
+    
+    if not isinstance(result, dict):
+        return str(result)
+        
+    return json.dumps({
+        "command": result['command'],
+        "cwd":  result['cwd'],
+        "exit_code": result['exit_code'],
+        "stdout": clip_mid(result['stdout'], limit),
+        "stderr": clip_mid(result['stderr'], limit),
+    }, indent=2)
 

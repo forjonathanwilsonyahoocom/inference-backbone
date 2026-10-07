@@ -58,7 +58,7 @@ def read_file(
     # Truncate very large output
     max_chars = 30_000
     if len(content) > max_chars:
-        content = content[:max_chars] + "\n...[truncated]"
+        content = content[:max_chars] + f"\n...[original read truncated {len(content) - max_chars} chars]"
 
     return content
 

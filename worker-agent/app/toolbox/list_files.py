@@ -3,10 +3,13 @@ from toolbox.util import safe_path, WORKSPACE, EXCLUDED_DIRS
 from langchain_core.tools import tool
 
 @tool
-def list_files() -> str:
+def list_files(path: str = ".") -> str:
     """List files and directories in the current project workspace."""
     entries = []
-    for path in sorted(WORKSPACE.rglob("*")):
+    
+    target_path = safe_path(path)
+    
+    for path in sorted(target_path.rglob("*")):
         relative = path.relative_to(WORKSPACE)
         if any(part in EXCLUDED_DIRS for part in relative.parts):
             continue

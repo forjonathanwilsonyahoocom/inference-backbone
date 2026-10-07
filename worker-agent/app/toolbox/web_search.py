@@ -1,5 +1,5 @@
-
 from langchain_core.tools import tool
+from typing import Any
 from ddgs import DDGS
 import json
 
@@ -38,6 +38,33 @@ def web_search(query: str) -> str:
     except Exception as e:
         return f"Error: The DuckDuckGo search operation failed: {str(e)}"
 
+
+def compress_web_search(result: Any, limit: int) -> str:
+    """Return the top results with truncated previews."""
+ 
+    parsed = json.loads(result)
+    if not isinstance(parsed, dict):
+        print(f"compress_web_search fails on {result}")
+        return result
+    
+    allowed_per = limit / len(parsed["results"])
+    
+    return_list = []
+    
+    if not isinstance(result, list):
+        return result
+
+    for hit in parsed["results"]:       
+        compressed_line = hit["snippet"]
+        
+        if len(compressed_line) > allowed_per:
+            compressed_line = compressed_line[:allowed_per] + f"...[truncated {len(compressed_line)  - allowed_per} chars]"
+
+        hit["snippet"] = compressed_line
+        
+        return_list.append(hit)
+        
+    return json.dumps({"results" : return_list}, ensure_ascii=False, indent=2)
 
 
 

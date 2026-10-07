@@ -1,4 +1,3 @@
-
 from langchain_core.tools import tool
 import httpx
 from bs4 import BeautifulSoup

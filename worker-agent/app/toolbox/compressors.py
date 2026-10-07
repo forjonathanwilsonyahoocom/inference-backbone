@@ -13,89 +13,37 @@ returned unchanged.
 """
 
 from typing import Any, Callable, Dict
+from toolbox.run_command import compress_run_command
+from toolbox.search_file import compress_search_file
+from toolbox.search_evidence import compress_search_evidence
+from toolbox.web_search import compress_web_search
 
 # ---------------------------------------------------------------------------
 # Compressor implementations
 # ---------------------------------------------------------------------------
 
-def compress_read_file(result: Any, limit: int) -> Dict[str, Any]:
+def compress_read_file(result: Any, limit: int) -> str:
     """Return a small summary of a file read.
 
     Parameters
     ----------
     result: str
-        The full file content.
+        The current content.
 
     Returns
     -------
-    dict
-        ``{"path": <path>, "size": <bytes>, "preview": <first 200 chars>}``
+    str
+        truncated to limit with markers
     """
-    if not isinstance(result, str):
-        return result
+    result = str(result)
+    
     size = len(result.encode("utf-8"))
-    preview = result[:limit]
-    return {"size": size, "preview": preview}
+    
+    if size > limit:
+        return result[:limit] + f"\n...[truncated {size - limit} chars]"
+    
+    return result
 
-
-def compress_write_file(result: Any, limit: int) -> Dict[str, Any]:
-    """Return a minimal representation of a write operation.
-
-    Parameters
-    ----------
-    result: str
-        The path written to.
-    """
-    return {"path": result}
-
-
-def compress_edit_file(result: Any, limit: int) -> Dict[str, Any]:
-    """Return a minimal representation of an edit operation.
-
-    Parameters
-    ----------
-    result: str
-        The path edited.
-    """
-    return {"path": result}
-
-
-def compress_run_command(result: Any, limit: int) -> Dict[str, Any]:
-    """Return a truncated stdout/stderr and exit code.
-
-    Parameters
-    ----------
-    result: dict
-        Expected to contain ``stdout``, ``stderr`` and ``exit_code``.
-    """
-    if not isinstance(result, dict):
-        return result
-    return {
-        "exit_code": result.get("exit_code"),
-        "stdout": result.get("stdout", "")[:limit],
-        "stderr": result.get("stderr", "")[:limit],
-    }
-
-
-def compress_search_file(result: Any, limit: int) -> Dict[str, Any]:
-    """Return the number of hits and a preview of the first hit."""
-    if not isinstance(result, list):
-        return result
-    return {"hits": len(result), "preview": result[0] if result else None}
-
-
-def compress_search_evidence(result: Any, limit: int) -> Dict[str, Any]:
-    """Return the number of evidence chunks and a preview of the first."""
-    if not isinstance(result, list):
-        return result
-    return {"hits": len(result), "preview": result[0] if result else None}
-
-
-def compress_web_search(result: Any, limit: int) -> Dict[str, Any]:
-    """Return the top results and a preview of the first."""
-    if not isinstance(result, list):
-        return result
-    return {"hits": len(result), "preview": result[0] if result else None}
 
 
 def compress_web_fetch(result: Any, limit: int) -> Dict[str, Any]:
@@ -111,8 +59,6 @@ def compress_web_fetch(result: Any, limit: int) -> Dict[str, Any]:
 # Mapping from tool name to compressor callable
 COMPRESSORS: Dict[str, Callable[[Any, int], Any]] = {
     "read_file": compress_read_file,
-    "write_file": compress_write_file,
-    "edit_file": compress_edit_file,
     "run_command": compress_run_command,
     "search_file": compress_search_file,
     "search_evidence": compress_search_evidence,
