@@ -50,7 +50,7 @@ def compress_search_evidence(result: Any, limit: int) -> str:
         print(f"compress_search_evidence fails on {result}")
         return result
         
-    allowed_per = limit / len(parsed)
+    allowed_per = limit // len(parsed)
     
     return_list = []
     

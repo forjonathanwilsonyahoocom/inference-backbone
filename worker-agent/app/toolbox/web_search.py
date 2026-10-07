@@ -47,7 +47,7 @@ def compress_web_search(result: Any, limit: int) -> str:
         print(f"compress_web_search fails on {result}")
         return result
     
-    allowed_per = limit / len(parsed["results"])
+    allowed_per = limit // len(parsed["results"])
     
     return_list = []
     
