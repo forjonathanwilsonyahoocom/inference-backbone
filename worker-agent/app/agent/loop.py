@@ -44,9 +44,6 @@ def run_agent(
     failure_metric_labeler = metrics.get_counter_message_labeler("tool_call_failure", "the agent tool fails")
     token_gauge = metrics.get_gauge_func("tokens_in_play", "tokens in current context")
     
-    
-    # expose execution id for tools that need it
-    os.environ["CURRENT_EXECUTION_ID"] = execution_id
     permanent_messages = [
         SystemMessage(content=SYSTEM_PROMPT),
         HumanMessage(content=user_request),
@@ -146,6 +143,8 @@ def run_agent(
             metrics.emit(failure_metric_labeler({"failure": f"unknown tool {tool_name}"}))
         else:
             this_iteration.tool_name = tool_name
+            if tool_name = "search_evidence":
+                tool_args["execution_id"] = execution_id
             try:
                 metrics.emit(tool_call_metric_labeler({"tool_call": tool_name}))
                 result = selected_tool.invoke(tool_args)
