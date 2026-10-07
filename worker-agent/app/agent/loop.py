@@ -93,9 +93,15 @@ def run_agent(
                 content = (response.content or "").strip()
                 if len(tool_calls) == 1 or (not tool_calls and len(content) > 4):
                     break
+                
+                metrics.emit(failure_metric_labeler({"failure": "model response was empty or invalid"}))
                 retry_notes += [response, HumanMessage("Your response was empty or invalid. Return exactly one tool call, or a final answer as content only.")]
             except ResponseError as e:
-                retry_notes.append(HumanMessage(f"Last response failed tool-call parsing: {e}. Return exactly one valid tool call."))
+                metrics.emit(failure_metric_labeler({"failure": f"model response caused ResponseError"}))
+                retry_notes.append(HumanMessage(f"Last response failed tool-call parsing: {e}. Return exactly one valid tool call, or a final answer as content only."))
+            except Exception as e:
+                metrics.emit(failure_metric_labeler({"failure": f"model response was unparsible"}))
+                retry_notes.append(HumanMessage(f"Last response failed tool-call parsing: {e}. Return exactly one valid tool call, or a final answer as content only."))
         else:
             return {"condition": "model failed after 10 retries", 
                     "final_response": getattr(response, "content", "failure after retries"),
