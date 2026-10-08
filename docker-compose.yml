@@ -6,7 +6,7 @@ services:
       dockerfile: backbone-api/Dockerfile
     container_name: backbone_api
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       GRAPHDB_URL: http://graphdb:7200/repositories/inference-backbone
       OLLAMA_BASE_URL: http://10.42.0.192:11434
@@ -20,7 +20,7 @@ services:
       dockerfile: worker-agent/Dockerfile
     container_name: worker_agent
     ports:
-      - "8001:8000"
+      - "127.0.0.1:8001:8000"
     shm_size: '2gb'
     environment:
       OLLAMA_URL: http://10.42.0.192:11434
@@ -37,7 +37,7 @@ services:
       dockerfile: validator-agent/Dockerfile
     container_name: validator_agent
     ports:
-      - "8002:8000"
+      - "127.0.0.1:8002:8000"
     environment:
       OLLAMA_URL: http://10.42.0.192:11434
       GEN_MODEL: gpt-oss:20b
@@ -46,16 +46,13 @@ services:
   jupyter:
     build: ./jupyter
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     volumes:
       - ./jupyter/notebooks/:/localjup/notebooks
 
   weaviate:
     image: semitechnologies/weaviate:1.39.3-2489571.amd64
     container_name: weaviate
-    ports:
-      - "8084:8080"
-      - "50051:50051"
     restart: on-failure:0
     volumes:
       - "./datasets/weaviate:/var/lib/weaviate"
@@ -71,10 +68,6 @@ services:
     image: khaller/graphdb-free:10.6.2
     container_name: graphdb
     restart: unless-stopped
-
-    ports:
-      - "7200:7200"          # SPARQL endpoint + UI
-
     environment:
       GDB_HEAP_SIZE: 2G      # adjust for your RAM
 
@@ -98,8 +91,6 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
-    ports:
-      - "9090:9090"
 
   grafana:
     image: docker.io/grafana/grafana:11.2.0
@@ -111,7 +102,7 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:rw
       - ./grafana/provisioning:/etc/grafana/provisioning:ro,Z
     ports:
-      - "3011:3000"
+      - "127.0.0.1:3011:3000"
 
 volumes:
   grafana-data:
