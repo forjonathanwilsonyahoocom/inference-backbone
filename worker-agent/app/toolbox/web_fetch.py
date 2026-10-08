@@ -25,7 +25,7 @@ def web_fetch(url: str) -> str:
         
 
 #this expects the response from the web-tools api
-def compress_web_fetch(result: Any, limit: int) -> Dict[str, Any]:
+def compress_web_fetch(result: Any, limit: int) -> str:
     """Return a preview of fetched content.
 
     We intentionally keep the original function untouched; this compressor
