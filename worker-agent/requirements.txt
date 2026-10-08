@@ -5,7 +5,6 @@ ddgs>=6.0.0
 playwright
 fastapi
 uvicorn
-nest_asyncio
 beautifulsoup4
 prometheus_client>=0.22.1
-
+trafilatura

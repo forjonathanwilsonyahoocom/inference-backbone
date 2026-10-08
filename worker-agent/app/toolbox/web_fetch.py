@@ -1,21 +1,107 @@
 from langchain_core.tools import tool
 import httpx
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin, urlsplit
 import asyncio
 from playwright.async_api import async_playwright
+import trafilatura
+import ipaddress
+import socket
 
-import nest_asyncio
+MAX_REDIRECTS = 5
+TIMEOUT = httpx.Timeout(15.0, connect=5.0)
+REDIRECT_STATUSES = {301, 302, 303, 307, 308}
 
 
-# Apply the patch to allow nested event loops inside the Jupyter runtime environment
-nest_asyncio.apply()
+def validate_public_url(url: str) -> str:
+    """Return a normalized HTTP(S) URL, or raise ValueError."""
+    try:
+        parts = urlsplit(url)
+        port = parts.port  # Accessing this also validates malformed ports.
+    except ValueError as exc:
+        raise ValueError(f"Malformed URL: {exc}") from exc
+
+    if parts.scheme.lower() not in {"http", "https"}:
+        raise ValueError("Only http and https URLs are allowed.")
+    if not parts.hostname:
+        raise ValueError("URL must include a hostname.")
+    if parts.username is not None or parts.password is not None:
+        raise ValueError("URLs containing credentials are not allowed.")
+    if port is not None and not (1 <= port <= 65535):
+        raise ValueError("Invalid port.")
+
+    host = parts.hostname.rstrip(".")
+    if not host or "%" in host:
+        # Reject empty host and scoped IPv6 zone identifiers.
+        raise ValueError("Invalid hostname.")
+
+    try:
+        # Handles literal IPv4 and IPv6 addresses, including unusual forms
+        # accepted by the standard library's IP parser.
+        addresses = [ipaddress.ip_address(host)]
+    except ValueError:
+        try:
+            answers = socket.getaddrinfo(
+                host,
+                port or (443 if parts.scheme.lower() == "https" else 80),
+                type=socket.SOCK_STREAM,
+            )
+        except socket.gaierror as exc:
+            raise ValueError(f"Hostname did not resolve: {host}") from exc
+
+        addresses = []
+        for answer in answers:
+            address = ipaddress.ip_address(answer[4][0])
+            if address not in addresses:
+                addresses.append(address)
+
+    if not addresses:
+        raise ValueError("Hostname has no usable IP addresses.")
+
+    # Reject the entire hostname if even one answer is non-public.
+    # is_global excludes private, loopback, link-local, reserved, etc.
+    if any(not address.is_global for address in addresses):
+        raise ValueError(f"Hostname resolves to a non-public IP: {host}")
+
+    return url
+
+
+def safe_get(url: str) -> httpx.Response:
+    current = validate_public_url(url)
+
+    with httpx.Client(
+        follow_redirects=False,
+        timeout=TIMEOUT,
+        headers={"User-Agent": "Mozilla/5.0"},
+        trust_env=False,  # Don't silently inherit proxy settings from env.
+    ) as client:
+        for hop in range(MAX_REDIRECTS + 1):
+            # Revalidate on each hop; urljoin handles relative Location values.
+            current = validate_public_url(current)
+            response = client.get(current)
+
+            if response.status_code not in REDIRECT_STATUSES:
+                response.raise_for_status()
+                return response
+
+            location = response.headers.get("location")
+            if not location:
+                return response
+
+            if hop == MAX_REDIRECTS:
+                raise ValueError("Too many redirects.")
+
+            current = urljoin(str(response.url), location)
+
+    raise AssertionError("Unreachable")
+
 
 @tool
 def web_fetch(url: str) -> str:
-    """Visits a specific URL found from a web search using a headless browser 
-    to extract its main text. Use this tool ONLY after finding a trusted URL 
-    from a web search when you need deeper information than the short snippet provided.
+    """Visits a specific URL found from a web search using a series of less trustworthy 
+    approaches ending in a headless browser to extract its main text.
+    Use this tool ONLY after finding a trusted URL from a web search
+    when you need deeper information than the short snippet provided.
     
     Args:
         url: The absolute web address (including http/https).
@@ -75,36 +161,72 @@ def web_fetch(url: str) -> str:
                 return "Error 404: Webpage not found."
 
             # Brief delay to allow background cryptographic script challenges to clear (e.g. Cloudflare)
-            await page.wait_for_timeout(1500)
+            await page.wait_for_timeout(3000)
             
             html_content = await page.content()
             await browser.close()
             return html_content
 
+
     try:
-        # Run the async crawler safely within our single-threaded loop architecture
+        response = safe_get(url)
+        html = response.text
+        text = trafilatura.extract(
+            html,
+            output_format="markdown",
+            include_tables=True,
+            include_links=False,
+        )
+           
+        if text and len(text.strip()) >= 200:
+            return text.strip()
+    except ValueError as e:
+        print(f"phase 1 safe_get exits with {e}")
+        return f"phase 1 safe_get exits with {e}"
+    except AssertionError as e:
+        print(f"phase 1 safe_get exits with {e}")
+        return f"phase 1 safe_get exits with {e}"
+    except Exception as e:
+        print(e)
+        print("phase 1 safe_get fails, trying phase 2")
+        
+    try:
+        html_content = trafilatura.fetch_url(url)
+        text = trafilatura.extract(
+                html_content,
+                output_format="markdown",
+                include_tables=True,
+                include_links=False,
+            )
+            
+        if text and len(text.strip()) >= 200:
+            return text.strip()
+            
+    except Exception as e:
+        print(e)
+        print("phase 2 trafilatura fetch fails")
+        
+    try:
+          
         html_content = asyncio.run(_fetch())
-        
-        # 2. Content extraction with layout cleanup
+                
+        text = trafilatura.extract(
+                html_content,
+                output_format="markdown",
+                include_tables=True,
+                include_links=False,
+            )
+
+        if text and len(text.strip()) >= 200:
+            return text.strip()
+
         soup = BeautifulSoup(html_content, "html.parser")
-        for element in soup(["script", "style", "nav", "footer", "header", "form", "iframe"]):
-            element.decompose()
+        for node in soup(["script", "style", "noscript", "svg", "nav", "footer", "form"]):
+            node.decompose()
 
-        text_blocks = []
-        for p in soup.find_all(["p", "h1", "h2", "h3", "li"]):
-            text = p.get_text().strip()
-            if len(text) > 20: 
-                text_blocks.append(text)
-
-        full_text = "\n".join(text_blocks)
+        return " ".join(soup.stripped_strings)
         
-        # Keep agent parsing snappy and inside context token window boundaries
-        if len(full_text) > 4000:
-            return full_text[:4000] + "\n\n[Content truncated by assistant framework for token safety...]"
-        
-        return full_text if full_text.strip() else "Error: Target webpage reached, but no layout text could be isolated."
 
     except Exception as e:
         return f"Error: Web fetch exception encountered during execution: {str(e)}"
         
-
