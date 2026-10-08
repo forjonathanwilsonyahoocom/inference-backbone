@@ -7,6 +7,10 @@ from typing import List, Dict, Any
 def search_evidence(query: str, limit: int = 8, instance_number: int | None = None, execution_id: str  | None = None) -> str:
     """Search chunked content from previous iterations.
     use when previous iteration details have been compressed away
+    
+    this is an essential tool after using web_fetch 
+    or any tool that returns large amounts of text that
+    may be immediately removed from the context
 
     Parameters
     ----------
@@ -17,7 +21,7 @@ def search_evidence(query: str, limit: int = 8, instance_number: int | None = No
     instance_number: int, optional
         Filter by instance number if provided.
     execution_id: str, optional:
-        injected by framework
+        overridden by framework
 
     Returns
     -------
