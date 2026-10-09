@@ -104,6 +104,9 @@ services:
 volumes:
   grafana-data:
   prometheus-data:
+  graphdb-data:
+  weaviate-data:
+
 
       
       
