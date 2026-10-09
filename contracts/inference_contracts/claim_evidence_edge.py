@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Literal
 
-from contracts.inference_contracts.validators import ArtifactId
+from contracts.inference_contracts.validations import ArtifactId
 from pydantic import BaseModel, Field
 
 class ClaimEvidenceEdge(BaseModel):
