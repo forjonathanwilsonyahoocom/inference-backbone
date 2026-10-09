@@ -87,7 +87,8 @@ services:
     restart: unless-stopped
     environment:
       GDB_HEAP_SIZE: 2G      # adjust for your RAM
-
+    ports:
+      - "127.0.0.1:7200:7200"
     volumes:
       - graphdb-data:/opt/graphdb/data
       - ./repository.init:/repository.init
