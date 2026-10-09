@@ -43,7 +43,7 @@ def search_evidence(query: str, limit: int = 8, instance_number: int | None = No
     try:
         resp = requests.post("http://backbone-api:8000/search/evidence", json=payload, timeout=10)
         resp.raise_for_status()
-        return json.dumps(json.resp.json(), ensure_ascii=False, indent=2)
+        return json.dumps(resp.json(), ensure_ascii=False, indent=2)
     except Exception as e:
         return json.dumps([{"error": str(e)}], ensure_ascii=False, indent=2)
         
