@@ -38,7 +38,7 @@ async def claim_ingest(payload: Claim) -> Dict:
         file_path = write_to_file(
             content=payload,
             location="claim",
-            identifier=payload.claim_id),
+            identifier=payload.claim_id)
         
         print(f"[ingest] Persisted claim to {file_path}")
 
