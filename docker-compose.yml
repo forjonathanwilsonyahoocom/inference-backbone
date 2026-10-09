@@ -41,7 +41,9 @@ services:
     container_name: web_tools
     shm_size: '2gb'
     restart: unless-stopped
-
+    networks:
+      - worker-webtools
+      
   validator-agent:
     build:
       context: .
@@ -79,7 +81,6 @@ services:
     networks:
       - data
 
-
   graphdb:
     image: khaller/graphdb-free:10.6.2
     container_name: graphdb
@@ -92,7 +93,6 @@ services:
       - ./repository.init:/repository.init
     networks:
       - data
-
 
   prometheus:
     image: docker.io/prom/prometheus:v2.54.1
@@ -129,9 +129,11 @@ volumes:
 networks:
   worker-api:
     driver: bridge
+    internal: true
 
   validator-api:
     driver: bridge
+    internal: true
 
   data:
     driver: bridge
