@@ -119,6 +119,10 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro,Z
     ports:
       - "127.0.0.1:3011:3000"
+    networks:
+      - worker-api
+      - validator-api
+
 
 volumes:
   grafana-data:
