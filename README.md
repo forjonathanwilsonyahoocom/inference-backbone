@@ -227,6 +227,41 @@ if you want the links shown below to work for you outside the docker network, yo
 
 ![graph db links](./readme/graphdb_link.png)
 
+### A SPARQL QUERY EXAMPLE
+showing claims and evidence that are connected by edges with support > 0.4
+```sparql
+PREFIX EX: <http://backbone-api:8000/>
+
+SELECT
+  ?claimIRI
+  ?claimContent
+  ?evidenceIRI
+  ?evidenceContent
+  ?support
+WHERE {
+  ?edge a EX:ClaimEvidenceEdge ;
+        EX:hasSupport ?support ;
+        EX:hasClaimId ?claimId ;
+        EX:hasEvidenceId ?evidenceId .
+
+  FILTER(?support > 0.4)
+
+  ?claim a EX:Claim ;
+         EX:hasClaimId ?claimId ;
+         EX:hasContent ?claimContent .
+
+  ?evidence a EX:Evidence ;
+            EX:hasEvidenceId ?evidenceId ;
+            EX:hasContent ?evidenceContent .
+
+  BIND(IRI(CONCAT("http://backbone-api:8000/file/claim/", STR(?claimId))) AS ?claimIRI)
+  BIND(IRI(CONCAT("http://backbone-api:8000/file/evidence/", STR(?evidenceId))) AS ?evidenceIRI)
+}
+ORDER BY DESC(?support)
+LIMIT 20
+```
+
+
 ### prometheus metrics
 currently only implemented for worker agent and validator agent
 
