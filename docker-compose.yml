@@ -11,6 +11,10 @@ services:
       GEN_MODEL: gpt-oss:20b
     volumes:
       - ./datasets/backbone-api:/indexed-artifacts
+    networks:
+      - worker-api
+      - validator-api
+      - data
 
   worker-agent:
     build:
@@ -26,6 +30,9 @@ services:
     volumes:
       - ./worker-agent-workspace:/agentworkspace
     restart: unless-stopped
+    networks:
+      - worker-api
+      - worker-webtools
 
   web-tools:
     build:
@@ -44,6 +51,8 @@ services:
       OLLAMA_URL: http://10.42.0.192:11434
       GEN_MODEL: gpt-oss:20b
     restart: unless-stopped
+    networks:
+      - validator-api
 
   jupyter:
     build: ./jupyter
@@ -51,6 +60,9 @@ services:
       - "127.0.0.1:8080:8080"
     volumes:
       - ./jupyter/notebooks/:/localjup/notebooks
+    networks:
+      - worker-api
+      - validator-api
 
   weaviate:
     image: semitechnologies/weaviate:1.39.3-2489571.amd64
@@ -64,6 +76,8 @@ services:
       PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
       DEFAULT_VECTORIZER_MODULE: "none"
       CLUSTER_HOSTNAME: "node1"
+    networks:
+      - data
 
 
   graphdb:
@@ -76,6 +90,8 @@ services:
     volumes:
       - graphdb-data:/opt/graphdb/data
       - ./repository.init:/repository.init
+    networks:
+      - data
 
 
   prometheus:
@@ -88,6 +104,9 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
+    networks:
+      - worker-api
+      - validator-api
 
   grafana:
     image: docker.io/grafana/grafana:11.2.0
@@ -107,7 +126,15 @@ volumes:
   graphdb-data:
   weaviate-data:
 
+networks:
+  worker-api:
+    driver: bridge
 
-      
-      
-      
+  validator-api:
+    driver: bridge
+
+  data:
+    driver: bridge
+
+  worker-webtools:
+    driver: bridge
