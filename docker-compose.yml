@@ -65,6 +65,7 @@ services:
     networks:
       - worker-api
       - validator-api
+      - tunnel
 
   weaviate:
     image: semitechnologies/weaviate:1.39.3-2489571.amd64
@@ -139,4 +140,7 @@ networks:
     driver: bridge
 
   worker-webtools:
+    driver: bridge
+
+  tunnel:
     driver: bridge
