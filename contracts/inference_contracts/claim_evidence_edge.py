@@ -1,11 +1,12 @@
 from datetime import datetime
 from typing import Any, Literal
 
+from contracts.inference_contracts.validators import ArtifactId
 from pydantic import BaseModel, Field
 
 class ClaimEvidenceEdge(BaseModel):
-    evidence_id: str
-    claim_id: str
+    evidence_id: ArtifactId
+    claim_id: ArtifactId
     support: float
 
     model_name: str

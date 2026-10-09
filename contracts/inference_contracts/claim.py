@@ -1,11 +1,12 @@
 from datetime import datetime
 from typing import Any, Literal
 
+from contracts.inference_contracts.validators import ArtifactId
 from pydantic import BaseModel, Field
 
 
 class Claim(BaseModel):
-    claim_id: str
+    claim_id: ArtifactId
     instance_number: int # numbering within the execution
     importance: float
     execution_id: str

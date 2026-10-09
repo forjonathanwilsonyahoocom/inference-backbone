@@ -1,11 +1,11 @@
 from datetime import datetime
 from typing import Any, Literal
-
+from contracts.inference_contracts.validators import ArtifactId
 from pydantic import BaseModel, Field
 
 
 class Evidence(BaseModel):
-    evidence_id: str
+    evidence_id: ArtifactId
     execution_id: str
     instance_number: int # numbering within the execution
     iteration: int
