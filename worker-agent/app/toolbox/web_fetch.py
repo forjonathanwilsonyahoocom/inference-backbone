@@ -16,7 +16,7 @@ def web_fetch(url: str) -> str:
     try:
         resp = requests.post("http://web-tools:8000/fetch", json=payload, timeout=10)
         resp.raise_for_status()
-        return json.dumps(json.resp.json(), ensure_ascii=False, indent=2)
+        return json.dumps(resp.json(), ensure_ascii=False, indent=2)
     except Exception as e:
         return json.dumps([{"error": str(e)}], ensure_ascii=False, indent=2)
         
