@@ -130,11 +130,9 @@ volumes:
 networks:
   worker-api:
     driver: bridge
-    internal: true
 
   validator-api:
     driver: bridge
-    internal: true
 
   data:
     driver: bridge
