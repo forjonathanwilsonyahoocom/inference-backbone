@@ -29,7 +29,12 @@ def web_search(query: str) -> str:
 def compress_web_search(result: Any, limit: int) -> str:
     """Return the top results with truncated previews."""
  
-    parsed = json.loads(result)
+    try:
+        parsed = json.loads(result)
+    except Exception as e:
+        print(f"failed to with {e} while parsing json {result} ")
+        return result
+        
     if not isinstance(parsed, list):
         print(f"compress_web_search fails on {result}")
         return result

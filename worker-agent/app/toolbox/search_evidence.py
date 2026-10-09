@@ -50,7 +50,12 @@ def search_evidence(query: str, limit: int = 8, instance_number: int | None = No
 def compress_search_evidence(result: Any, limit: int) -> str:
     """Return the number of evidence chunks and a preview of the first."""
     
-    parsed = json.loads(result)
+    try:
+        parsed = json.loads(result)
+    except Exception as e:
+        print(f"failed to with {e} while parsing json {result} ")
+        return result
+        
     if not isinstance(parsed, list):
         print(f"compress_search_evidence fails on {result}")
         return result

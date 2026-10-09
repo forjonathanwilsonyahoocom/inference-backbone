@@ -32,7 +32,12 @@ def compress_web_fetch(result: Any, limit: int) -> str:
     simply truncates the content to a manageable size.
     """
 
-    parsed = json.loads(result)
+    try:
+        parsed = json.loads(result)
+    except Exception as e:
+        print(f"failed to with {e} while parsing json {result} ")
+        return result
+        
     if not isinstance(parsed, dict):
         print(f"compress_search_evidence fails on {result}")
         return result
