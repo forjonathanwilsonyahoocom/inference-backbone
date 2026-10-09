@@ -28,7 +28,7 @@ class MetricsWrapper:
         self.gauges = {}
         
     def clear_counters(self):
-        for k, metric in self.counters.items()
+        for k, metric in self.counters.items():
             metric.reset()
             
     def emit(self, msg: Dict):
