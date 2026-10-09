@@ -2,7 +2,6 @@ import httpx
 from typing import Dict
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin, urlsplit
-import asyncio
 from playwright.async_api import async_playwright
 import trafilatura
 import ipaddress
@@ -212,7 +211,7 @@ async def web_fetch(url: str) -> Dict:
         
     try:
           
-        html_content = await asyncio.run(_fetch())
+        html_content = await _fetch()
                 
         text = trafilatura.extract(
                 html_content,
