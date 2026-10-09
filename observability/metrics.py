@@ -29,7 +29,12 @@ class MetricsWrapper:
         
     def clear_counters(self):
         for k, metric in self.counters.items():
-            metric.reset()
+            try:
+                print(f"resetting {k}")
+                metric.reset()
+            except Exception as e:
+                print(e)
+            
             
     def emit(self, msg: Dict):
         try:
