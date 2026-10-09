@@ -82,7 +82,7 @@ async def run_agent_endpoint(req: AgentRequest):
     llm, distill_llm = create_llms(config)
     distill_llm_typed = distill_llm.with_structured_output(AgentState)
     tools, llm_with_tools = get_toolchain(llm)
-    
+    METRICS.clear_counters()
     result = run_agent(
         metrics=METRICS,
         config=config,

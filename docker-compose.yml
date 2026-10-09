@@ -27,6 +27,14 @@ services:
       - ./worker-agent-workspace:/agentworkspace
     restart: unless-stopped
 
+  web-tools:
+    build:
+      context: .
+      dockerfile: web-tools/Dockerfile
+    container_name: web_tools
+    shm_size: '2gb'
+    restart: unless-stopped
+
   validator-agent:
     build:
       context: .

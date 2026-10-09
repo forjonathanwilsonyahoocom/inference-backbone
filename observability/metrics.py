@@ -27,6 +27,15 @@ class MetricsWrapper:
         self.service_name = service_name
         self.gauges = {}
         
+    def clear_counters(self):
+        for k, metric in self.counters.items():
+            try:
+                print(f"resetting {k}")
+                metric.reset()
+            except Exception as e:
+                print(e)
+            
+            
     def emit(self, msg: Dict):
         try:
             if msg['type'] == "counter":

@@ -17,6 +17,7 @@ from toolbox.run_command import compress_run_command
 from toolbox.search_file import compress_search_file
 from toolbox.search_evidence import compress_search_evidence
 from toolbox.web_search import compress_web_search
+from toolbox.web_fetch import compress_web_fetch
 
 # ---------------------------------------------------------------------------
 # Compressor implementations
@@ -46,15 +47,6 @@ def compress_read_file(result: Any, limit: int) -> str:
 
 
 
-def compress_web_fetch(result: Any, limit: int) -> Dict[str, Any]:
-    """Return a preview of fetched content.
-
-    We intentionally keep the original function untouched; this compressor
-    simply truncates the content to a manageable size.
-    """
-    if not isinstance(result, str):
-        return result
-    return {"preview": result[:limit]}
 
 # Mapping from tool name to compressor callable
 COMPRESSORS: Dict[str, Callable[[Any, int], Any]] = {

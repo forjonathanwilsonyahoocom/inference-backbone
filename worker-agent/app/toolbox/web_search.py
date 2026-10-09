@@ -1,6 +1,6 @@
 from langchain_core.tools import tool
 from typing import Any
-from ddgs import DDGS
+import requests
 import json
 
 @tool
@@ -16,58 +16,45 @@ def web_search(query: str) -> str:
     if not clean_query:
         return "Error: The provided search query was empty."
 
+    payload = {"query" : clean_query}
+    
     try:
-        # Initializing DuckDuckGo Search Client
-        with DDGS() as ddgs:
-            # Gather up to 4 clean results to reduce token clutter
-            raw_results = list(ddgs.text(clean_query, max_results=4))
-
-        if not raw_results:
-            return f"Search completed, but no results were found for: '{clean_query}'"
-
-        structured_results = []
-        for item in raw_results:
-            structured_results.append({
-                "title": item.get("title", "No Title"),
-                "url": item.get("href", ""),
-                "snippet": item.get("body", "No description available.")
-            })
-
-        return json.dumps({"results": structured_results}, indent=2)
-
+        resp = requests.post("http://web-tools:8000/search", json=payload, timeout=10)
+        resp.raise_for_status()
+        return json.dumps(resp.json(), ensure_ascii=False, indent=2)
     except Exception as e:
-        return f"Error: The DuckDuckGo search operation failed: {str(e)}"
+        return json.dumps([{"error": str(e)}], ensure_ascii=False, indent=2)
 
 
 def compress_web_search(result: Any, limit: int) -> str:
     """Return the top results with truncated previews."""
  
     parsed = json.loads(result)
-    if not isinstance(parsed, dict):
+    if not isinstance(parsed, list):
         print(f"compress_web_search fails on {result}")
         return result
     
-    if len(parsed["results"]) == 0:
+    if len(parsed) == 0:
         return str(result)
         
-    allowed_per = limit // len(parsed["results"])
+    allowed_per = limit // len(parsed)
     
     return_list = []
     
     if not isinstance(result, list):
         return result
 
-    for hit in parsed["results"]:       
-        compressed_line = hit["snippet"]
+    for hit in parsed:       
+        compressed_line = hit["body"]
         
         if len(compressed_line) > allowed_per:
             compressed_line = compressed_line[:allowed_per] + f"...[truncated {len(compressed_line)  - allowed_per} chars]"
 
-        hit["snippet"] = compressed_line
+        hit["body"] = compressed_line
         
         return_list.append(hit)
         
-    return json.dumps({"results" : return_list}, ensure_ascii=False, indent=2)
+    return json.dumps(return_list, ensure_ascii=False, indent=2)
 
 
 
