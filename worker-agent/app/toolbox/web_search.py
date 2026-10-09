@@ -30,14 +30,14 @@ def compress_web_search(result: Any, limit: int) -> str:
     """Return the top results with truncated previews."""
  
     parsed = json.loads(result)
-    if not isinstance(parsed, dict):
+    if not isinstance(parsed, list):
         print(f"compress_web_search fails on {result}")
         return result
     
-    if len(parsed["results"]) == 0:
+    if len(parsed) == 0:
         return str(result)
         
-    allowed_per = limit // len(parsed["results"])
+    allowed_per = limit // len(parsed)
     
     return_list = []
     

@@ -63,15 +63,20 @@ def compress_search_evidence(result: Any, limit: int) -> str:
     return_list = []
     
     for hit in parsed:
-        #hit is a contracts.EvidenceChunk
-        compressed_hit = {"properties" : {"instance_number" : hit["properties"]["instance_number"]}, "distance" : hit["distance"]}
-        
-        compressed_line = hit["properties"]["content"]
-        
-        if len(compressed_line) > allowed_per:
-            compressed_line = compressed_line[:allowed_per] + f"...[truncated {len(compressed_line)  - allowed_per} chars]"
-        compressed_hit["properties"]["content"] = compressed_line
-        
-        return_list.append(compressed_hit)
+        try:
+            #hit is a contracts.EvidenceChunk
+            compressed_hit = {"properties" : {"instance_number" : hit["properties"]["instance_number"]}, "distance" : hit["distance"]}
+            
+            compressed_line = hit["properties"]["content"]
+            
+            if len(compressed_line) > allowed_per:
+                compressed_line = compressed_line[:allowed_per] + f"...[truncated {len(compressed_line)  - allowed_per} chars]"
+            compressed_hit["properties"]["content"] = compressed_line
+            
+            return_list.append(compressed_hit)
+        except Exception as e:
+            print(e)
+            print(hit)
+            return result
         
     return json.dumps(return_list, ensure_ascii=False, indent=2)
