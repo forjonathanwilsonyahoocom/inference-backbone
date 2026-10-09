@@ -212,7 +212,7 @@ async def web_fetch(url: str) -> Dict:
         
     try:
           
-        html_content = asyncio.run(_fetch())
+        html_content = await asyncio.run(_fetch())
                 
         text = trafilatura.extract(
                 html_content,
