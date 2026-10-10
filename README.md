@@ -1,6 +1,5 @@
-# inference-backbone
-
 ![Sweet image from https://freegen.app/ after having duck.ai cinematize a prompt made by local agent system using gpt-oss:20b](./readme/freegen_inference_backbone.jpg)
+# inference-backbone
 
 ## Overview
 
