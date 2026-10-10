@@ -15,6 +15,7 @@ class Iteration(BaseModel):
 
 
 class Compaction(BaseModel):
+    execution_id: str
     summary: List[dict] = []
     fallback: str = ""
     upto: int = 0          # history[:upto] is folded into summary

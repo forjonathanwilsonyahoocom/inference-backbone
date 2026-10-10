@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any, List
 from pydantic import BaseModel, field_validator
 from typing_extensions import Literal
+from contracts.inference_contracts.validations import ArtifactId
 
 # --------------------------------------------------------------------------- #
 # 1️⃣  Artifact
@@ -90,7 +91,11 @@ class AgentState(BaseModel):
     """
     A container for the various artifacts the agent has produced.
     """
-
+    state_id: ArtifactId | None #stamped by framework
+    execution_id: str | None #stamped by framework
+    instance_number: int | None #stamped by framework
+    content_hash: str | None = None #stamped by framework
+    
     artifacts: List[Artifact] = []
     claims: List[Claim] = []
     understandings: List[Understanding] = []

@@ -4,6 +4,7 @@ import requests
 from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field
 from contracts.inference_contracts.evidence import Evidence
+from contracts.inference_contracts.agent_state import AgentState
 
 class ToolEvent(BaseModel):
     iteration: int
@@ -44,4 +45,16 @@ def ingest_tool_event(execution_id: str, tool_event: ToolEvent) -> None:
     except Exception as e:
         # Log but do not raise – evidence is observational
         print(f"[Evidence ingestion] failed for event {tool_event}: {e}")
+
+
+def ingest_agent_state(state: AgentState) -> None:
+  
+    try:
+        state.state_id = f"{state.execution_id}-{state.instance_number}"
+   
+        resp = requests.post("http://backbone-api:8000/ingest/agent_state", json=state.model_dump(mode="json"), timeout=10)
+        resp.raise_for_status()
+    except Exception as e:
+        # Log but do not raise – evidence is observational
+        print(f"[AgentState ingestion] failed for state {state}: {e}")
 

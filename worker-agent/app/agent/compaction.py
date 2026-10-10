@@ -2,7 +2,8 @@ from typing import Dict, Any, List
 from observability.metrics import MetricsWrapper
 from agent.models import Compaction
 from prompts.distillation import DISTILLATION_PROMPT
-from prompts.distillation_schema import AgentState
+from contracts.inference_contracts.agent_state import AgentState
+from agent.telemetry import ingest_agent_state
 from langchain_ollama import ChatOllama
 import json
 
@@ -75,6 +76,9 @@ def get_distillation(metrics: MetricsWrapper,
             agent_state_facts = distillation_llm.invoke(distillation_messages)
             if not isinstance(agent_state_facts, AgentState):
                 raise ValueError(f"expected a AgentState object, got {type(agent_state_facts).__name__}")
+            agent_state_facts.execution_id = compact.execution_id
+            agent_state_facts.instance_number = upto
+            ingest_agent_state(agent_state_facts)
             facts_dict = agent_state_facts.model_dump()
             if not isinstance(facts_dict, dict):
                 raise ValueError(f"expected a dict from AgentState.model_dump(), got {type(facts_dict).__name__}")

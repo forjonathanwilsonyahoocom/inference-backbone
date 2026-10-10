@@ -55,7 +55,7 @@ def run_agent(
     
     full_thread_history: List[Iteration]  = []#model message list is derived from this
     
-    current_compaction: Compaction = Compaction()
+    current_compaction: Compaction = Compaction(execution_id=execution_id)
     
     # centralize tool event accumulation / ingest call details
     # using local state
