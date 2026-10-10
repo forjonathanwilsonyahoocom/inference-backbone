@@ -1,6 +1,8 @@
 
 ![Limited access ideas](./overview.jpg)
 
+from meta muse, under review before impl
+
 # on host machine
 
 ```bash
