@@ -3,13 +3,13 @@
 
 from meta muse, under review before impl
 
-# /etc/nftables/agent-isolated.nft
+# /etc/nftables/worker-webtools.nft
 
 ```bash
 #!/usr/sbin/nft -f
 
 # Include this from /etc/nftables/main.nft with:
-# include "/etc/nftables/agent-isolated.nft"
+# include "/etc/nftables/worker-webtools.nft"
 
 table inet agent_iso {
   chain forward {
@@ -64,11 +64,11 @@ table inet agent_iso {
 # network asymmetry
 
 ```bash
-# 1. Make sure your agent-isolated network uses that bridge name
+# 1. Make sure your worker-webtools network uses that bridge name
 # In compose:
 # networks:
-#   agent-isolated:
-#     name: agent-isolated
+#   worker-webtools:
+#     name: worker-webtools
 #     driver: bridge
 #     driver_opts:
 #       com.docker.network.bridge.name: br-agent
@@ -77,7 +77,7 @@ table inet agent_iso {
 #     ipam: { config: [{ subnet: 172.20.0.0/24 }] }
 
 # 2. Include the file
-echo 'include "/etc/nftables/agent-isolated.nft"' | sudo tee -a /etc/nftables/main.nft
+echo 'include "/etc/nftables/worker-webtools.nft"' | sudo tee -a /etc/nftables/main.nft
 
 # 3. Test without reboot
 sudo nft -c -f /etc/nftables/main.nft && sudo systemctl reload nftables
