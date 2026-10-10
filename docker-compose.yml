@@ -12,9 +12,9 @@ services:
     volumes:
       - ./datasets/backbone-api:/indexed-artifacts
     networks:
-      - worker-api
-      - validator-api
-      - data
+      worker-api:
+      validator-api:
+      data:
 
   worker-agent:
     build:
@@ -34,7 +34,6 @@ services:
       worker-api:
       worker-webtools:
           ipv4_address: 172.21.0.2
-        
 
   web-tools:
     build:
@@ -44,9 +43,43 @@ services:
     shm_size: '2gb'
     restart: unless-stopped
     networks:
+      web-tool-egress:
       worker-webtools:
         ipv4_address: 172.21.0.3
-        
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: "1"
+    volumes:
+      - firewall-ready:/run/firewall
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        token="$(cat /proc/sys/kernel/random/uuid)"
+        printf '%s' "$token" > /run/firewall/token
+        until [ -f /run/firewall/ready ] &&
+              [ "$(cat /run/firewall/ready)" = "$token" ]; do
+          sleep 0.1
+        done
+        exec "$@"
+      - web-tools
+      - uvicorn
+      - main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+
+  firewall-init:
+    build:
+      context: ./firewall-init
+    network_mode: "service:web-tools"
+    cap_add:
+      - NET_ADMIN
+    depends_on:
+      web-tools:
+        condition: service_started
+    volumes:
+      - firewall-ready:/run/firewall
       
   validator-agent:
     build:
@@ -134,7 +167,8 @@ volumes:
   prometheus-data:
   graphdb-data:
   weaviate-data:
-
+  firewall-ready:
+  
 networks:
   worker-api:
     driver: bridge
@@ -145,8 +179,13 @@ networks:
   data:
     driver: bridge
 
+  web-tool-egress:
+    driver: bridge
+    
   worker-webtools:
     driver: bridge
+    enable_ipv6: false
+    internal: true
     ipam:
       config:
         - subnet: 172.21.0.0/29
