@@ -3,7 +3,7 @@
 
 from meta muse, under review before impl
 
-# on host machine
+# /etc/nftables/agent-isolated.nft
 
 ```bash
 #!/usr/sbin/nft -f
