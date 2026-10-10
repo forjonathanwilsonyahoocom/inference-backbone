@@ -31,8 +31,8 @@ services:
       - ./worker-agent-workspace:/agentworkspace
     restart: unless-stopped
     networks:
-      - worker-api:
-      - worker-webtools:
+      worker-api
+      worker-webtools:
           ipv4_address: 172.21.0.2
         
 
