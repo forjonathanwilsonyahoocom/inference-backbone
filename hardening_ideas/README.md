@@ -230,3 +230,50 @@ Now you have 3 layers for web-tools:
 And worker still has its own secure-entrypoint.sh with only ollama:11434 + web-tools:8000 + squid:3128 allowed, and cannot be called by web-tools.
 
 
+
+# some testing commands
+from https://buildsoftwaresystems.com/post/minimal-linux-network-commands/
+
+## can i reach the interwebs from this container?
+```bash
+exec 3<>/dev/tcp/example.com/80
+echo -e "GET / HTTP/1.1\nHost: example.com\nConnection: close\n\n" >&3
+cat <&3
+exec 3<&-
+```
+
+## what tcp connections do i have  from this container?
+```bash
+awk '
+BEGIN {
+  split("ESTABLISHED SYN_SENT SYN_RECV FIN_WAIT1 FIN_WAIT2 " \
+        "TIME_WAIT CLOSE CLOSE_WAIT LAST_ACK LISTEN CLOSING", st)
+}
+function h2d(h,   i, d, v) {
+  h = toupper(h); d = 0
+  for (i=1; i<=length(h); i++) {
+    v = index("0123456789ABCDEF", substr(h, i, 1)) - 1
+    d = (d * 16) + v
+  }
+  return d
+}
+function dec_ip(h,   i, ip) {
+  for (i=7; i>0; i-=2) ip = ip (ip ? "." : "") h2d(substr(h, i, 2))
+  return ip
+}
+NR>1 {
+  split($2, l, ":"); split($3, r, ":"); s = h2d($4)
+  printf "%-21s %-21s %-12s\n", \
+    dec_ip(l[1]) ":" h2d(l[2]), dec_ip(r[1]) ":" h2d(r[2]), (st[s] ? st[s] : "UNKNOWN")
+}' /proc/net/tcp
+```
+
+## can i dns resolve from this container?
+```bash
+getent ahostsv4 example.com
+```
+
+## can i reach some port from this container
+```bash
+timeout 1 bash -c "echo > /dev/tcp/example.com/80" 2>/dev/null && echo "Port 80 is open" || echo "Port 80 is closed"
+```
