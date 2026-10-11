@@ -6,6 +6,7 @@ from ollama import ResponseError
 from agent.messages import derive_message_list, final_distillation
 from agent.models import Iteration, Compaction
 from agent.fingerprint import tool_call_fingerprint, result_fingerprint
+from agent.telemetry import ingest_task, ingest_final_answer
 
 from langchain_core.messages import (
     AIMessage,
@@ -43,7 +44,7 @@ def run_agent(
     tool_call_metric_labeler = metrics.get_counter_message_labeler("tool_call", "the agent calls a tool")
     failure_metric_labeler = metrics.get_counter_message_labeler("tool_call_failure", "the agent tool fails")
     token_gauge = metrics.get_gauge_func("tokens_in_play", "tokens in current context")
-    
+    ingest_task(execution_id, user_request, config['model'])
     permanent_messages = [
         SystemMessage(content=SYSTEM_PROMPT),
         HumanMessage(content=user_request),
@@ -118,6 +119,9 @@ def run_agent(
 
         # The model is finished when it returns content and no tool calls.
         if len(tool_calls) == 0:
+        
+            
+            ingest_final_answer(execution_id, response.content, config['model'])
             current_compaction, distillation = final_distillation(metrics, distillation_llm, current_compaction, full_thread_history)
             
             metrics.emit(operation_metric_labeler({"operation" : "completed"}))

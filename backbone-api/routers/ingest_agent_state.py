@@ -11,7 +11,6 @@ from util.embedding_provider import OllamaEmbeddingProvider
 from util.file_persistence import write_to_file
 from util.identity import context_based_id
 from clients.weaviate import get_weaviate_client, ensure_weaviate_collection
-from routers.retrieval import load_document
 
 ingest_agent_state_router = APIRouter()
 
