@@ -1,7 +1,7 @@
 #messages.py
 from observability.metrics import MetricsWrapper
 from langchain_ollama import ChatOllama
-from langchain_core.messages import ToolMessage, BaseMessage
+from langchain_core.messages import ToolMessage, BaseMessage, HumanMessage
 from typing import Any, List
 from agent.models import Iteration, Compaction
 from agent.compaction import make_summary_message, get_distillation
@@ -109,7 +109,7 @@ def derive_message_list(metrics: MetricsWrapper,
 def final_distillation(metrics: MetricsWrapper, 
                        distillation_llm: ChatOllama, 
                        compact: Compaction, 
-                       history: List[Iteration]) -> (Compaction, List[Any]):
+                       history: List[Iteration]) -> (Compaction, HumanMessage):
     """distill all remaining messages at the end of the thread.
     this is primarily to create the ingested AgentState records
 
@@ -167,5 +167,11 @@ def final_distillation(metrics: MetricsWrapper,
     
     if len(send_to_distill) > 0:
         compact = get_distillation(metrics, distillation_llm, compact, history[-1].iteration, send_to_distill)
-               
-    return compact, make_summary_message(compact)
+    summary =  make_summary_message(compact)
+    
+    sm = HumanMessage(content="missing")
+    
+    if len(summary) > 0:
+        sm = summary[0]
+        
+    return compact, sm
