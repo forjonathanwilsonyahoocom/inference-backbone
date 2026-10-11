@@ -9,6 +9,7 @@ from routers.ingest_edge import ingest_edge_router
 from routers.ingest_claim import ingest_claim_router
 from routers.search import search_router
 from routers.retrieval import retrieval_router
+from routers ingest_agent_state import ingest_agent_state_router
 
 app = FastAPI()
 
@@ -18,3 +19,4 @@ app.include_router(ingest_claim_router)
 app.include_router(ingest_edge_router)
 app.include_router(retrieval_router)
 app.include_router(search_router)
+app.include_router(ingest_agent_state_router)
