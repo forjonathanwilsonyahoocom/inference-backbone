@@ -49,7 +49,7 @@ async def agent_state_ingest(payload: AgentState) -> Dict:
             for section in ["artifacts", "claims", "understandings", "hypotheses", "completed_steps"]:
                 for i, section_item in enumerate(getattr(payload, section, [])):
                     section_item_text = ""
-                    for field in section_item.model_fields:
+                    for field, field_info in type(section_item).model_fields.items():
                         section_item_text += str(getattr(section_item, field, ""))
                                 
                     raw_chunks = chunk_text(section_item_text)
