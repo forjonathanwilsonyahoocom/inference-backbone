@@ -91,7 +91,7 @@ class AgentState(BaseModel):
     """
     A container for the various artifacts the agent has produced.
     """
-    state_id: ArtifactId | None #stamped by framework
+    state_id: str | None #stamped by framework
     execution_id: str | None #stamped by framework
     instance_number: int | None #stamped by framework
     content_hash: str | None = None #stamped by framework
