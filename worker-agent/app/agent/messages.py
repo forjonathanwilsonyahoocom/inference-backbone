@@ -152,18 +152,20 @@ def final_distillation(metrics: MetricsWrapper,
                 token_quota = LOW
             
             token_quota -= iter_tokens(iteration, "tool_call_result","model_response")
-            tool_content = f"{iteration.tool_call_result}"
-            
-            send_to_distill.append(
-                ToolMessage(
-                    content=tool_content,
-                    tool_call_id=iteration.model_response.tool_calls[0]["id"],
-                )
-            )
-
+                        
             send_to_distill.append(iteration.model_response) 
+        
+            if len(getattr(iteration.model_response, "tool_calls", [])) > 0 :
+                tool_content = f"{iteration.tool_call_result}"
+                send_to_distill.append(
+                    ToolMessage(
+                        content=tool_content,
+                        tool_call_id=iteration.model_response.tool_calls[0]["id"],
+                    )
+                )
+
     
     if len(send_to_distill) > 0:
-        compact = get_distillation(metrics, distillation_llm, compact, deduplicated[-1].iteration, send_to_distill)
+        compact = get_distillation(metrics, distillation_llm, compact, history[-1].iteration, send_to_distill)
                
     return compact, make_summary_message(compact)
