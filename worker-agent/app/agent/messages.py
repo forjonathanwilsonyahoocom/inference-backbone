@@ -127,7 +127,7 @@ def final_distillation(metrics: MetricsWrapper,
     seen_fingerprints = set()
     send_to_distill = []
         
-    token_quota = HIGH 
+    token_quota = LOW 
         
     deduplicated: List[Iteration] = []
     last_upto = compact.upto
@@ -149,7 +149,7 @@ def final_distillation(metrics: MetricsWrapper,
             if token_quota < 0:
                 compact = get_distillation(metrics, distillation_llm, compact, iteration.iteration, send_to_distill)
                 send_to_distill = []
-                token_quota = HIGH
+                token_quota = LOW
             
             token_quota -= iter_tokens(iteration, "tool_call_result","model_response")
             tool_content = f"{iteration.tool_call_result}"

@@ -71,7 +71,7 @@ def get_distillation(metrics: MetricsWrapper,
     ]
     facts = None
     for _ in range(3):
-        facts_json = None
+        agent_state_facts = None
         try:
             agent_state_facts = distillation_llm.invoke(distillation_messages)
             if not isinstance(agent_state_facts, AgentState):
@@ -86,9 +86,9 @@ def get_distillation(metrics: MetricsWrapper,
             metrics.emit(metrics.get_counter_message("distillation_success", "distillation agent worked"))
             break
         except Exception as exc:
+            print(f"Distillation failed: {exc}")
             metrics.emit(metrics.get_counter_message("distillation_failure", "distillation agent crashes"))
             raw_content = str(agent_state_facts) if agent_state_facts else "(no response)"
-            print(f"Distillation JSON parse failed: {exc}")
             print(f"Raw model output (truncated): {raw_content[:300]}")
 
     print(f"Distilled: {facts}")
