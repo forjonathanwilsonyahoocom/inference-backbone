@@ -57,7 +57,7 @@ async def agent_state_ingest(payload: AgentState) -> Dict:
                             chunk_id=context_based_id(raw_chunk),
                             execution_id=payload.execution_id,
                             source_id=payload.state_id,
-                            info_type=F"AgentState.{section}"
+                            info_type=F"AgentState.{section}",
                             instance_number=payload.instance_number,
                             content=raw_chunk,
                             chunk_index=idx,
