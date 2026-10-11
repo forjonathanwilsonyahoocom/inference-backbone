@@ -147,7 +147,7 @@ def final_distillation(metrics: MetricsWrapper,
         
     for iteration in reversed(deduplicated):
             if token_quota < 0:
-                compact = get_distillation(metrics, distillation_llm, compact, upto, send_to_distill)
+                compact = get_distillation(metrics, distillation_llm, compact, iteration.iteration, send_to_distill)
                 send_to_distill = []
                 token_quota = HIGH
             
@@ -164,6 +164,6 @@ def final_distillation(metrics: MetricsWrapper,
             send_to_distill.append(iteration.model_response) 
     
     if len(send_to_distill) > 0:
-        compact = get_distillation(metrics, distillation_llm, compact, upto, send_to_distill)
+        compact = get_distillation(metrics, distillation_llm, compact, deduplicated[-1].iteration, send_to_distill)
                
     return compact, make_summary_message(compact)
