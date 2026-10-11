@@ -21,8 +21,8 @@ def iter_tokens(it: Iteration,
         worker llm, when we switch to assembling distillation llm 
         message, we do not keep track of tokens
     """
-    r = getattr(iteration, primary_result_attribute) or iteration.tool_call_result
-    m = getattr(iteration, primary_response_attribute) or iteration.model_response
+    r = getattr(it, primary_result_attribute) or it.tool_call_result
+    m = getattr(it, primary_response_attribute) or it.model_response
     return (estimate_tokens(r) + estimate_tokens(getattr(m, "content", ""))
             + estimate_tokens(getattr(m, "tool_calls", "")))
 
