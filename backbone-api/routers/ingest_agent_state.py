@@ -4,6 +4,7 @@ routers/ingest_agent_state.py
 from fastapi import APIRouter
 from contracts.inference_contracts.agent_state import AgentState
 from contracts.inference_contracts.info_chunk import InfoChunk
+from contracts.inference_contracts.validations import validate_artifact_id
 from util.chunker import chunk_text
 from typing import List, Dict
 from util.embedding_provider import OllamaEmbeddingProvider
@@ -25,7 +26,8 @@ async def agent_state_ingest(payload: AgentState) -> Dict:
     weaviate_client = get_weaviate_client()
     
     try:
-
+        print("ingesting agent state", validate_artifact_id(payload.state_id))
+        
         payload.content_hash = context_based_id(payload.model_dump_json(indent=2))
                         
         file_path = write_to_file(
