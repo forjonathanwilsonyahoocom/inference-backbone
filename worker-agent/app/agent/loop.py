@@ -3,7 +3,7 @@ from observability.metrics import MetricsWrapper
 from typing import Any, List, Optional, Dict
 from pydantic import BaseModel
 from ollama import ResponseError 
-from agent.messages import derive_message_list
+from agent.messages import derive_message_list, final_distillation
 from agent.models import Iteration, Compaction
 from agent.fingerprint import tool_call_fingerprint, result_fingerprint
 
