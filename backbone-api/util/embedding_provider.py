@@ -57,7 +57,6 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
         """
         url = "/api/embeddings"
         response = await self.client.post(url, json=payload, timeout=30.0)
-        print("POST ATTEMPT",url, payload)
         response.raise_for_status()
         return response.json()
 

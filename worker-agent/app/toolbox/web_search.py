@@ -4,12 +4,14 @@ import requests
 import json
 
 @tool
-def web_search(query: str) -> str:
+def web_search(purpose: str, query: str) -> str:
     """Executes a keyword search on the live internet via DuckDuckGo.
     Use this first to find relevant URLs and snippets when asked about
     current events, weather, news, or fresh updates.
 
     Args:
+        purpose: str
+           The immediate purpose of this call
         query: A standard web search keyword query.
     """
     clean_query = query.strip()

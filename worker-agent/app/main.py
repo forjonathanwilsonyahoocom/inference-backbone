@@ -22,7 +22,7 @@ from toolbox.write_file import write_file
 from toolbox.edit_file import edit_file
 from toolbox.run_command import run_command
 
-from prompts.distillation_schema import AgentState
+from contracts.inference_contracts.agent_state import AgentState
 
 METRICS = None #this global is instantiated during app startup, a reference is sent to the agent runtime
 

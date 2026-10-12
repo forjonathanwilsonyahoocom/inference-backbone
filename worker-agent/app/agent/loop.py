@@ -3,9 +3,10 @@ from observability.metrics import MetricsWrapper
 from typing import Any, List, Optional, Dict
 from pydantic import BaseModel
 from ollama import ResponseError 
-from agent.messages import derive_message_list
+from agent.messages import derive_message_list, final_distillation
 from agent.models import Iteration, Compaction
 from agent.fingerprint import tool_call_fingerprint, result_fingerprint
+from agent.telemetry import ingest_task, ingest_final_answer
 
 from langchain_core.messages import (
     AIMessage,
@@ -43,7 +44,7 @@ def run_agent(
     tool_call_metric_labeler = metrics.get_counter_message_labeler("tool_call", "the agent calls a tool")
     failure_metric_labeler = metrics.get_counter_message_labeler("tool_call_failure", "the agent tool fails")
     token_gauge = metrics.get_gauge_func("tokens_in_play", "tokens in current context")
-    
+    ingest_task(execution_id, user_request, config['model'])
     permanent_messages = [
         SystemMessage(content=SYSTEM_PROMPT),
         HumanMessage(content=user_request),
@@ -55,7 +56,7 @@ def run_agent(
     
     full_thread_history: List[Iteration]  = []#model message list is derived from this
     
-    current_compaction: Compaction = Compaction()
+    current_compaction: Compaction = Compaction(execution_id=execution_id)
     
     # centralize tool event accumulation / ingest call details
     # using local state
@@ -103,10 +104,13 @@ def run_agent(
                 metrics.emit(failure_metric_labeler({"failure": f"model response was unparsible"}))
                 retry_notes.append(HumanMessage(f"Last response failed tool-call parsing: {e}. Return exactly one valid tool call, or a final answer as content only."))
         else:
+            current_compaction, distillation = final_distillation(metrics, distillation_llm, current_compaction, full_thread_history)
+            
             return {"condition": "model failed after 10 retries", 
                     "final_response": getattr(response, "content", "failure after retries"),
                     "iterations": iteration,
                     "events": events,
+                    "distillation" : getattr(distillation, "content", "distillation failure"),
                     "execution_id" : execution_id}
                     
         if verbose:
@@ -116,11 +120,16 @@ def run_agent(
         # The model is finished when it returns content and no tool calls.
         if len(tool_calls) == 0:
         
+            
+            ingest_final_answer(execution_id, response.content, config['model'])
+            current_compaction, distillation = final_distillation(metrics, distillation_llm, current_compaction, full_thread_history)
+            
             metrics.emit(operation_metric_labeler({"operation" : "completed"}))
             return {"condition" : "no tool calls",
                     "final_response": response.content,
                     "iterations": iteration,
                     "events": events,
+                    "distillation" :  getattr(distillation, "content", "distillation failure"),
                     "execution_id" : execution_id}
         
         add_tool_event(
@@ -187,9 +196,12 @@ def run_agent(
         metrics.emit(token_gauge(getattr(response, "usage_metadata", {}).get("input_tokens", 0)))
 
     metrics.emit(operation_metric_labeler({"operation" : "ran out of turns"}))
+    current_compaction, distillation = final_distillation(metrics, distillation_llm, current_compaction, full_thread_history)
+           
     return {"condition" : f"Agent stopped after {max_iterations} iterations. The workspace may contain partial results.",
             "final_response": response.content,
             "iterations": iteration,
             "events": events,
+            "distillation" :  getattr(distillation, "content", "distillation failure"),
             "execution_id" : execution_id}
 

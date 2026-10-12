@@ -28,12 +28,21 @@ class MetricsWrapper:
         self.gauges = {}
         
     def clear_counters(self):
+        """
+            this is to get clean metrics on each run, when we end up with multiple 
+            overlapping runs we will move to another idea
+        """
         for k, metric in self.counters.items():
             try:
                 print(f"resetting {k}")
                 metric.reset()
             except Exception as e:
-                print(e)
+                print("expected when counter has labels", e)
+            try:
+                print(f"clearing {k}")
+                metric.clear()
+            except Exception as e:
+                print("expected when counter does not have labels", e)
             
             
     def emit(self, msg: Dict):

@@ -18,6 +18,11 @@ def build_where_filter(payload: SearchRequest) -> Optional[List[Filter]]:
             Filter.by_property("execution_id").equal(payload.execution_id)
         )
 
+    if payload.info_type:
+        filters.append(
+            Filter.by_property("info_type").equal(payload.info_type)
+        )
+
     if payload.instance_number:
         filters.append(
             Filter.by_property("instance_number").equal(payload.instance_number)
@@ -63,6 +68,29 @@ async def claim_search(payload: SearchRequest) -> List[Dict]:
     weaviate_client = get_weaviate_client()
     try:
         collection = weaviate_client.collections.use("Claim")
+        query_vector = await embedding_provider.embed(payload.query)
+
+        results = collection.query.near_vector(
+            near_vector=query_vector,
+            limit=payload.limit,
+            return_metadata=MetadataQuery(distance=True),
+            filters=build_where_filter(payload),
+        )
+
+        return [
+            {"properties": art.properties, "distance": art.metadata.distance}
+            for art in results.objects
+        ]
+    finally:
+        weaviate_client.close()
+        
+
+@search_router.post("/search/info")
+async def info_search(payload: SearchRequest) -> List[Dict]:
+    embedding_provider = OllamaEmbeddingProvider()
+    weaviate_client = get_weaviate_client()
+    try:
+        collection = weaviate_client.collections.use("InfoChunk")
         query_vector = await embedding_provider.embed(payload.query)
 
         results = collection.query.near_vector(

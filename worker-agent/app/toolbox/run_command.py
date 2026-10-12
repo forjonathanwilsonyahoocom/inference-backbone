@@ -11,7 +11,7 @@ COMMAND_OUTPUT_LIMIT = 2000
 
 
 @tool
-def run_command(command: str, cwd: str = ".") -> str:
+def run_command(purpose: str, command: str, cwd: str = ".") -> str:
     """
     Run a non-interactive shell command in a workspace-relative directory.
 

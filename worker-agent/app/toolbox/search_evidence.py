@@ -5,7 +5,7 @@ import json
 from typing import List, Dict, Any
 
 @tool
-def search_evidence(query: str, limit: int = 8, instance_number: int | None = None, execution_id: str  | None = None) -> str:
+def search_evidence(purpose: str, query: str, limit: int = 8, instance_number: int | None = None, execution_id: str  | None = None) -> str:
     """Search chunked content from previous iterations.
     use when previous iteration details have been compressed away
     
@@ -15,6 +15,8 @@ def search_evidence(query: str, limit: int = 8, instance_number: int | None = No
 
     Parameters
     ----------
+    purpose: str
+        The immediate purpose of this call
     query: str
         Search query string.
     limit: int, optional

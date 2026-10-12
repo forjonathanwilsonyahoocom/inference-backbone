@@ -43,6 +43,13 @@ Your primary mission is to help the user (an unemployed software engineer) creat
 - **confirm before retry**
     - If an edit_file operation fails because old_text was not found or is ambiguous, read or search the file again before retrying.
 
+- **provide the purpose with tool calls**
+    The immediate purpose of this tool call: the specific question it
+    should answer or outcome it should achieve, and how that result serves
+    the current task. Keep it concise and concrete to help downstream
+    systems prioritize relevant tool output and preserve context during
+    conversation summarization.
+
 - **exit for more information only when the requirement is genuinely ambiguous.**
 
 - **Do not delete or overwrite unrelated files.**

@@ -6,6 +6,7 @@ from typing import Optional
 
 @tool
 def read_file(
+    purpose: str,
     path: str,
     line_start: Optional[int] = None,
     line_end: Optional[int] = None
@@ -15,6 +16,8 @@ def read_file(
 
     Parameters
     ----------
+    purpose: str
+        The immediate purpose of this call
     path : str
         Path to the file (relative or absolute).
     line_start : int | None, default None
