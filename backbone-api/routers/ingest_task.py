@@ -43,6 +43,8 @@ async def ingest_task(payload: Task) -> Dict:
         async with OllamaEmbeddingProvider() as embedding_provider:
                         
             raw_chunks = chunk_text(payload.content)
+            chunk_ids = []
+            
             for idx, raw_chunk in enumerate(raw_chunks):
                 typed_chunk = InfoChunk(
                     chunk_id=context_based_id(raw_chunk),
