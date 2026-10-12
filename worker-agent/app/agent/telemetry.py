@@ -84,7 +84,7 @@ def ingest_final_answer(execution_id: str, answer: str, model_name: str) -> None
   
     now = datetime.now(UTC).isoformat()
     
-    task = FinalAnswer(final_answer_id=f"{execution_id}-1",
+    final_answer = FinalAnswer(final_answer_id=f"{execution_id}-1",
                        execution_id=execution_id,
                        instance_number=1,
                        content=answer,
