@@ -314,8 +314,7 @@ currently only implemented for worker agent and validator agent
 currently only one dashboard is init for worker agent and validator as shown above
 
 
-## planned:
-## 3 Critical Highlights
+## planned: Critical Highlights
 
 1. **Maintain a current model of beliefs without erasing history.** Separate claims from the system's current assessment of those claims. When new evidence changes a conclusion, update its status or create a revised claim rather than rewriting the past. Preserve the evidence and reasoning context so the system can reconstruct why its understanding evolved.
 
