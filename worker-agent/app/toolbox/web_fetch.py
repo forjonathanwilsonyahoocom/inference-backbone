@@ -4,13 +4,16 @@ import requests
 import json
 
 @tool
-def web_fetch(url: str) -> str:
+def web_fetch(purpose: str, url: str) -> str:
     """Visits a specific URL found from a web search
     Use this tool on URL returned from a web_search call
     when you need deeper information than the short body provided.
     
     Args:
-        url: The absolute web address (including http/https).
+        purpose: str
+           The immediate purpose of this call
+        url: str 
+            The absolute web address (including http/https).
     """
     payload = {"url" : url}
     try:

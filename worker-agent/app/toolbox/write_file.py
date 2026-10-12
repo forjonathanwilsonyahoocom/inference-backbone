@@ -4,7 +4,7 @@ from toolbox.util import safe_path, WORKSPACE_PATH
 from typing import Any, Mapping
 
 @tool
-def write_file(path: str, content: Any, overwrite: bool = False) -> str:
+def write_file(purpose: str, path: str, content: Any, overwrite: bool = False) -> str:
     """
     Write `content` to `path`.  
     - If the file exists and `overwrite` is False (default), the call is a no‑op

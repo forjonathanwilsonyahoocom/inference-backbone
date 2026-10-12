@@ -3,7 +3,7 @@ from langchain_core.tools import tool
 from toolbox.util import safe_path, WORKSPACE
 
 @tool
-def edit_file(path: str, old_text: str, new_text: str) -> str:
+def edit_file(purpose: str, path: str, old_text: str, new_text: str) -> str:
     """
     Edit a UTF-8 text file by replacing old_text with new_text.
     
