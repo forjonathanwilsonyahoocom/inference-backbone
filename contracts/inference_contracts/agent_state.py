@@ -27,9 +27,9 @@ class Artifact(BaseModel):
 
 
 # --------------------------------------------------------------------------- #
-# 2️⃣  Claim
+# 2️⃣  Observation
 # --------------------------------------------------------------------------- #
-class Claim(BaseModel):
+class Observation(BaseModel):
     statement: str
     source: str
     confidence: float
@@ -97,7 +97,7 @@ class AgentState(BaseModel):
     content_hash: str | None = None #stamped by framework
     
     artifacts: List[Artifact] = []
-    claims: List[Claim] = []
+    observations: List[Observation] = []
     understandings: List[Understanding] = []
     hypotheses: List[Hypothesis] = []
     completed_steps: List[CompletedStep] = []
@@ -105,7 +105,7 @@ class AgentState(BaseModel):
     # ---- before‑mode list coercion ---------------------------------------
     @field_validator(
         "artifacts",
-        "claims",
+        "observations",
         "understandings",
         "hypotheses",
         "completed_steps",
@@ -130,7 +130,7 @@ def test_state_object():
      # Single artifact dict – gets wrapped into a list automatically
      state = AgentState(
          artifacts={"id": "a1", "type": "file", "value": "def foo(): pass"},
-         claims=[
+         observations=[
              {"statement": "The file contains a function",
               "source": "a1",
               "confidence": 0.95}

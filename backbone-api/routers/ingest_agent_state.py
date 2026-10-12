@@ -45,7 +45,7 @@ async def agent_state_ingest(payload: AgentState) -> Dict:
         async with OllamaEmbeddingProvider() as embedding_provider:
             total_chunk_count = 0
             chunk_ids = []
-            for section in ["artifacts", "claims", "understandings", "hypotheses", "completed_steps"]:
+            for section in ["artifacts", "observations", "understandings", "hypotheses", "completed_steps"]:
                 for i, section_item in enumerate(getattr(payload, section, [])):
                     section_item_text = ""
                     for field, field_info in type(section_item).model_fields.items():
