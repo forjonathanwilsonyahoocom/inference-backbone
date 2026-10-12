@@ -87,7 +87,7 @@ def ingest_final_answer(execution_id: str, answer: str, model_name: str) -> None
     task = FinalAnswer(final_answer_id=f"{execution_id}-1",
                        execution_id=execution_id,
                        instance_number=1,
-                       content=instruction,
+                       content=answer,
                        model_name=model_name,
                        observed_at=now,
                     )
