@@ -37,7 +37,7 @@ async def ingest_task(payload: Task) -> Dict:
 
         ensure_weaviate_collection("InfoChunk")
         
-        evidence_chunk_collection = weaviate_client.collections.use("InfoChunk")
+        info_chunk_collection = weaviate_client.collections.use("InfoChunk")
 
         # ---- 1️⃣  Embed with a context‑manager ----
         async with OllamaEmbeddingProvider() as embedding_provider:
