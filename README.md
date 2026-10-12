@@ -19,7 +19,7 @@
 Prompt → Worker Agent → (Ingest → GraphDB / Weaviate) → Inference → Validation → API
 ```
 
-![Agent Dashboard](./readme/agent_dashboard.png)
+![Agent Dashboard](./readme/agent_dashboard.jpg)
 
 ### Observability
 
@@ -54,7 +54,7 @@ we have reached a milestone! we added some metrics to allow better observation!
 
 would you inspect the project, then modify the README.md file at the root of that project to have a high level explanation of the current operation and flow
 
-please include an image link in the README.md to the file ./inference-backone/readme/agent_dashboard.png
+please include an image link in the README.md to the file ./inference-backone/readme/agent_dashboard.jpg
 
 """
 payload = {
@@ -270,7 +270,7 @@ ssh -N \
   [user]@[tunnel_target.ip]
 ```
 
-![graph db links](./readme/graphdb_link.png)
+![graph db links](./readme/graphdb_link.jpg)
 
 ### A SPARQL QUERY EXAMPLE
 showing claims and evidence that are connected by edges with support > 0.4
@@ -305,6 +305,68 @@ WHERE {
 ORDER BY DESC(?support)
 LIMIT 20
 ```
+
+### a basic construct for a graph showing claims and evidence
+```sparql
+PREFIX EX: <http://backbone-api:8000/>
+
+CONSTRUCT {
+  ?claimIRI EX:hasContent ?claimContent .
+  ?evidenceIRI EX:hasContent ?evidenceContent .
+
+  ?edgeIRI a EX:ClaimEvidenceEdge ;
+           EX:hasClaim ?claimIRI ;
+           EX:hasEvidence ?evidenceIRI ;
+           EX:hasSupport ?support .
+}
+WHERE {
+  {
+    SELECT
+      ?claimId
+      ?claimContent
+      ?evidenceId
+      ?evidenceContent
+      ?support
+    WHERE {
+      ?edge a EX:ClaimEvidenceEdge ;
+            EX:hasSupport ?support ;
+            EX:hasClaimId ?claimId ;
+            EX:hasEvidenceId ?evidenceId .
+
+      FILTER(?support > 0.4)
+
+      ?claim a EX:Claim ;
+             EX:hasClaimId ?claimId ;
+             EX:hasContent ?claimContent .
+
+      ?evidence a EX:Evidence ;
+                EX:hasEvidenceId ?evidenceId ;
+                EX:hasContent ?evidenceContent .
+    }
+    ORDER BY DESC(?support)
+    LIMIT 20
+  }
+
+  BIND(IRI(CONCAT(
+    "http://backbone-api:8000/file/claim/",
+    STR(?claimId)
+  )) AS ?claimIRI)
+
+  BIND(IRI(CONCAT(
+    "http://backbone-api:8000/file/evidence/",
+    STR(?evidenceId)
+  )) AS ?evidenceIRI)
+
+  BIND(IRI(CONCAT(
+    "http://backbone-api:8000/file/claim-evidence/",
+    STR(?claimId), "-", STR(?evidenceId)
+  )) AS ?edgeIRI)
+}
+```
+
+as a starting spot:
+
+![Visual graph](./readme/graphdb_visual_graph2.jpg)
 
 
 ### prometheus metrics
