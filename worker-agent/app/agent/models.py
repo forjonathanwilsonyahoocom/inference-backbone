@@ -3,7 +3,8 @@ import uuid
 from pydantic import BaseModel
 
 class AgentRequest(BaseModel):
-    request: str
+    request: str #instruction for agent action
+    base_url: str #send your local ollama server base url
     execution_id: str = str(uuid.uuid4()) # unique per run
     max_iterations: int = 150 #intentionally unbounded, run forever at your own risk
     distill_at: int = 15000 #token budget before distillation, intentionally unbounded for experimentation sake
@@ -18,7 +19,6 @@ class AgentRequest(BaseModel):
     worker_temp: float = 0.01  #intentionally unbounded for experimentation sake
     distillation_model: str = "gpt-oss:20b"
     distillation_temp: float = 0.01  #intentionally unbounded for experimentation sake
-    base_url: str =  "http://10.42.0.192:11434/" #replace this with your local ollama server
     verbose: bool = False    
     
 class Iteration(BaseModel):
