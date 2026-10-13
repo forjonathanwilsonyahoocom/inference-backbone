@@ -3,6 +3,7 @@ from observability.metrics import MetricsWrapper
 from agent.models import Compaction, AgentRequest
 from prompts.distillation import DISTILLATION_PROMPT
 from contracts.inference_contracts.agent_state import AgentState
+from contracts.inference_contracts.info import InfoNode
 
 from agent.telemetry import ingest_agent_state
 from langchain_ollama import ChatOllama
