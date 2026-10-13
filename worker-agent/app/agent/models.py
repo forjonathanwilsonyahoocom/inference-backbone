@@ -4,9 +4,10 @@ from pydantic import BaseModel
 
 class AgentRequest(BaseModel):
     request: str
+    execution_id: str = str(uuid.uuid4()) # unique per run
     max_iterations: int = 150 #intentionally unbounded, run forever at your own risk
-    distill_at: int = 15000 #intentionally unbounded for experimentation sake
-    distill_to: int = 7000 #intentionally unbounded for experimentation sake
+    distill_at: int = 15000 #token budget before distillation, intentionally unbounded for experimentation sake
+    distill_to: int = 7000 #token target after distillation, intentionally unbounded for experimentation sake
     # ---------------------------------------------------------------------------
     # Tiered compression limits
     # ---------------------------------------------------------------------------
@@ -17,8 +18,7 @@ class AgentRequest(BaseModel):
     worker_temp: float = 0.01  #intentionally unbounded for experimentation sake
     distillation_model: str = "gpt-oss:20b"
     distillation_temp: float = 0.01  #intentionally unbounded for experimentation sake
-    base_url: str =  "http://10.42.0.192:11434/"
-    execution_id: str = str(uuid.uuid4())
+    base_url: str =  "http://10.42.0.192:11434/" #replace this with your local ollama server
     verbose: bool = False    
     
 class Iteration(BaseModel):
