@@ -33,11 +33,13 @@ def create_llms(config: AgentRequest) -> Tuple[ChatOllama, ChatOllama]:
         model=config.worker_model,
         base_url=config.base_url,
         temperature=config.worker_temp,
+        num_ctx=config.worker_num_ctx,
     )
     distill_llm = ChatOllama(
         model=config.distillation_model,
         base_url=config.base_url,
         temperature=config.distillation_temp,
+        num_ctx=config.distillation_num_ctx,
     )
     return llm, distill_llm
 

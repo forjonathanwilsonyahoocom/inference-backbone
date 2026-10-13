@@ -17,8 +17,10 @@ class AgentRequest(BaseModel):
     compression_tiers: List[Tuple[int, int]] =  [(8, 300), (4, 600), (2, 1000)] 
     worker_model: str = "gpt-oss:20b"
     worker_temp: float = 0.01  #intentionally unbounded for experimentation sake
+    worker_num_ctx: int = 40960  #intentionally unbounded for experimentation sake
     distillation_model: str = "gpt-oss:20b"
     distillation_temp: float = 0.01  #intentionally unbounded for experimentation sake
+    distillation_num_ctx: int = 40960  #intentionally unbounded for experimentation sake
     verbose: bool = False    
     
 class Iteration(BaseModel):
