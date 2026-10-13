@@ -12,7 +12,7 @@ class AgentRequest(BaseModel):
     # ---------------------------------------------------------------------------
     # (min_age, char_limit) – age 0 is the newest iteration.
     # The tiers are intentionally simple; they can be tuned by the user.
-    compression_tiers: List[Tuple] =  [(8, 300), (4, 600), (2, 1000)]
+    compression_tiers: List[Tuple[int, int]] =  [(8, 300), (4, 600), (2, 1000)]
     worker_model: str = "gpt-oss:20b"
     worker_temp: float = 0.01
     distillation_model: str = "gpt-oss:20b"

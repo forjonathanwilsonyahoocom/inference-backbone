@@ -26,14 +26,14 @@ async def agent_state_ingest(payload: InfoContainer[AgentState]) -> Dict:
     weaviate_client = get_weaviate_client()
     
     try:
-        print("ingesting agent state", validate_artifact_id(payload.state_id))
+        print("ingesting agent state", validate_artifact_id(payload.info.id))
         
         payload.info.content_hash = context_based_id(payload.model_dump_json(indent=2))
                         
         file_path = write_to_file(
                         content=payload,
                         location="agent_state",
-                        identifier=payload.state_id,
+                        identifier=payload.info.id,
                     )
                     
         print(f"[ingest] Persisted AgentState to {file_path}")
