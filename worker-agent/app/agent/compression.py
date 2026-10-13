@@ -116,6 +116,7 @@ def compress_history(config: AgentRequest, metrics: MetricsWrapper, history: Lis
             continue
         
         compressed_result = get_compressor(it.tool_name)(it.tool_call_result, limit)
+        #only use compressed tool result if it's worth adding the annotations
         if len(str(it.tool_call_result)) - len(str(compressed_result)) > 100:
             metrics.emit(metrics.get_counter_message("compression_compressed_tool_result", "compression event"))
             compressed_result = f"search_evidence with instance_number={it.tool_call_result_instance_number} for original chunks, compressed: \n{compressed_result}"
