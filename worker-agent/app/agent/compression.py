@@ -114,11 +114,17 @@ def compress_history(config: AgentRequest, metrics: MetricsWrapper, history: Lis
         limit = limit_for_age(config, age)
         if limit is None or it.compression_limit == limit:
             continue
-            
-        metrics.emit(metrics.get_counter_message("compression_compressed", "compression event"))
-        # Re‑compress from the raw values – never mutate the originals.
-        it.tool_call_result_compressed = get_compressor(it.tool_name)(it.tool_call_result, limit)
+        
+        compressed_result = get_compressor(it.tool_name)(it.tool_call_result, limit)
+        if len(str(it.tool_call_result)) - len(str(compressed_result)) > 100:
+            metrics.emit(metrics.get_counter_message("compression_compressed_tool_result", "compression event"))
+            compressed_result = f"search_evidence with instance_number={it.tool_call_result_instance_number} for original chunks, compressed: \n{compressed_result}"
+            # Re‑compress from the raw values – never mutate the originals.
+            it.tool_call_result_compressed = compressed_result
+                
         it.model_response_compressed = compress_response(metrics, it.model_response, limit)
+        metrics.emit(metrics.get_counter_message("compression_compressed_response", "compression event"))
+            
         it.compression_limit = limit
 
     return history

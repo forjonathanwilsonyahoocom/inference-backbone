@@ -63,7 +63,7 @@ def run_agent(
         te.instance_number = event_counter
         events.append(te)
         #do not ingest nonsense events
-        if not (te.event_type=="parse_error" or (te.event_type == "agent_response" and len(te.result) < 5)):
+        if not (te.event_type == "agent_response" and len(te.result) < 5):
             ingest_tool_event(config.execution_id, te)
                 
     while iteration < config.max_iterations:
@@ -116,11 +116,8 @@ def run_agent(
 
         # The model is finished when it returns content and no tool calls.
         if len(tool_calls) == 0:
-        
-            
             ingest_final_answer(config.execution_id, response.content, config.worker_model)
             current_compaction, distillation = final_distillation(config, metrics, distillation_llm, current_compaction, full_thread_history)
-            
             metrics.emit(operation_metric_labeler({"operation" : "completed"}))
             return {"condition" : "no tool calls",
                     "final_response": response.content,
@@ -138,7 +135,7 @@ def run_agent(
                 result=str(response.content)
             )
         )
-
+        this_iteration.model_response_instance_number = event_counter
         tool_call = tool_calls[0]
         #NOTE there will only be one tool call per the current rules
         tool_name = tool_call["name"]
@@ -185,6 +182,8 @@ def run_agent(
                 result=this_iteration.tool_call_result,
             )
         )
+        
+        this_iteration.tool_call_result_instance_number = event_counter
         
         print(f"Executing: {tool_name}({str(tool_args)[:150]})")
 

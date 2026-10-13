@@ -25,7 +25,9 @@ class Iteration(BaseModel):
     iteration: int
     model_response: Any = None
     model_response_compressed: Any = None
+    model_response_instance_number: int = None
     tool_call_result: Any = None
+    tool_call_result_instance_number: int = None
     tool_call_result_compressed: Any = None
     tool_call_fingerprint: Optional[str] = None
     result_fingerprint: Optional[str] = None
