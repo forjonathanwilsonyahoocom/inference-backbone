@@ -6,32 +6,38 @@ from typing import List, Dict, Any
 
 @tool
 def search_evidence(purpose: str, query: str, limit: int = 8, instance_number: int | None = None, execution_id: str  | None = None) -> str:
-    """Search chunked content from previous iterations.
-    use when previous iteration details have been compressed away
-    
-    this is an essential tool after using web_fetch 
-    or any tool that returns large amounts of text that
-    may be immediately removed from the context
+    """
+    Search text already fetched or read in this execution.
+
+    Use this tool instead of calling `web_fetch`, `read_file`, or another
+    large-output tool again when you need to find, recall, or verify details
+    from content that was already returned in a previous iteration. Previously
+    read content may have been compressed; this tool searches its stored chunks
+    by meaning and returns the best matches.
+
+    Call this tool after fetching or reading a large document, and whenever a
+    later step needs information from that document. Do not reread or refetch
+    the document just to locate a passage or recover a detail.
 
     Parameters
     ----------
     purpose: str
-        The immediate purpose of this call
+        The immediate purpose of this search.
     query: str
-        Search query string.
+        What information to find in the previously read content.
     limit: int, optional
-        Max number of results to return.
+        Maximum number of matching chunks to return.
     instance_number: int, optional
-        Filter by instance number if provided.
-    execution_id: str, optional:
-        overridden by framework
+        Restrict the search to a specific iteration. Use an instance_number
+        from a prior result to focus on that iteration.
+    execution_id: str, optional
+        Overridden by the framework with the current execution_id.
 
     Returns
     -------
-    string representation of List[Dict]
-        List of ranked chunks from previous iterations.
-        result chunks will include the instance_number, use the
-        instance_number as a filter to focus on a single iteration
+    string
+        A representation of a ranked list of matching chunks. Each chunk
+        includes its instance_number, which can be used to narrow later searches.
     """
     payload = {
         "query": query,
