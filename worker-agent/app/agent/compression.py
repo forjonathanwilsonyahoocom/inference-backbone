@@ -46,7 +46,7 @@ def clip_mid(metrics: MetricsWrapper, value: Any, limit: int) -> str:
     head = int(limit * 0.7)
     tail = max(1, limit - head)
     omitted = len(s) - limit
-    metrics.emit(metrics.get_counter_message("compression_amount", "reduced by this many chars", value=omitted))
+    metrics.emit(metrics.get_counter_message("compression_amount_tool_call", "reduced by this many chars", value=omitted))
     return f"{s[:head]}...[{omitted} chars omitted]...{s[-tail:]}"
 
 # ---------------------------------------------------------------------------
@@ -117,8 +117,10 @@ def compress_history(config: AgentRequest, metrics: MetricsWrapper, history: Lis
         
         compressed_result = get_compressor(it.tool_name)(it.tool_call_result, limit)
         #only use compressed tool result if it's worth adding the annotations
-        if len(str(it.tool_call_result)) - len(str(compressed_result)) > 100:
+        omitted = len(str(it.tool_call_result)) - len(str(compressed_result))
+        if omitted > 100:
             metrics.emit(metrics.get_counter_message("compression_compressed_tool_result", "compression event"))
+            metrics.emit(metrics.get_counter_message("compression_amount_tool_result", "reduced by this many chars", value=omitted))
             compressed_result = f"search_evidence with instance_number={it.tool_call_result_instance_number} for original chunks, compressed: \n{compressed_result}"
             # Re‑compress from the raw values – never mutate the originals.
             it.tool_call_result_compressed = compressed_result
