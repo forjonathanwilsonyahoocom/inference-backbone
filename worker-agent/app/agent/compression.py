@@ -15,24 +15,16 @@ from typing import Any, Dict, List, Optional
 from langchain_core.messages import AIMessage
 
 from observability.metrics import MetricsWrapper
-from agent.models import Iteration
+from agent.models import Iteration, AgentRequest
 from toolbox.compressors import get_compressor
 
-# ---------------------------------------------------------------------------
-# Tiered compression limits
-# ---------------------------------------------------------------------------
-# (min_age, char_limit) – age 0 is the newest iteration.
-# The tiers are intentionally simple; they can be tuned by the user.
-TIERS: List[tuple[int, int]] = [(8, 300), (4, 600), (2, 1000)]
-
-
-def limit_for_age(age: int) -> Optional[int]:
+def limit_for_age(config: AgentRequest, age: int) -> Optional[int]:
     """Return the character limit for a given iteration age.
 
     The function walks the ``TIERS`` list in order and returns the first
     limit whose ``min_age`` is less than or equal to ``age``.
     """
-    for min_age, limit in TIERS:
+    for min_age, limit in config.compression_tiers:
         if age >= min_age:
             return limit
     return None
@@ -94,7 +86,7 @@ def compress_response(metrics: MetricsWrapper, resp: AIMessage, limit: int) -> A
 # Main compression routine
 # ---------------------------------------------------------------------------
 
-def compress_history(metrics: MetricsWrapper, history: List[Iteration], upto: int) ->  List[Iteration]:
+def compress_history(config: AgentRequest, metrics: MetricsWrapper, history: List[Iteration], upto: int) ->  List[Iteration]:
     """Compress the *raw* fields of ``history``.
 
     Parameters
@@ -119,7 +111,7 @@ def compress_history(metrics: MetricsWrapper, history: List[Iteration], upto: in
         if it.iteration <= upto:
             continue
         age = newest - it.iteration
-        limit = limit_for_age(age)
+        limit = limit_for_age(config, age)
         if limit is None or it.compression_limit == limit:
             continue
             

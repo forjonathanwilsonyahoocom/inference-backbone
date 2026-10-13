@@ -6,38 +6,33 @@ from typing import List, Dict, Any
 
 @tool
 def search_evidence(purpose: str, query: str, limit: int = 8, instance_number: int | None = None, execution_id: str  | None = None) -> str:
-    """
-    Search text already fetched or read in this execution.
+    """Search for specific information within large texts already retrieved in previous turns.
 
-    Use this tool instead of calling `web_fetch`, `read_file`, or another
-    large-output tool again when you need to find, recall, or verify details
-    from content that was already returned in a previous iteration. Previously
-    read content may have been compressed; this tool searches its stored chunks
-    by meaning and returns the best matches.
+    CRITICAL: Use this tool INSTEAD of re-reading a file or re-fetching a URL if the content 
+    was already retrieved once. Reading a full file again is inefficient and wasteful. 
 
-    Call this tool after fetching or reading a large document, and whenever a
-    later step needs information from that document. Do not reread or refetch
-    the document just to locate a passage or recover a detail.
+    This is the mandatory next step after using web_fetch or read_file to isolate 
+    relevant sections of a large document without reloading the entire source.
 
     Parameters
     ----------
     purpose: str
-        The immediate purpose of this search.
+        The specific piece of information you are looking for.
     query: str
-        What information to find in the previously read content.
+        Search query string focused on the target information.
     limit: int, optional
-        Maximum number of matching chunks to return.
+        Max number of results to return.
     instance_number: int, optional
-        Restrict the search to a specific iteration. Use an instance_number
-        from a prior result to focus on that iteration.
-    execution_id: str, optional
-        Overridden by the framework with the current execution_id.
+        Filter by instance number to narrow search to a specific previous iteration.
+    execution_id: str, optional:
+        Overridden by framework to current execution_id.
 
     Returns
     -------
-    string
-        A representation of a ranked list of matching chunks. Each chunk
-        includes its instance_number, which can be used to narrow later searches.
+    string representation of List[Dict]
+        A list of the most relevant ranked chunks. Each chunk includes an 
+        instance_number; use this as a filter in subsequent calls to refine 
+        your search within a specific document version.
     """
     payload = {
         "query": query,

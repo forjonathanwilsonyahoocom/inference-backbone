@@ -3,11 +3,9 @@ from observability.metrics import MetricsWrapper
 from langchain_ollama import ChatOllama
 from langchain_core.messages import ToolMessage, BaseMessage, HumanMessage
 from typing import Any, List
-from agent.models import Iteration, Compaction
+from agent.models import Iteration, Compaction, AgentRequest
 from agent.compaction import make_summary_message, get_distillation
 from agent.compression import compress_history
-
-HIGH, LOW = 15_000, 8_000
 
 def estimate_tokens(content: Any) -> int:
     return max(1, len(str(content)) // 4)
@@ -26,7 +24,8 @@ def iter_tokens(it: Iteration,
     return (estimate_tokens(r) + estimate_tokens(getattr(m, "content", ""))
             + estimate_tokens(getattr(m, "tool_calls", "")))
 
-def derive_message_list(metrics: MetricsWrapper, 
+def derive_message_list(config: AgentRequest,
+                        metrics: MetricsWrapper, 
                         distillation_llm: ChatOllama, 
                         compact: Compaction, 
                         permanent: List[BaseMessage],
@@ -45,9 +44,9 @@ def derive_message_list(metrics: MetricsWrapper,
     send_to_distill = []
         
     live_total = sum(iter_tokens(i) for i in history if i.iteration > compact.upto)
-    token_quota = LOW if live_total > HIGH else float("inf")
+    token_quota = config.distill_to if live_total > config.distill_at else float("inf")
     
-    history = compress_history(metrics, history, compact.upto)
+    history = compress_history(config, metrics, history, compact.upto)
     
     upto: int = 0
     list_to_add_to = send_to_llm
@@ -99,14 +98,15 @@ def derive_message_list(metrics: MetricsWrapper,
     
     if len(send_to_distill) > 0:
         send_to_distill.reverse()
-        compact = get_distillation(metrics, distillation_llm, compact, upto, send_to_distill)
+        compact = get_distillation(config, metrics, distillation_llm, compact, upto, send_to_distill)
         
     send_to_llm.reverse()
         
     return compact, permanent + make_summary_message(compact) + send_to_llm
     
 
-def final_distillation(metrics: MetricsWrapper, 
+def final_distillation(config: AgentRequest,
+                       metrics: MetricsWrapper, 
                        distillation_llm: ChatOllama, 
                        compact: Compaction, 
                        history: List[Iteration]) -> (Compaction, HumanMessage):
@@ -127,7 +127,7 @@ def final_distillation(metrics: MetricsWrapper,
     seen_fingerprints = set()
     send_to_distill = []
         
-    token_quota = LOW 
+    token_quota = config.distill_to
         
     deduplicated: List[Iteration] = []
     last_upto = compact.upto
@@ -147,9 +147,9 @@ def final_distillation(metrics: MetricsWrapper,
         
     for iteration in reversed(deduplicated):
             if token_quota < 0:
-                compact = get_distillation(metrics, distillation_llm, compact, iteration.iteration, send_to_distill)
+                compact = get_distillation(config, metrics, distillation_llm, compact, iteration.iteration, send_to_distill)
                 send_to_distill = []
-                token_quota = LOW
+                token_quota = config.distill_to
             
             token_quota -= iter_tokens(iteration, "tool_call_result","model_response")
                         
@@ -166,7 +166,7 @@ def final_distillation(metrics: MetricsWrapper,
 
     
     if len(send_to_distill) > 0:
-        compact = get_distillation(metrics, distillation_llm, compact, history[-1].iteration, send_to_distill)
+        compact = get_distillation(config, metrics, distillation_llm, compact, history[-1].iteration, send_to_distill)
     summary =  make_summary_message(compact)
     
     sm = HumanMessage(content="missing")

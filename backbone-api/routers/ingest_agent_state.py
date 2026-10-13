@@ -3,6 +3,7 @@ routers/ingest_agent_state.py
 """
 from fastapi import APIRouter
 from contracts.inference_contracts.agent_state import AgentState
+from contracts.inference_contracts.info import InfoContainer, InfoNode
 from contracts.inference_contracts.info_chunk import InfoChunk
 from contracts.inference_contracts.validations import validate_artifact_id
 from util.chunker import chunk_text
@@ -16,7 +17,7 @@ ingest_agent_state_router = APIRouter()
 
 
 @ingest_agent_state_router.post("/ingest/agent_state")
-async def agent_state_ingest(payload: AgentState) -> Dict:
+async def agent_state_ingest(payload: InfoContainer[AgentState]) -> Dict:
     """
     /ingest/agent_state endpoint takes the distillation object from the distillation agent
     and chunks into weaviate and saves the state object
@@ -27,7 +28,7 @@ async def agent_state_ingest(payload: AgentState) -> Dict:
     try:
         print("ingesting agent state", validate_artifact_id(payload.state_id))
         
-        payload.content_hash = context_based_id(payload.model_dump_json(indent=2))
+        payload.info.content_hash = context_based_id(payload.model_dump_json(indent=2))
                         
         file_path = write_to_file(
                         content=payload,
@@ -56,10 +57,11 @@ async def agent_state_ingest(payload: AgentState) -> Dict:
                     for idx, raw_chunk in enumerate(raw_chunks):
                         typed_chunk = InfoChunk(
                             chunk_id=context_based_id(raw_chunk),
-                            execution_id=payload.execution_id,
-                            source_id=payload.state_id,
+                            execution_id=payload.info.execution_id,
+                            source_id=payload.info.id,
                             info_type=F"AgentState.{section}",
-                            instance_number=payload.instance_number,
+                            instance_number_start=payload.info.instance_number_start,
+                            instance_number=payload.info.instance_number_end,
                             content=raw_chunk,
                             chunk_index=idx,
                             chunk_count=len(raw_chunks),
@@ -80,7 +82,7 @@ async def agent_state_ingest(payload: AgentState) -> Dict:
                         )
 
         return {
-            "content_hash": payload.content_hash,
+            "content_hash": payload.info.content_hash,
             "chunk_count": total_chunk_count,
             "chunks": chunk_ids,
             "file_path" : file_path,
