@@ -4,7 +4,7 @@ from typing import Any, List, Optional, Dict
 from pydantic import BaseModel
 from ollama import ResponseError 
 from agent.messages import derive_message_list, final_distillation
-from agent.models import Iteration, Compaction
+from agent.models import Iteration, Compaction, AgentRequest
 from agent.fingerprint import tool_call_fingerprint, result_fingerprint
 from agent.telemetry import ingest_task, ingest_final_answer
 
@@ -27,15 +27,12 @@ from agent.telemetry import ingest_tool_event, ToolEvent
     
 def run_agent(
     metrics: MetricsWrapper,
-    config: dict,
+    config: AgentRequest,
     tools: dict,
     llm_with_tools: ChatOllama,
     distillation_llm: ChatOllama,
-    user_request: str,
-    execution_id: str,
-    max_iterations: int = 150,
-    verbose: bool = False,
 ) -> Dict:
+    
     operation_metric_labeler = metrics.get_counter_message_labeler(
         "operation", "agent general activity"
     )
@@ -44,10 +41,10 @@ def run_agent(
     tool_call_metric_labeler = metrics.get_counter_message_labeler("tool_call", "the agent calls a tool")
     failure_metric_labeler = metrics.get_counter_message_labeler("tool_call_failure", "the agent tool fails")
     token_gauge = metrics.get_gauge_func("tokens_in_play", "tokens in current context")
-    ingest_task(execution_id, user_request, config['model'])
+    ingest_task(config.execution_id, config.request, config.worker_model)
     permanent_messages = [
         SystemMessage(content=SYSTEM_PROMPT),
-        HumanMessage(content=user_request),
+        HumanMessage(content=config.request),
     ]
     events: list[ToolEvent] = []
     iteration = 0
@@ -56,7 +53,7 @@ def run_agent(
     
     full_thread_history: List[Iteration]  = []#model message list is derived from this
     
-    current_compaction: Compaction = Compaction(execution_id=execution_id)
+    current_compaction: Compaction = Compaction()
     
     # centralize tool event accumulation / ingest call details
     # using local state
@@ -66,22 +63,22 @@ def run_agent(
         te.instance_number = event_counter
         events.append(te)
         #do not ingest nonsense events
-        if not (te.event_type=="parse_error" or (te.event_type == "agent_response" and len(te.result) < 5)):
-            ingest_tool_event(execution_id, te)
+        if not (te.event_type == "agent_response" and len(te.result) < 5):
+            ingest_tool_event(config.execution_id, te)
                 
-    while iteration < max_iterations:
+    while iteration < config.max_iterations:
         iteration = iteration + 1
         this_iteration = Iteration(
             iteration=iteration
         )
-        if verbose:
+        if config.verbose:
             print(f"\n--- iteration {iteration} ---")
             
         metrics.emit(operation_metric_labeler({"operation" : "iterate"}))
         
         tool_calls = []
         response = {}
-        current_compaction, send_to_llm = derive_message_list(metrics, distillation_llm, current_compaction, permanent_messages, full_thread_history)
+        current_compaction, send_to_llm = derive_message_list(config, metrics, distillation_llm, current_compaction, permanent_messages, full_thread_history)
         retry_notes: list[BaseMessage] = []
         for retry in range(10):
             
@@ -104,44 +101,41 @@ def run_agent(
                 metrics.emit(failure_metric_labeler({"failure": f"model response was unparsible"}))
                 retry_notes.append(HumanMessage(f"Last response failed tool-call parsing: {e}. Return exactly one valid tool call, or a final answer as content only."))
         else:
-            current_compaction, distillation = final_distillation(metrics, distillation_llm, current_compaction, full_thread_history)
+            current_compaction, distillation = final_distillation(config, metrics, distillation_llm, current_compaction, full_thread_history)
             
             return {"condition": "model failed after 10 retries", 
                     "final_response": getattr(response, "content", "failure after retries"),
                     "iterations": iteration,
                     "events": events,
                     "distillation" : getattr(distillation, "content", "distillation failure"),
-                    "execution_id" : execution_id}
+                    "execution_id" : config.execution_id}
                     
-        if verbose:
+        if config.verbose:
             if response.content:
                 print("Assistant:", response.content[:2000])
 
         # The model is finished when it returns content and no tool calls.
         if len(tool_calls) == 0:
-        
-            
-            ingest_final_answer(execution_id, response.content, config['model'])
-            current_compaction, distillation = final_distillation(metrics, distillation_llm, current_compaction, full_thread_history)
-            
+            ingest_final_answer(config.execution_id, response.content, config.worker_model)
+            current_compaction, distillation = final_distillation(config, metrics, distillation_llm, current_compaction, full_thread_history)
             metrics.emit(operation_metric_labeler({"operation" : "completed"}))
             return {"condition" : "no tool calls",
                     "final_response": response.content,
                     "iterations": iteration,
                     "events": events,
                     "distillation" :  getattr(distillation, "content", "distillation failure"),
-                    "execution_id" : execution_id}
+                    "execution_id" : config.execution_id}
         
         add_tool_event(
             ToolEvent(
                 iteration=iteration,
                 event_type="agent_response",
-                model_name=config['model'],
+                model_name=config.worker_model,
                 args={},
                 result=str(response.content)
             )
         )
-
+        this_iteration.model_response_instance_number = event_counter
         tool_call = tool_calls[0]
         #NOTE there will only be one tool call per the current rules
         tool_name = tool_call["name"]
@@ -159,7 +153,7 @@ def run_agent(
         else:
             this_iteration.tool_name = tool_name
             if tool_name == "search_evidence":
-                tool_args["execution_id"] = execution_id
+                tool_args["execution_id"] = config.execution_id
             try:
                 metrics.emit(tool_call_metric_labeler({"tool_call": tool_name}))
                 result = selected_tool.invoke(tool_args)
@@ -182,12 +176,14 @@ def run_agent(
             ToolEvent(
                 iteration=iteration,
                 event_type="tool_call_result",
-                model_name=config['model'],
+                model_name=config.worker_model,
                 tool=tool_name,
                 args=tool_args,
                 result=this_iteration.tool_call_result,
             )
         )
+        
+        this_iteration.tool_call_result_instance_number = event_counter
         
         print(f"Executing: {tool_name}({str(tool_args)[:150]})")
 
@@ -196,12 +192,12 @@ def run_agent(
         metrics.emit(token_gauge(getattr(response, "usage_metadata", {}).get("input_tokens", 0)))
 
     metrics.emit(operation_metric_labeler({"operation" : "ran out of turns"}))
-    current_compaction, distillation = final_distillation(metrics, distillation_llm, current_compaction, full_thread_history)
+    current_compaction, distillation = final_distillation(config, metrics, distillation_llm, current_compaction, full_thread_history)
            
-    return {"condition" : f"Agent stopped after {max_iterations} iterations. The workspace may contain partial results.",
+    return {"condition" : f"Agent stopped after {config.max_iterations} iterations. The workspace may contain partial results.",
             "final_response": response.content,
             "iterations": iteration,
             "events": events,
             "distillation" :  getattr(distillation, "content", "distillation failure"),
-            "execution_id" : execution_id}
+            "execution_id" : config.execution_id}
 

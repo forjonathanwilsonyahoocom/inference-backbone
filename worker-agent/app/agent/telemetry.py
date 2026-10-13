@@ -7,6 +7,7 @@ from contracts.inference_contracts.evidence import Evidence
 from contracts.inference_contracts.agent_state import AgentState
 from contracts.inference_contracts.task import Task
 from contracts.inference_contracts.final_answer import FinalAnswer
+from contracts.inference_contracts.info import InfoContainer, InfoNode
 
 class ToolEvent(BaseModel):
     iteration: int
@@ -49,12 +50,13 @@ def ingest_tool_event(execution_id: str, tool_event: ToolEvent) -> None:
         print(f"[Evidence ingestion] failed for event {tool_event}: {e}")
 
 
-def ingest_agent_state(state: AgentState) -> None:
+def ingest_agent_state(state: AgentState, info: InfoNode) -> None:
   
     try:
-        state.state_id = f"{state.execution_id}-{state.instance_number}"
+        payload = InfoContainer[AgentState](info=info,
+                                            contains=state)
    
-        resp = requests.post("http://backbone-api:8000/ingest/agent_state", json=state.model_dump(mode="json"), timeout=10)
+        resp = requests.post("http://backbone-api:8000/ingest/agent_state", json=payload.model_dump(mode="json"), timeout=10)
         resp.raise_for_status()
     except Exception as e:
         # Log but do not raise – evidence is observational

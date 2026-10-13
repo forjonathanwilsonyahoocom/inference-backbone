@@ -15,24 +15,16 @@ from typing import Any, Dict, List, Optional
 from langchain_core.messages import AIMessage
 
 from observability.metrics import MetricsWrapper
-from agent.models import Iteration
+from agent.models import Iteration, AgentRequest
 from toolbox.compressors import get_compressor
 
-# ---------------------------------------------------------------------------
-# Tiered compression limits
-# ---------------------------------------------------------------------------
-# (min_age, char_limit) – age 0 is the newest iteration.
-# The tiers are intentionally simple; they can be tuned by the user.
-TIERS: List[tuple[int, int]] = [(8, 300), (4, 600), (2, 1000)]
-
-
-def limit_for_age(age: int) -> Optional[int]:
+def limit_for_age(config: AgentRequest, age: int) -> Optional[int]:
     """Return the character limit for a given iteration age.
 
     The function walks the ``TIERS`` list in order and returns the first
     limit whose ``min_age`` is less than or equal to ``age``.
     """
-    for min_age, limit in TIERS:
+    for min_age, limit in config.compression_tiers:
         if age >= min_age:
             return limit
     return None
@@ -54,7 +46,7 @@ def clip_mid(metrics: MetricsWrapper, value: Any, limit: int) -> str:
     head = int(limit * 0.7)
     tail = max(1, limit - head)
     omitted = len(s) - limit
-    metrics.emit(metrics.get_counter_message("compression_amount", "reduced by this many chars", value=omitted))
+    metrics.emit(metrics.get_counter_message("compression_amount_tool_call", "reduced by this many chars", value=omitted))
     return f"{s[:head]}...[{omitted} chars omitted]...{s[-tail:]}"
 
 # ---------------------------------------------------------------------------
@@ -94,7 +86,7 @@ def compress_response(metrics: MetricsWrapper, resp: AIMessage, limit: int) -> A
 # Main compression routine
 # ---------------------------------------------------------------------------
 
-def compress_history(metrics: MetricsWrapper, history: List[Iteration], upto: int) ->  List[Iteration]:
+def compress_history(config: AgentRequest, metrics: MetricsWrapper, history: List[Iteration], upto: int) ->  List[Iteration]:
     """Compress the *raw* fields of ``history``.
 
     Parameters
@@ -119,14 +111,23 @@ def compress_history(metrics: MetricsWrapper, history: List[Iteration], upto: in
         if it.iteration <= upto:
             continue
         age = newest - it.iteration
-        limit = limit_for_age(age)
+        limit = limit_for_age(config, age)
         if limit is None or it.compression_limit == limit:
             continue
-            
-        metrics.emit(metrics.get_counter_message("compression_compressed", "compression event"))
-        # Re‑compress from the raw values – never mutate the originals.
-        it.tool_call_result_compressed = get_compressor(it.tool_name)(it.tool_call_result, limit)
+        
+        compressed_result = get_compressor(it.tool_name)(it.tool_call_result, limit)
+        #only use compressed tool result if it's worth adding the annotations
+        omitted = len(str(it.tool_call_result)) - len(str(compressed_result))
+        if omitted > 100:
+            metrics.emit(metrics.get_counter_message("compression_compressed_tool_result", "compression event"))
+            metrics.emit(metrics.get_counter_message("compression_amount_tool_result", "reduced by this many chars", value=omitted))
+            compressed_result = f"search_evidence with instance_number={it.tool_call_result_instance_number} for original chunks, compressed: \n{compressed_result}"
+            # Re‑compress from the raw values – never mutate the originals.
+            it.tool_call_result_compressed = compressed_result
+                
         it.model_response_compressed = compress_response(metrics, it.model_response, limit)
+        metrics.emit(metrics.get_counter_message("compression_compressed_response", "compression event"))
+            
         it.compression_limit = limit
 
     return history

@@ -1,7 +1,4 @@
-import os
-import uuid
-
-from typing import Tuple
+from typing import Tuple, List
 from pydantic import BaseModel
 
 from langchain_ollama import ChatOllama
@@ -10,6 +7,7 @@ from prometheus_client import start_http_server
 from fastapi import FastAPI
 
 from agent.loop import run_agent
+from agent.models import AgentRequest
 from observability.metrics import MetricsWrapper
 
 from toolbox.web_search import web_search
@@ -25,28 +23,23 @@ from toolbox.run_command import run_command
 from contracts.inference_contracts.agent_state import AgentState
 
 METRICS = None #this global is instantiated during app startup, a reference is sent to the agent runtime
-
+    
 def init_metrics() -> MetricsWrapper:
     metrics = MetricsWrapper("worker-agent")
     return metrics
 
-def get_ollama_config() -> dict:
-    return {
-        "base_url": os.getenv("OLLAMA_BASE_URL", "http://10.42.0.192:11434/"),
-        "model": os.getenv("GEN_MODEL", "gpt-oss:20b"),
-        "distill_model": os.getenv("DISTILL_GEN_MODEL", "gpt-oss:20b"),
-    }
-
-def create_llms(config: dict) -> Tuple[ChatOllama, ChatOllama]:
+def create_llms(config: AgentRequest) -> Tuple[ChatOllama, ChatOllama]:
     llm = ChatOllama(
-        model=config["model"],
-        base_url=config["base_url"],
-        temperature=0.01,
+        model=config.worker_model,
+        base_url=config.base_url,
+        temperature=config.worker_temp,
+        num_ctx=config.worker_num_ctx,
     )
     distill_llm = ChatOllama(
-        model=config["distill_model"],
-        base_url=config["base_url"],
-        temperature=0.01,
+        model=config.distillation_model,
+        base_url=config.base_url,
+        temperature=config.distillation_temp,
+        num_ctx=config.distillation_num_ctx,
     )
     return llm, distill_llm
 
@@ -70,15 +63,9 @@ def startup_event():
     METRICS.emit(operation_metric_labeler({"operation": "startup"}))
     start_http_server(8080)
 
-class AgentRequest(BaseModel):
-    request: str
-    max_iterations: int = 150
-    execution_id: str = str(uuid.uuid4())
-    verbose: bool = False    
 
 @app.post("/run")
-async def run_agent_endpoint(req: AgentRequest):
-    config = get_ollama_config()
+async def run_agent_endpoint(config: AgentRequest):
     llm, distill_llm = create_llms(config)
     distill_llm_typed = distill_llm.with_structured_output(AgentState)
     tools, llm_with_tools = get_toolchain(llm)
@@ -88,11 +75,7 @@ async def run_agent_endpoint(req: AgentRequest):
         config=config,
         tools=tools,
         llm_with_tools=llm_with_tools,
-        distillation_llm=distill_llm_typed,
-        user_request=req.request,
-        execution_id=req.execution_id,
-        max_iterations=req.max_iterations,
-        verbose=req.verbose,
+        distillation_llm=distill_llm_typed
     )
     return result
 
