@@ -14,6 +14,8 @@ class InfoNode(BaseModel):
     instance_number_end: int | None #stamped by framework
     content_hash: str | None = None #stamped by framework
 
+T = TypeVar("T")
+
 class InfoContainer(BaseModel, Generic[T]):
     info: InfoNode
     contains: T

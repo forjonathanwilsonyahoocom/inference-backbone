@@ -80,7 +80,7 @@ def get_distillation(config: AgentRequest,
                 raise ValueError(f"expected a AgentState object, got {type(agent_state_facts).__name__}")
                 
             info = InfoNode(id = f"{config.execution_id}-{upto}",
-                            execution_id=config.execution_id
+                            execution_id=config.execution_id,
                             instance_number_start=compact.upto,
                             instance_number_end=upto,
                             )
