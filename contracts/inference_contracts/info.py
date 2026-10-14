@@ -9,10 +9,11 @@ class InfoNode(BaseModel):
     for enrichment of persisted artifacts without llm context pollution
     """
     id: ArtifactId
-    execution_id: str | None #stamped by framework
-    instance_number_start: int | None #stamped by framework
-    instance_number_end: int | None #stamped by framework
-    content_hash: str | None = None #stamped by framework
+    source_id: ArtifactId | None #used when pulling extracting many infoNodes from one source (like AgentState)
+    execution_id: str | None 
+    instance_number_start: int | None 
+    instance_number_end: int | None 
+    content_hash: str | None = None 
 
 T = TypeVar("T")
 

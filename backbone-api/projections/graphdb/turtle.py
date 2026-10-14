@@ -33,7 +33,15 @@ EX = Namespace("http://backbone-api:8000/")
 # or an rdflib Identifier (URIRef/Literal/BNode), used as-is.
 FieldMapping = list[tuple[str, URIRef, Callable[[Any], Any] | None]]
 
-
+def get_nested_attr(obj, path: str, default=None):
+    for name in path.split("."):
+        if obj is None:
+            return default
+        obj = getattr(obj, name, default)
+        if obj is default:
+            return default
+    return obj
+    
 def build_node_turtle(
     graph: Graph,
     node_iri: URIRef,
@@ -46,7 +54,10 @@ def build_node_turtle(
     graph.add((node_iri, RDF.type, rdf_type))
 
     for attr_name, predicate, transform in field_mapping:
-        raw_value = getattr(entity, attr_name, None)
+        if "." in attr_name:
+            raw_value = get_nested_attr(entity, attr_name)
+        else:
+            raw_value = getattr(entity, attr_name, None)
         if raw_value is None:
             continue
 

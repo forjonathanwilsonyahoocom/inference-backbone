@@ -51,7 +51,6 @@ def derive_message_list(config: AgentRequest,
     upto: int = 0
     list_to_add_to = send_to_llm
     last_upto = compact.upto
-    print(f"last upto {last_upto}")
     primary_result_attribute = "tool_call_result_compressed"
     primary_response_attribute = "model_response_compressed"
     for iteration in reversed(history):

@@ -64,7 +64,7 @@ def get_distillation(config: AgentRequest,
                      compact: Compaction,
                      upto: int,
                      distill_these: List[Any]) -> Compaction:
-    print("Starting distill")
+    print(f"Starting distill from {compact.upto} to {upto}")
     
     conv_text = distillation_assembly(distill_these)
     
@@ -98,17 +98,15 @@ def get_distillation(config: AgentRequest,
             raw_content = str(agent_state_facts) if agent_state_facts else "(no response)"
             print(f"Raw model output (truncated): {raw_content[:300]}")
 
-    print(f"Distilled upto {upto}: {facts}")
-
     if facts is not None:
         compact.upto = upto
         compact.summary.append(facts)
         compact.fallback = ""
+        print(f"Distilled upto {upto}: {facts}")
     else:
         metrics.emit(metrics.get_counter_message("distillation_fallback", "distillation mechanical fallback"))
         compact.fallback = fallback_mechanical_summary(distill_these)
-    
-    print(compact.fallback)
+        print(f"Distilled fallback to {compact.fallback)}"
     
     return compact 
         
