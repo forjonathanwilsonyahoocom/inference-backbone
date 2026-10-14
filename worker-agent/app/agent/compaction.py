@@ -98,7 +98,7 @@ def get_distillation(config: AgentRequest,
             raw_content = str(agent_state_facts) if agent_state_facts else "(no response)"
             print(f"Raw model output (truncated): {raw_content[:300]}")
 
-    print(f"Distilled: {facts}")
+    print(f"Distilled upto {upto}: {facts}")
 
     if facts is not None:
         compact.upto = upto
