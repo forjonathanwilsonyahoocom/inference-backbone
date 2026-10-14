@@ -1,9 +1,7 @@
 import httpx
 from rdflib import Graph, URIRef
-
 from contracts.inference_contracts.agent_state import Hypothesis
 from contracts.inference_contracts.info import InfoContainer
-
 from clients.graphdb_client import post_turtle
 from projections.graphdb.turtle import build_node_turtle, FieldMapping, EX
 from projections.graphdb.info import INFO_FIELD_MAPPING

@@ -1,6 +1,5 @@
 import httpx
 from rdflib import Graph, URIRef
-
 from contracts.inference_contracts.agent_state import Observation
 from contracts.inference_contracts.info import InfoContainer
 from clients.graphdb_client import post_turtle
