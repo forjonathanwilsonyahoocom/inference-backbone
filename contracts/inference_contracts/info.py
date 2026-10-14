@@ -9,9 +9,9 @@ class InfoNode(BaseModel):
     for enrichment of persisted artifacts without llm context pollution
     """
     id: ArtifactId
-    source_id: ArtifactId | None #used when pulling extracting many infoNodes from one source (like AgentState)
+    source_id: ArtifactId | None = None #used when pulling extracting many infoNodes from one source (like AgentState)
     execution_id: str | None 
-    instance_number_start: int | None 
+    instance_number_start: int | None
     instance_number_end: int | None 
     content_hash: str | None = None 
 
