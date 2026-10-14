@@ -102,11 +102,11 @@ def get_distillation(config: AgentRequest,
         compact.upto = upto
         compact.summary.append(facts)
         compact.fallback = ""
-        print(f"Distilled upto {upto}: {facts}")
+        print(f"Distilled upto {upto}:{facts}")
     else:
         metrics.emit(metrics.get_counter_message("distillation_fallback", "distillation mechanical fallback"))
         compact.fallback = fallback_mechanical_summary(distill_these)
-        print(f"Distilled fallback to {compact.fallback)}"
+        print(f"Distilled fallback to {compact.fallback}")
     
     return compact 
         
