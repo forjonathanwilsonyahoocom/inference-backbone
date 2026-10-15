@@ -155,7 +155,7 @@ def object_to_turtle(
         g,
         file_iri(file_location, identifier),
         EX[type_name],
-        edge,
+        thing,
         mapping,
     )
     return g.serialize(format="turtle")
