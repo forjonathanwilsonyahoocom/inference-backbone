@@ -37,7 +37,9 @@ class InfoEdge(BaseModel):
 
     id: str
     source_id: str #deliberately loose to allow connection from node OR edge
+    source_type: str #because ids may over lap on diff types 
     target_id: str #deliberately loose to allow connection to node OR edge
+    target_type: str #because ids may over lap on diff types 
     type: EdgeType
     context: str | None = None
     assessment_confidence: float | None = Field(default=None, ge=0, le=1)

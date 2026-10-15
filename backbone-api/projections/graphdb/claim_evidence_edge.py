@@ -15,10 +15,10 @@ Design notes:
 - None values are skipped, not written as empty literals.
 """
 
-from typing import Any, Callable
+from typing import Any
 
 import httpx
-from rdflib import RDF, Graph, Literal, Namespace, URIRef
+from rdflib import Graph, URIRef
 from rdflib.term import Identifier
 
 from contracts.inference_contracts.claim_evidence_edge import ClaimEvidenceEdge
