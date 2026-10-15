@@ -72,7 +72,7 @@ def field_mapping_from_model(
     """
     mapping: FieldMapping = []
 
-    for field_name, model_field in model_cls.model_fields.items():    
+    for field_name, model_field in type(model_cls).model_fields.items():    
         t = getattr(model_field, "annotation", Any) #field type or Any
         #allow overrides to predicate or transform on class def in json_schema_extra map
         predicate = (getattr(model_field, "json_schema_extra") or {"rdf_predicate" : None}).get("rdf_predicate", None)
