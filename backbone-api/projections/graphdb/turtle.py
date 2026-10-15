@@ -174,10 +174,10 @@ async def write_object_to_graphdb(
     """
     if isinstance(thing, InfoContainer):
         mapping = field_mapping_from_model(thing.info, EX, "info") + field_mapping_from_model(thing.contains, EX, "contains")
-        type_name = str(type(thing.contains))
+        type_name = thing.contains.__class__.__name__
     else:
         mapping = field_mapping_from_model(thing, EX) 
-        type_name = str(type(thing))
+        type_name = thing.__class__.__name__
         
     turtle = object_to_turtle(thing, mapping, file_location, identifier, type_name)
     await post_turtle(turtle, client=client)
