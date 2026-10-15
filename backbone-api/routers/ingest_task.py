@@ -72,7 +72,7 @@ async def ingest_task(payload: Task) -> Dict:
                     )
                 )
 
-        write_object_to_graphdb(payload, "task",  payload.task_id)
+        await write_object_to_graphdb(payload, "task",  payload.task_id)
         
         return {
             "content_hash": payload.content_hash,
