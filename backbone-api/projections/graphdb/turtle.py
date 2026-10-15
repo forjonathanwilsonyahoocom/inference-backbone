@@ -176,7 +176,7 @@ async def write_object_to_graphdb(
         mapping = field_mapping_from_model(thing.info, EX, "info") + field_mapping_from_model(thing.contains, EX, "contains")
         type_name = str(type(thing.contains))
     else:
-        mapping = field_mapping_from_model(thing.info, EX) 
+        mapping = field_mapping_from_model(thing, EX) 
         type_name = str(type(thing))
         
     turtle = object_to_turtle(thing, mapping, file_location, identifier, type_name)
