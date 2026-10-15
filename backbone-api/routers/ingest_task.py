@@ -10,6 +10,7 @@ from util.embedding_provider import OllamaEmbeddingProvider
 from util.file_persistence import write_to_file
 from util.identity import context_based_id
 from clients.weaviate import get_weaviate_client, ensure_weaviate_collection
+from projections.graphdb.turtle import write_object_to_graphdb
 
 ingest_task_router = APIRouter()
 
@@ -71,6 +72,8 @@ async def ingest_task(payload: Task) -> Dict:
                     )
                 )
 
+        write_object_to_graphdb(payload, "task",  payload.task_id)
+        
         return {
             "content_hash": payload.content_hash,
             "chunk_count": len(raw_chunks),
