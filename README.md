@@ -43,6 +43,8 @@ apt install npm -y
 
 and bob's your uncle
 
+while this works, I have a better solution planned that will broker launches of a selection of runtime exec containers
+
 ## Detailed Documentation
 
 The rest of this repository contains the implementation details, Docker‑Compose configuration, and example notebooks. 
@@ -399,10 +401,6 @@ currently only one dashboard is init for worker agent and validator as shown abo
 2. **Distinguish evidence, interpretation, and belief.** Model the relationships between claims and evidence explicitly, using relationships such as `supports`, `contradicts`, `qualifies`, and `derived_from`. Define confidence scores carefully: confidence that evidence supports a claim is not the same as confidence that the claim is true. Preserve claim scope, assumptions, and validity so apparently contradictory claims can coexist when they apply under different conditions.
 
 **Guiding principle:** Preserve not just what the system currently believes, but why it believes it, where that belief applies, and what remains unresolved.
-
-# KNOWN BUGS
-list files returns the whole list, so for instance if node_modules exists and agent asks for list all, the list is too long to ingest
-planned fix: add filter and paging to list files, current patch is `node_modules` is added to block list on `list_files` results
 
 ### 🏗️ System Architecture Flow
 ```text
