@@ -38,7 +38,7 @@ for example to setup npm:
 ```bash
 docker compose exec -it -u root  worker-agent bash
 apt-get update
-apt install npm -Y
+apt install npm -y
 ```
 
 and bob's your uncle
