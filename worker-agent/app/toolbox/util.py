@@ -6,7 +6,7 @@ EXCLUDED_DIRS = {".git", "__pycache__", ".pytest_cache",  ".venv", "venv", ".myp
 
 WORKSPACE_PATH = os.getenv(
     "WORKSPACE",
-    "/agentworkspace",
+    "/srv/agent-workspaces",
 )
 WORKSPACE = Path(WORKSPACE_PATH)
 
