@@ -104,7 +104,7 @@ async def supporting_evidence_ingest(identifier: str) -> Dict:
         
         payload = Evidence.model_validate(file_resp)
 
-        await write_object_to_graphdb(payload, "evidence",  payload.identifier)
+        await write_object_to_graphdb(payload, "evidence", identifier)
 
         return {
             "content_hash": payload.content_hash,
