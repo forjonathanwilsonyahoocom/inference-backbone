@@ -92,7 +92,7 @@ async def agent_state_ingest(payload: InfoContainer[AgentState]) -> Dict:
                                                                                               instance_number_start=payload.info.instance_number_start,
                                                                                               instance_number_end=payload.info.instance_number_end,
                                                                                               content_hash=context_based_id(section_item.model_dump_json(indent=2))),
-                                                                                    contains=section_item), "agent_state",  payload.info.id))
+                                                                                    contains=section_item), "agent_state",  payload.info.id)
 
         return {
             "content_hash": payload.info.content_hash,
