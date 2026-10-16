@@ -31,6 +31,18 @@ Metrics are exposed via Prometheus and visualized in Grafana. Key metrics includ
 
 ---
 
+if you want to let the agent run something beyond the basics visible to it, just install it on the worker-agent container
+
+for example to setup npm:
+
+```bash
+docker compose exec -it -u root  worker-agent bash
+apt-get update
+apt install npm -Y
+```
+
+and bob's your uncle
+
 ## Detailed Documentation
 
 The rest of this repository contains the implementation details, Docker‑Compose configuration, and example notebooks. 
