@@ -4,7 +4,7 @@ routers/ingest_evidence.py
 from fastapi import APIRouter
 from contracts.inference_contracts.evidence import Evidence
 from contracts.inference_contracts.evidence_chunk import EvidenceChunk
-from projections.graphdb.evidence import write_evidence_to_graphdb
+from projections.graphdb.turtle import write_object_to_graphdb
 from util.chunker import chunk_text
 from typing import List, Dict
 from util.embedding_provider import OllamaEmbeddingProvider
@@ -104,7 +104,7 @@ async def supporting_evidence_ingest(identifier: str) -> Dict:
         
         payload = Evidence.model_validate(file_resp)
 
-        await write_evidence_to_graphdb(payload)
+        await write_object_to_graphdb(payload, "evidence",  payload.identifier)
 
         return {
             "content_hash": payload.content_hash,

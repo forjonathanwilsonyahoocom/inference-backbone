@@ -13,12 +13,7 @@ from util.file_persistence import write_to_file
 from util.identity import context_based_id
 from clients.weaviate import get_weaviate_client, ensure_weaviate_collection
 import uuid
-
-from projections.graphdb.hypothesis import write_hypothesis_to_graphdb
-from projections.graphdb.completed_step import write_completed_step_to_graphdb
-from projections.graphdb.artifact import write_artifact_to_graphdb
-from projections.graphdb.observation import write_observation_to_graphdb
-from projections.graphdb.understanding import write_understanding_to_graphdb
+from projections.graphdb.turtle import write_object_to_graphdb
 
 ingest_agent_state_router = APIRouter()
 
@@ -28,12 +23,6 @@ async def agent_state_ingest(payload: InfoContainer[AgentState]) -> Dict:
     /ingest/agent_state endpoint takes the distillation object from the distillation agent
     and chunks into weaviate and saves the state object
     """
-
-    map_section_to_ingestor = {"artifacts" : write_artifact_to_graphdb,
-                               "observations" : write_observation_to_graphdb,
-                               "understandings" : write_understanding_to_graphdb,
-                               "hypotheses" : write_hypothesis_to_graphdb,
-                               "completed_steps" : write_completed_step_to_graphdb}
                                
     weaviate_client = get_weaviate_client()
     
@@ -96,15 +85,14 @@ async def agent_state_ingest(payload: InfoContainer[AgentState]) -> Dict:
                             )
                         )
                         
-                    #we could probably build a subgraph and add the whole thing,
-                    #too tired right now to think through it
-                    section_ingestor(section)(InfoContainer[type(section_item)](info=InfoNode(id=section_item_id,
+                    #we could probably build a subgraph and add the whole thing in one call
+                    await write_object_to_graphdb(InfoContainer[type(section_item)](info=InfoNode(id=section_item_id,
                                                                                               source_id=payload.info.id,
                                                                                               execution_id=payload.info.execution_id,
                                                                                               instance_number_start=payload.info.instance_number_start,
                                                                                               instance_number_end=payload.info.instance_number_end,
                                                                                               content_hash=context_based_id(section_item.model_dump_json(indent=2))),
-                                                                                contains=section_item))
+                                                                                    contains=section_item), "agent_state",  payload.info.id))
 
         return {
             "content_hash": payload.info.content_hash,

@@ -5,12 +5,12 @@ Endpoint to ingest a Claim: persist to file, embed, store in Weaviate, write to 
 """
 from fastapi import APIRouter
 from contracts.inference_contracts.claim import Claim
-from projections.graphdb.claim import write_claim_to_graphdb
 from util.file_persistence import write_to_file
 from util.identity import context_based_id
 from util.embedding_provider import OllamaEmbeddingProvider
 from clients.weaviate import get_weaviate_client, ensure_weaviate_collection
 from typing import Dict
+from projections.graphdb.turtle import write_object_to_graphdb
 
 ingest_claim_router = APIRouter()
 
@@ -42,9 +42,7 @@ async def claim_ingest(payload: Claim) -> Dict:
         
         print(f"[ingest] Persisted claim to {file_path}")
 
-        
-        # Write to GraphDB
-        await write_claim_to_graphdb(payload)
+        await write_object_to_graphdb(payload, "claim",  payload.claim_id)
 
         # Ensure Weaviate collection
         ensure_weaviate_collection("Claim")

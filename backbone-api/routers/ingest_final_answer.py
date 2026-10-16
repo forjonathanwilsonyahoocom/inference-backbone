@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from contracts.inference_contracts.final_answer import FinalAnswer
 from contracts.inference_contracts.info_chunk import InfoChunk
 from util.chunker import chunk_text
+from projections.graphdb.turtle import write_object_to_graphdb
 from typing import List, Dict
 from util.embedding_provider import OllamaEmbeddingProvider
 from util.file_persistence import write_to_file
@@ -70,6 +71,8 @@ async def ingest_final_answer(payload: FinalAnswer) -> Dict:
                     )
                 )
 
+        await write_object_to_graphdb(payload, "final_answer",  payload.final_answer_id)
+        
         return {
             "content_hash": payload.content_hash,
             "chunk_count": len(raw_chunks),
