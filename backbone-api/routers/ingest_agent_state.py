@@ -12,9 +12,10 @@ from util.embedding_provider import OllamaEmbeddingProvider
 from util.file_persistence import write_to_file
 from util.identity import context_based_id
 from clients.weaviate import get_weaviate_client, ensure_weaviate_collection
+import uuid
+from projections.graphdb.turtle import write_object_to_graphdb
 
 ingest_agent_state_router = APIRouter()
-
 
 @ingest_agent_state_router.post("/ingest/agent_state")
 async def agent_state_ingest(payload: InfoContainer[AgentState]) -> Dict:
@@ -22,7 +23,7 @@ async def agent_state_ingest(payload: InfoContainer[AgentState]) -> Dict:
     /ingest/agent_state endpoint takes the distillation object from the distillation agent
     and chunks into weaviate and saves the state object
     """
-
+                               
     weaviate_client = get_weaviate_client()
     
     try:
@@ -47,7 +48,9 @@ async def agent_state_ingest(payload: InfoContainer[AgentState]) -> Dict:
             total_chunk_count = 0
             chunk_ids = []
             for section in ["artifacts", "observations", "understandings", "hypotheses", "completed_steps"]:
+                section_id = str(uuid.uuid4())
                 for i, section_item in enumerate(getattr(payload, section, [])):
+                    section_item_id = f"{section_id}-{i}"
                     section_item_text = ""
                     for field, field_info in type(section_item).model_fields.items():
                         section_item_text += str(getattr(section_item, field, ""))
@@ -59,6 +62,7 @@ async def agent_state_ingest(payload: InfoContainer[AgentState]) -> Dict:
                             chunk_id=context_based_id(raw_chunk),
                             execution_id=payload.info.execution_id,
                             source_id=payload.info.id,
+                            item_id=section_item_id,
                             info_type=F"AgentState.{section}",
                             instance_number_start=payload.info.instance_number_start,
                             instance_number=payload.info.instance_number_end,
@@ -80,6 +84,15 @@ async def agent_state_ingest(payload: InfoContainer[AgentState]) -> Dict:
                                 properties=typed_chunk.model_dump(), vector=embedding
                             )
                         )
+                        
+                    #we could probably build a subgraph and add the whole thing in one call
+                    await write_object_to_graphdb(InfoContainer[type(section_item)](info=InfoNode(id=section_item_id,
+                                                                                              source_id=payload.info.id,
+                                                                                              execution_id=payload.info.execution_id,
+                                                                                              instance_number_start=payload.info.instance_number_start,
+                                                                                              instance_number_end=payload.info.instance_number_end,
+                                                                                              content_hash=context_based_id(section_item.model_dump_json(indent=2))),
+                                                                                    contains=section_item), "agent_state",  payload.info.id)
 
         return {
             "content_hash": payload.info.content_hash,

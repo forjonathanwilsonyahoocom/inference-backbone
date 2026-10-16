@@ -31,6 +31,18 @@ Metrics are exposed via Prometheus and visualized in Grafana. Key metrics includ
 
 ---
 
+if you want to let the agent run something beyond the basics visible to it, just install it on the worker-agent container
+
+for example to setup npm:
+
+```bash
+docker compose exec -it -u root  worker-agent bash
+apt-get update
+apt install npm -Y
+```
+
+and bob's your uncle
+
 ## Detailed Documentation
 
 The rest of this repository contains the implementation details, Docker‑Compose configuration, and example notebooks. 
@@ -259,15 +271,19 @@ as implemented uses nomic embeddings for indexing
 ### graphdb ingest of claims and evidence
 current ingest of claims are only from the validator agent, not from the distillations, only evidence determined by the validator agent to support claims is added / linked
 
-if you want the http file links shown below to work for you outside the docker network, you will have to add a /etc/hosts entry and expose the backbone-api port to the host
-
-i recommend just ssh tunneling to the jupyter notebook/graphdb panel/grafana panel if you run this from a machine separate from your workstation
+if you are not running this on the same machine you control it from, i recommend just ssh tunneling to the backbone-api/jupyter notebook/graphdb panel/grafana panel if you run this from a machine separate from your workstation
 ```bash
 ssh -N \
+  -L 8000:127.0.0.1:8000 \
   -L 8080:127.0.0.1:8080 \
   -L 7200:127.0.0.1:7200 \
   -L 3011:127.0.0.1:3011 \
   [user]@[tunnel_target.ip]
+```
+
+if you want the http file links shown below to work for you outside the docker network, you will have to add a /etc/hosts entry 
+```bash
+127.0.0.1 backbone-api
 ```
 
 ![graph db links](./readme/graphdb_link.jpg)

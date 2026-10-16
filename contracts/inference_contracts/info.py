@@ -9,10 +9,11 @@ class InfoNode(BaseModel):
     for enrichment of persisted artifacts without llm context pollution
     """
     id: ArtifactId
-    execution_id: str | None #stamped by framework
-    instance_number_start: int | None #stamped by framework
-    instance_number_end: int | None #stamped by framework
-    content_hash: str | None = None #stamped by framework
+    source_id: ArtifactId | None = None #used when pulling extracting many infoNodes from one source (like AgentState)
+    execution_id: str | None 
+    instance_number_start: int | None
+    instance_number_end: int | None 
+    content_hash: str | None = None 
 
 T = TypeVar("T")
 
@@ -36,7 +37,9 @@ class InfoEdge(BaseModel):
 
     id: str
     source_id: str #deliberately loose to allow connection from node OR edge
+    source_type: str #because ids may over lap on diff types 
     target_id: str #deliberately loose to allow connection to node OR edge
+    target_type: str #because ids may over lap on diff types 
     type: EdgeType
     context: str | None = None
     assessment_confidence: float | None = Field(default=None, ge=0, le=1)

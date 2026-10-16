@@ -5,7 +5,7 @@ Endpoint to ingest a ClaimEvidenceEdge: persist to file, write to GraphDB.
 """
 from fastapi import APIRouter, status
 from contracts.inference_contracts.claim_evidence_edge import ClaimEvidenceEdge
-from projections.graphdb.claim_evidence_edge import write_claim_evidence_edge_to_graphdb
+from projections.graphdb.turtle import write_object_to_graphdb
 from util.file_persistence import write_to_file
 from typing import Dict
 
@@ -29,8 +29,7 @@ async def claim_evidence_edge_ingest(payload: ClaimEvidenceEdge) -> Dict:
         )
         print(f"[ingest] Persisted edge to {file_path}")
 
-        # Write to GraphDB
-        await write_claim_evidence_edge_to_graphdb(payload)
+        await write_object_to_graphdb(payload, "claim_evidence_edge",  identifier)
 
         return {
             "evidence_id": payload.evidence_id,
