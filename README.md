@@ -400,7 +400,9 @@ currently only one dashboard is init for worker agent and validator as shown abo
 
 **Guiding principle:** Preserve not just what the system currently believes, but why it believes it, where that belief applies, and what remains unresolved.
 
-
+# KNOWN BUGS
+list files returns the whole list, so for instance if node_modules exists and agent asks for list all, the list is too long to ingest
+planned fix: add filter and paging to list files, current patch is `node_modules` is added to block list on `list_files` results
 
 ### 🏗️ System Architecture Flow
 ```text

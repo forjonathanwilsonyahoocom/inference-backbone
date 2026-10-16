@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Any
 import os
 
-EXCLUDED_DIRS = {".git", "__pycache__", ".pytest_cache", "node_modules", ".venv", "venv", ".mypy_cache", ".ruff_cache"}
+EXCLUDED_DIRS = {".git", "__pycache__", ".pytest_cache", "node_modules", ".venv", "venv", ".mypy_cache", ".ruff_cache", "node_modules"}
 
 WORKSPACE_PATH = os.getenv(
     "WORKSPACE",
