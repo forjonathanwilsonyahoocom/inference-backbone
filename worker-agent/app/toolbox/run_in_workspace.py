@@ -24,23 +24,31 @@ def run_in_workspace(
     #this fails with exception if path is not safe
     workspace_path = safe_path(cwd)
     
+    if cwd.startswith("./"):
+        cwd = cwd[2:]
+        
     payload = RunRequest(workspace=cwd,
                          runtime=runtime,
                          command=command,
                          timeout_seconds=timeout_seconds)
+    
     try:
-        resp = requests.post("http://docker-broker:8000/jobs", json=payload.model_dump_json(indent=2), timeout=int(timeout_seconds * 1.2))
+        resp = requests.post("http://docker-broker:8000/jobs", json=payload.model_dump(), timeout=int(timeout_seconds * 1.2))
         resp.raise_for_status()
             
-        try:
-            parsed = RunResponse.model_validate(resp.json())
-            parsed.logs=clip_mid(parsed.logs, 3000)
-        except Exception as e:
-            print(f"failed to parse to RunResponse with {e} while parsing json {resp.json()} ")
-
-        return json.dumps(resp.json(), ensure_ascii=False, indent=2)
+        parsed = RunResponse.model_validate(resp.json())
+        parsed.logs=clip_mid(parsed.logs, 3000)
+        
+        return parsed.model_dump_json(indent=2)
+        
     except Exception as e:
-        return json.dumps([{"error": str(e)}], ensure_ascii=False, indent=2)
+        error_return = RunResponse(exit_code=1,
+                                   timed_out = False,
+                                   logs = f"error: {str(e)}")
+    
+        
+    
+        return error_return.model_dump_json(indent=2)
         
 def compress_run_in_workspace(result: Any, limit: int) -> str:
     """Return the number of evidence chunks and a preview of the first."""
@@ -48,7 +56,7 @@ def compress_run_in_workspace(result: Any, limit: int) -> str:
     try:
         parsed = RunResponse.model_validate(json.loads(result))
     except Exception as e:
-        print(f"failed to with {e} while parsing json {result} ")
+        print(f"failed to compress_run_in_workspace with {e} while parsing json {result} ")
         return result
                 
     parsed.logs=clip_mid(parsed.logs, limit)
