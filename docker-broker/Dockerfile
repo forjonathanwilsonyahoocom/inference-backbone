@@ -7,7 +7,7 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # install deps
-COPY ./worker-agent/requirements.txt /app/requirements.txt
+COPY ./docker-broker/requirements.txt /app/requirements.txt
 RUN pip install -Ur requirements.txt
 
 # --- Stage 2: Final Runtime ---
@@ -18,7 +18,7 @@ WORKDIR /app/
 COPY --from=compiler /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-COPY ./worker-agent/app/ .
+COPY ./docker-broker/app/ .
 COPY ./contracts/ /tmp/contracts/
 RUN pip install --no-cache-dir /tmp/contracts
 COPY ./observability/ /tmp/observability/
