@@ -33,18 +33,26 @@ Metrics are exposed via Prometheus and visualized in Grafana. Key metrics includ
 
 ### docker broker detail
 the tools for execution of environmental tools chains for node / go / rust / php are NOT safe
+
 **i recommend just not using them...**
+
 although they are incredibly useful
+
 in the docker-compose.yaml notice the group user 10001 is added to,
+
 that may need to change on your box run
+
 ```bash
 stat -c '%u:%g %a %n' /var/run/docker.sock
 ```
+
 to Check the socket’s numeric ownership on the host 
 
 also there is a .env file that needs to be updated to the absolute location of your agent workspace if you want to use these
-i could not get it to work with relative path, another option would be to use docker volumes for the workspace, that might overall be a better solution, but it is what it is for now
 
+i could not get it to work with relative path
+
+another option would be to use docker volumes for the workspace, that might overall be a better solution, but it is what it is for now
 
 ---
 
