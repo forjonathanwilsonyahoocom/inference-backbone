@@ -1,9 +1,8 @@
 # schema_v2.py
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any, List, Literal
 from pydantic import BaseModel, field_validator
-from typing_extensions import Literal
 from contracts.inference_contracts.validations import ArtifactId
 
 # --------------------------------------------------------------------------- #

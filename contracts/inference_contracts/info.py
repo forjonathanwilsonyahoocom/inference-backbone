@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Generic, TypeVar
-from typing_extensions import Literal
+from typing import Generic, TypeVar, Literal
 from contracts.inference_contracts.validations import ArtifactId
 
 class InfoNode(BaseModel):
