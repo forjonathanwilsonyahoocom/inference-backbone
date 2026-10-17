@@ -44,6 +44,7 @@ services:
     shm_size: '2gb'
     volumes:
       - ./worker-agent-workspace:/srv/agent-workspaces
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
     networks:
       docker-broker:
