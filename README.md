@@ -12,6 +12,7 @@
 - **FastAPI** – API gateway exposing ingestion, retrieval, and validation endpoints.
 - **Worker Agent** – runs inference loops, collects telemetry, and pushes results to GraphDB/Weaviate.
 - **Validator Agent** – verifies claims against the knowledge base.
+- **Docker Broker** – handles launch of execution environments for node / go / rust / php .
 
 ### Flow
 
