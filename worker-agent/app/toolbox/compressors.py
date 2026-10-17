@@ -18,6 +18,7 @@ from toolbox.search_file import compress_search_file
 from toolbox.search_evidence import compress_search_evidence
 from toolbox.web_search import compress_web_search
 from toolbox.web_fetch import compress_web_fetch
+from toolbox.run_in_workspace import compress_run_in_workspace
 
 # ---------------------------------------------------------------------------
 # Compressor implementations
@@ -56,6 +57,7 @@ COMPRESSORS: Dict[str, Callable[[Any, int], Any]] = {
     "search_evidence": compress_search_evidence,
     "web_search": compress_web_search,
     "web_fetch": compress_web_fetch,
+    "run_in_workspace" : compress_run_in_workspace,
 }
 
 # Helper to get a compressor or identity

@@ -29,21 +29,23 @@ Metrics are exposed via Prometheus and visualized in Grafana. Key metrics includ
 - Telemetry event counts
 - machine utilization (available but not viz)
 
----
 
-if you want to let the agent run something beyond the basics visible to it, just install it on the worker-agent container
-
-for example to setup npm:
-
+### docker broker detail
+the tools for execution of environmental tools chains for node / go / rust / php are NOT safe
+**i recommend just not using them...**
+although they are incredibly useful
+in the docker-compose.yaml notice the group user 10001 is added to,
+that may need to change on your box run
 ```bash
-docker compose exec -it -u root  worker-agent bash
-apt-get update
-apt install npm -y
+stat -c '%u:%g %a %n' /var/run/docker.sock
 ```
+to Check the socket’s numeric ownership on the host 
 
-and bob's your uncle
+also there is a .env file that needs to be updated to the absolute location of your agent workspace if you want to use these
+i could not get it to work with relative path, another option would be to use docker volumes for the workspace, that might overall be a better solution, but it is what it is for now
 
-while this works, I have a better solution planned that will broker launches of a selection of runtime exec containers
+
+---
 
 ## Detailed Documentation
 
@@ -269,7 +271,6 @@ as implemented uses nomic embeddings for indexing
 | **Auditability & traceability** | Deterministic fingerprints and stored provenance allow any claim to be traced back to its originating tool call. |
 ---
 
-
 ### graphdb ingest of claims and evidence
 current ingest of claims are only from the validator agent, not from the distillations, only evidence determined by the validator agent to support claims is added / linked
 
@@ -401,6 +402,24 @@ currently only one dashboard is init for worker agent and validator as shown abo
 2. **Distinguish evidence, interpretation, and belief.** Model the relationships between claims and evidence explicitly, using relationships such as `supports`, `contradicts`, `qualifies`, and `derived_from`. Define confidence scores carefully: confidence that evidence supports a claim is not the same as confidence that the claim is true. Preserve claim scope, assumptions, and validity so apparently contradictory claims can coexist when they apply under different conditions.
 
 **Guiding principle:** Preserve not just what the system currently believes, but why it believes it, where that belief applies, and what remains unresolved.
+
+# KNOWN BUGS
+sometimes docker compose up will crash with:
+
+[+] up 7/7
+ ✘ Network inference-backbone_data            Error error during connect: Post "http://%2Fvar%2Fru...  0.0s
+ ✘ Network inference-backbone_worker-api      Error error during connect: Post "http://%2Fvar%2Fru...  0.0s
+ ✘ Network inference-backbone_web-tool-egress Error error during connect: Post "http://%2Fvar%2Fru...  0.0s
+ ✘ Network inference-backbone_docker-broker   Error error during connect: Post "http://%2Fvar%2Fru...  0.0s
+ ✘ Network inference-backbone_worker-webtools Error Error response from daemon: invalid pool reque...  0.0s
+ ✘ Network inference-backbone_validator-api   Error error during connect: Post "http://%2Fvar%2Fru...  0.0s
+ ✘ network:worker-webtools                    failed to create network inference-backbone_worker-we... 0.0s
+failed to create network inference-backbone_worker-webtools: Error response from daemon: invalid pool request: Pool overlaps with other one on this address space
+
+usually docker compose down then up will fix this, but sometimes the `firewall-ready` volume needs deleted
+
+im not sure exactly why
+
 
 ### 🏗️ System Architecture Flow
 ```text

@@ -26,14 +26,35 @@ services:
     shm_size: '2gb'
     environment:
       OLLAMA_URL: http://10.42.0.192:11434
-      WORKSPACE: /agentworkspace
+      WORKSPACE: /srv/agent-workspaces
     volumes:
-      - ./worker-agent-workspace:/agentworkspace
+      - ./worker-agent-workspace:/srv/agent-workspaces
     restart: unless-stopped
     networks:
       worker-api:
+      docker-broker:
       worker-webtools:
           ipv4_address: 172.21.0.2
+
+  docker-broker:
+    build:
+      context: .
+      dockerfile: docker-broker/Dockerfile
+    container_name: docker_broker
+    shm_size: '2gb'
+    user: "10001:10001"
+    ports:
+      - "127.0.0.1:8001:8000"
+    group_add:
+      - "983"
+    environment:
+      WORKSPACE_ROOT: ${WORKSPACE_ROOT:?Set WORKSPACE_ROOT}
+    volumes:
+      - ${WORKSPACE_ROOT:?Set WORKSPACE_ROOT}:${WORKSPACE_ROOT:?Set WORKSPACE_ROOT}
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    networks:
+      docker-broker:
 
   web-tools:
     build:
@@ -179,6 +200,9 @@ networks:
   data:
     driver: bridge
 
+  docker-broker:
+    driver: bridge
+    
   web-tool-egress:
     driver: bridge
     
