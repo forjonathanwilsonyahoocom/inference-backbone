@@ -412,6 +412,24 @@ currently only one dashboard is init for worker agent and validator as shown abo
 
 **Guiding principle:** Preserve not just what the system currently believes, but why it believes it, where that belief applies, and what remains unresolved.
 
+# KNOWN BUGS
+sometimes docker compose up will crash with:
+
+[+] up 7/7
+ ✘ Network inference-backbone_data            Error error during connect: Post "http://%2Fvar%2Fru...  0.0s
+ ✘ Network inference-backbone_worker-api      Error error during connect: Post "http://%2Fvar%2Fru...  0.0s
+ ✘ Network inference-backbone_web-tool-egress Error error during connect: Post "http://%2Fvar%2Fru...  0.0s
+ ✘ Network inference-backbone_docker-broker   Error error during connect: Post "http://%2Fvar%2Fru...  0.0s
+ ✘ Network inference-backbone_worker-webtools Error Error response from daemon: invalid pool reque...  0.0s
+ ✘ Network inference-backbone_validator-api   Error error during connect: Post "http://%2Fvar%2Fru...  0.0s
+ ✘ network:worker-webtools                    failed to create network inference-backbone_worker-we... 0.0s
+failed to create network inference-backbone_worker-webtools: Error response from daemon: invalid pool request: Pool overlaps with other one on this address space
+
+usually docker compose down then up will fix this, but sometimes the `firewall-ready` volume needs deleted
+
+im not sure exactly why
+
+
 ### 🏗️ System Architecture Flow
 ```text
                         ┌───────────────┐
