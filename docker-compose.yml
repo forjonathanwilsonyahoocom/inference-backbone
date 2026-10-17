@@ -51,8 +51,6 @@ services:
       WORKSPACE_ROOT: ${WORKSPACE_ROOT:?Set WORKSPACE_ROOT}
     volumes:
       - ${WORKSPACE_ROOT:?Set WORKSPACE_ROOT}:${WORKSPACE_ROOT:?Set WORKSPACE_ROOT}
-    volumes:
-      - ./worker-agent-workspace:/srv/agent-workspaces
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
     networks:
