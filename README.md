@@ -269,6 +269,16 @@ as implemented uses nomic embeddings for indexing
 | **Auditability & traceability** | Deterministic fingerprints and stored provenance allow any claim to be traced back to its originating tool call. |
 ---
 
+### docker broker detail
+the tools for execution of environmental tools chains for node / go / rust / php are NOT safe
+**i recommend just not using them...**
+although they are incredibly useful
+in the docker-compose.yaml notice the group user 10001 is added to,
+that may need to change on your box run
+```bash
+stat -c '%u:%g %a %n' /var/run/docker.sock
+```
+to Check the socket’s numeric ownership on the host 
 
 ### graphdb ingest of claims and evidence
 current ingest of claims are only from the validator agent, not from the distillations, only evidence determined by the validator agent to support claims is added / linked
