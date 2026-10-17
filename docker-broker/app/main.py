@@ -1,9 +1,6 @@
 import logging
 import time
 from pathlib import Path
-from typing import Literal
-from uuid import UUID
-import os
 import docker
 from docker.errors import DockerException, ImageNotFound
 from fastapi import FastAPI, HTTPException
@@ -17,10 +14,10 @@ docker_client = docker.from_env()
 
 # The caller chooses a logical runtime, never an arbitrary image.
 RUNTIME_IMAGES = {
-    "node": "agent-runtime-node:22",
-    "go": "agent-runtime-go:1.24",
-    "rust": "agent-runtime-rust:1.88",
-    "php": "agent-runtime-php:8.4",
+    "node": "node:22-trixie-slim",
+    "go": "golang:1.24-trixie",
+    "rust": "rust:1.88-slim-trixie",
+    "php": "php:8.4-cli-trixie",
 }
 
 WORKSPACE_ROOT = Path("/srv/agent-workspaces").resolve()
