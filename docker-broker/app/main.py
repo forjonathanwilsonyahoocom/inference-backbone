@@ -34,6 +34,8 @@ def resolve_workspace(workspace: str) -> Path:
     return path
 
 
+DEFAULT_ENV_PER_IMAGE = {"node" : {"HOME": "/tmp", "npm_config_cache": "/tmp/.npm"}}
+
 @app.post("/jobs", response_model=RunResponse)
 def run_job(request: RunRequest) -> RunResponse:
     """Use a regular `def`: Docker SDK calls are synchronous/blocking."""
@@ -48,6 +50,7 @@ def run_job(request: RunRequest) -> RunResponse:
         container = docker_client.containers.run(
             image=image,
             command=request.command,
+            environment=DEFAULT_ENV_PER_IMAGE.get(request.runtime, {})
             working_dir="/workspace",
             volumes={
                 str(workspace): {
