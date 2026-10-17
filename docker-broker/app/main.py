@@ -50,7 +50,7 @@ def run_job(request: RunRequest) -> RunResponse:
         container = docker_client.containers.run(
             image=image,
             command=request.command,
-            environment=DEFAULT_ENV_PER_IMAGE.get(request.runtime, {})
+            environment=DEFAULT_ENV_PER_IMAGE.get(request.runtime, {}),
             working_dir="/workspace",
             volumes={
                 str(workspace): {
