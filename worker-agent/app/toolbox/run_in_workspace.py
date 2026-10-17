@@ -35,11 +35,7 @@ def run_in_workspace(
     try:
         resp = requests.post("http://docker-broker:8000/jobs", json=payload.model_dump(), timeout=int(timeout_seconds * 1.2))
         resp.raise_for_status()
-        
-        print("==============================")
-        print(resp.json())
-        print("==============================")
-        
+                
         parsed = RunResponse.model_validate(resp.json())
         parsed.logs=clip_mid(parsed.logs, 3000)
         
