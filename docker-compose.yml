@@ -43,8 +43,14 @@ services:
     container_name: docker_broker
     shm_size: '2gb'
     user: "10001:10001"
+    ports:
+      - "127.0.0.1:8001:8000"
     group_add:
       - "983"
+    environment:
+      WORKSPACE_ROOT: ${WORKSPACE_ROOT:?Set WORKSPACE_ROOT}
+    volumes:
+      - ${WORKSPACE_ROOT:?Set WORKSPACE_ROOT}:${WORKSPACE_ROOT:?Set WORKSPACE_ROOT}
     volumes:
       - ./worker-agent-workspace:/srv/agent-workspaces
       - /var/run/docker.sock:/var/run/docker.sock

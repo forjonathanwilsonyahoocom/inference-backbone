@@ -42,6 +42,7 @@ def run_in_workspace(
         return parsed.model_dump_json(indent=2)
         
     except Exception as e:
+        print(f"failed to run_in_workspace with {e} while parsing json {resp.json()} ")
         error_return = RunResponse(exit_code=1,
                                    timed_out = False,
                                    logs = f"error: {str(e)}")

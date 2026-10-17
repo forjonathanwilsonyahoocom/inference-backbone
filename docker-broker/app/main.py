@@ -5,6 +5,7 @@ import docker
 from docker.errors import DockerException, ImageNotFound
 from fastapi import FastAPI, HTTPException
 from contracts.general_contracts.docker_broker import RunRequest, RunResponse
+import os
 
 app = FastAPI()
 log = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ RUNTIME_IMAGES = {
     "php": "php:8.4-cli-trixie",
 }
 
-WORKSPACE_ROOT = Path("/srv/agent-workspaces").resolve()
+WORKSPACE_ROOT = Path(os.environ["WORKSPACE_ROOT"]).resolve()
 
 def resolve_workspace(workspace: str) -> Path:
     # In a real service, look up authorization and workspace ownership here.
@@ -39,6 +40,7 @@ def run_job(request: RunRequest) -> RunResponse:
     workspace = resolve_workspace(request.workspace)
     image = RUNTIME_IMAGES[request.runtime]
 
+    log.info(f"workspace mapping from {workspace}")
     container = None
     timed_out = False
 
