@@ -54,7 +54,7 @@ def get_tool_call_purpose(resp: AIMessage):
         purpose.append(tc.get("args", {}).get("purpose", ""))
     return " ".join(purpose).strip() 
     
-def semantic_compressor(config: AgentRequest, it: Iteration, limit: int) -> str | None:
+def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Iteration, limit: int) -> str | None:
     if it.tool_name in TRY_SEMANTIC_COMPRESSOR and it.tool_call_result_chunks is None: 
         try:
             # Determine how many chunks to fetch based on tier limit
@@ -75,8 +75,10 @@ def semantic_compressor(config: AgentRequest, it: Iteration, limit: int) -> str 
                                              execution_id=config.execution_id)
                 chunks = json.loads(raw_chunks)
                 it.tool_call_result_chunks = chunks
+            
+            metrics.emit(metrics.get_counter_message("compression_semantic_compressor_got_chunks", "compression event"))
         except Exception as e:
-            metrics.emit(metrics.get_counter_message("compression_error", "failed to fetch evidence chunks", value=str(e))) 
+            metrics.emit(metrics.get_counter_message("compression_semantic_compressor_error", "failed to fetch evidence chunks")) 
     
     compressed_result = None
     if it.tool_call_result_chunks:
@@ -92,6 +94,8 @@ def semantic_compressor(config: AgentRequest, it: Iteration, limit: int) -> str 
                 else:
                     compressed_chunks.append(f"{chunk_tag}:{chunk['content']}")
         compressed_result = "\n".join(compressed_chunks).strip()
+        
+        metrics.emit(metrics.get_counter_message("compression_semantic_compressor_compressed", "compression event"))
         print(f"semantic compressor found: \n {compressed_result}")
         
     return compressed_result

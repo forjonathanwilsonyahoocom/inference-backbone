@@ -115,7 +115,7 @@ def compress_history(config: AgentRequest, metrics: MetricsWrapper, history: Lis
         if limit is None or it.compression_limit == limit:
             continue
         
-        compressed_result = semantic_compressor(config, it, limit)
+        compressed_result = semantic_compressor(config, metrics, it, limit)
         if compressed_result is None:
             compressed_result = get_compressor(it.tool_name)(it.tool_call_result, limit)
             
