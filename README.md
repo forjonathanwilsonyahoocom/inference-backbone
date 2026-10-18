@@ -425,10 +425,7 @@ sometimes docker compose up will crash with:
  ✘ network:worker-webtools                    failed to create network inference-backbone_worker-we... 0.0s
 failed to create network inference-backbone_worker-webtools: Error response from daemon: invalid pool request: Pool overlaps with other one on this address space
 
-usually docker compose down then up will fix this, but sometimes the `firewall-ready` volume needs deleted
-
-im not sure exactly why
-
+usually docker compose down then up (some times more than once) will usually fix this, I believe it has to do with the static ips being assigned to nodes on the worker-webtools docker network, but i have not dug in here yet
 
 ### 🏗️ System Architecture Flow
 ```text

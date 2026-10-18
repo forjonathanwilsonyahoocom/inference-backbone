@@ -19,34 +19,11 @@ from toolbox.search_evidence import compress_search_evidence
 from toolbox.web_search import compress_web_search
 from toolbox.web_fetch import compress_web_fetch
 from toolbox.run_in_workspace import compress_run_in_workspace
+from toolbox.read_file import compress_read_file
 
 # ---------------------------------------------------------------------------
 # Compressor implementations
 # ---------------------------------------------------------------------------
-
-def compress_read_file(result: Any, limit: int) -> str:
-    """Return a small summary of a file read.
-
-    Parameters
-    ----------
-    result: str
-        The current content.
-
-    Returns
-    -------
-    str
-        truncated to limit with markers
-    """
-    result = str(result)
-    
-    size = len(result.encode("utf-8"))
-    
-    if size > limit:
-        return result[:limit] + f"\n...[truncated {size - limit} chars]"
-    
-    return result
-
-
 
 
 # Mapping from tool name to compressor callable

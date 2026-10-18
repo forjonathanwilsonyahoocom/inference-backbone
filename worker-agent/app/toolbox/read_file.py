@@ -66,3 +66,26 @@ def read_file(
     return content
 
 
+def compress_read_file(result: Any, limit: int) -> str:
+    """Return a small summary of a file read.
+
+    Parameters
+    ----------
+    result: str
+        The current content.
+
+    Returns
+    -------
+    str
+        truncated to limit with markers
+    """
+    result = str(result)
+    
+    size = len(result.encode("utf-8"))
+    
+    if size > limit:
+        return result[:limit] + f"\n...[truncated {size - limit} chars]"
+    
+    return result
+
+
