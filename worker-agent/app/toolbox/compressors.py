@@ -80,6 +80,7 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
             
             metrics.emit(metrics.get_counter_message("compression_semantic_compressor_got_chunks", "compression event"))
         except Exception as e:
+            print(e)
             metrics.emit(metrics.get_counter_message("compression_semantic_compressor_error", "failed to fetch evidence chunks")) 
     
     compressed_result = None
