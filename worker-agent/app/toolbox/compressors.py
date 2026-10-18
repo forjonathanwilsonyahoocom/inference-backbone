@@ -22,6 +22,8 @@ from toolbox.run_in_workspace import compress_run_in_workspace
 from toolbox.read_file import compress_read_file
 from agent.models import Iteration, AgentRequest
 
+
+from observability.metrics import MetricsWrapper
 from langchain_core.messages import AIMessage
 from toolbox.util import middle_slice, clip_mid
 import json
