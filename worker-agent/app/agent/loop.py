@@ -62,7 +62,7 @@ def run_agent(
         event_counter = event_counter + 1
         te.instance_number = event_counter
         events.append(te)
-        #do not ingest nonsense events
+        iteration.tool_call_args = te.args
         if not (te.event_type == "agent_response" and len(te.result) < 5):
             ingest_tool_event(config.execution_id, te)
                 
@@ -183,7 +183,7 @@ def run_agent(
             )
         )
         
-        this_iteration.tool_call_result_instance_number = event_counter
+        this_iteration.tool_call_args = tool_args
         
         print(f"Executing: {tool_name}({str(tool_args)[:150]})")
 

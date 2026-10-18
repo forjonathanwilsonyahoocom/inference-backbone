@@ -16,7 +16,7 @@ from langchain_core.messages import AIMessage
 
 from observability.metrics import MetricsWrapper
 from agent.models import Iteration, AgentRequest
-from toolbox.compressors import get_compressor
+from toolbox.search_evidence import search_evidence
 
 def limit_for_age(config: AgentRequest, age: int) -> Optional[int]:
     """Return the character limit for a given iteration age.
@@ -115,8 +115,29 @@ def compress_history(config: AgentRequest, metrics: MetricsWrapper, history: Lis
         if limit is None or it.compression_limit == limit:
             continue
         
-        compressed_result = get_compressor(it.tool_name)(it.tool_call_result, limit)
-        #only use compressed tool result if it's worth adding the annotations
+        # Fetch evidence chunks if needed
+        if it.tool_name == "search_evidence" and it.tool_call_result_chunks is None:
+            try:
+                # Determine how many chunks to fetch based on tier limit
+                tier_limit = limit_for_age(config, age) or config.compression_tiers[0][1]
+                num_chunks = tier_limit // 1000
+                raw_chunks = search_evidence(purpose=purpose, query="", limit=num_chunks, instance_number=instance_number, execution_id=it.execution_id)
+                import json
+                chunks = json.loads(raw_chunks)
+                it.tool_call_result_chunks = chunks
+            except Exception as e:
+                metrics.emit(metrics.get_counter_message("compression_error", "failed to fetch evidence chunks", value=str(e)))
+        
+        if it.tool_name == "search_evidence" and it.tool_call_result_chunks:
+            # Build compressed string from chunks up to limit
+            compressed_chunks = []
+            for chunk in it.tool_call_result_chunks:
+                if "text" in chunk:
+                    compressed_chunks.append(chunk["text"])
+                if len("\n".join(compressed_chunks)) >= limit:
+                    break
+            compressed_result = "\n".join(compressed_chunks)
+        
         omitted = len(str(it.tool_call_result)) - len(str(compressed_result))
         if omitted > 100:
             metrics.emit(metrics.get_counter_message("compression_compressed_tool_result", "compression event"))
