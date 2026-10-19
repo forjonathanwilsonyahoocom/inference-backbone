@@ -1,0 +1,83 @@
+from langchain.tools import tool
+from typing import List, Dict, Optional
+from agent.models import Iteration, AgentRequest
+from toolbox.repurpose import repurpose_function
+from toolbox.search_evidence import search_evidence_function
+import json
+
+
+class ToolWrapper:
+    """
+    * Holds the list of Iterations
+    * holds the config AgentRequest
+    * provides @tool annotations that call functions that require access to local run state
+    """
+    def __init__(self, config: AgentRequest, iterations:  Optional[List[Iteration]] = None):
+        self.iterations: List[Iteration] = iterations or []
+        self.config: AgentRequest = config
+        
+    
+    @tool
+    def repurpose(self, instance_number: int, new_purpose: str):
+        """Update the purpose of a previous tool call.
+
+        This tool is intended to be called after a tool has already been
+        executed.  It finds the iteration whose
+        ``tool_call_result_instance_number`` matches ``instance_number`` and
+        rewrites the stored ``tool_calls[0].args['purpose']`` to
+        ``new_purpose``.  It also clears the compression state so that the
+        next compression pass will re‑compress the raw result.
+
+        Parameters
+        ----------
+        instance_number: int
+            The ``tool_call_result_instance_number`` of the iteration to
+            modify.
+        new_purpose: str
+            The new purpose string to inject.
+
+        Returns
+        -------
+        str
+            Confirmation message.
+        """
+        
+        return repurpose_function(self.iterations, instance_number, new_purpose)
+        
+    @tool
+    def search_evidence(self, purpose: str, query: str, limit: int = 8, instance_number: int | None = None) -> str:
+        """
+        Search for specific information within large texts already retrieved in previous turns.
+
+        CRITICAL: Use this tool INSTEAD of re-reading a file or re-fetching a URL if the content 
+        was already retrieved once. Reading a full file again is inefficient and wasteful. 
+
+        This is the mandatory next step after using web_fetch or read_file to isolate 
+        relevant sections of a large document without reloading the entire source.
+
+        Parameters
+        ----------
+        purpose: str
+            The specific piece of information you are looking for.
+        query: str
+            Search query string focused on the target information.
+        limit: int, optional
+            Max number of results to return.
+        instance_number: int, optional
+            Filter by instance number to narrow search to a specific previous iteration.
+        execution_id: str, optional:
+            Overridden by framework to current execution_id.
+
+        Returns
+        -------
+        string representation of List[Dict]
+            A list of the most relevant ranked chunks. Each chunk includes an 
+            instance_number; use this as a filter in subsequent calls to refine 
+            your search within a specific document version.
+        """
+        return search_evidence_function(purpose, query, limit, instance_number, self.config.execution_id)
+            
+
+
+
+

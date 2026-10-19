@@ -15,7 +15,7 @@ returned unchanged.
 from typing import Any, Callable, Dict, Set
 from toolbox.run_command import compress_run_command
 from toolbox.search_file import compress_search_file
-from toolbox.search_evidence import compress_search_evidence, search_evidence
+from toolbox.search_evidence import compress_search_evidence, search_evidence_function
 from toolbox.web_search import compress_web_search
 from toolbox.web_fetch import compress_web_fetch
 from toolbox.run_in_workspace import compress_run_in_workspace
@@ -70,12 +70,7 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
             purpose = get_tool_call_purpose(it.model_response)
             print(f"semantic compressor purpose: {purpose}")
             if(purpose):
-                args = {"purpose" : "find compression chunks", 
-                        "query" : purpose, 
-                        "limit" : num_chunks + 1, 
-                        "instance_number" : it.tool_call_result_instance_number, 
-                        "execution_id" : config.execution_id}
-                raw_chunks = search_evidence.invoke(args)
+                raw_chunks = search_evidence_function("find compression chunks", purpose, num_chunks + 1,  it.tool_call_result_instance_number, config.execution_id)
                 chunks = json.loads(raw_chunks)
                 if len(chunks) > 0:
                     it.tool_call_result_chunks = chunks

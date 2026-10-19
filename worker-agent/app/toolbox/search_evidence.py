@@ -1,11 +1,9 @@
-from langchain_core.tools import tool
 import os
 import requests
 import json
 from typing import List, Dict, Any
 
-@tool
-def search_evidence(purpose: str, query: str, limit: int = 8, instance_number: int | None = None, execution_id: str  | None = None) -> str:
+def search_evidence_function(purpose: str, query: str, limit: int = 8, instance_number: int | None = None, execution_id: str  | None = None) -> str:
     """Search for specific information within large texts already retrieved in previous turns.
 
     CRITICAL: Use this tool INSTEAD of re-reading a file or re-fetching a URL if the content 
