@@ -133,7 +133,8 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
                 done = True
                 
             if omitted > 0:
-                omitted_tag =  f"...omitted approx {omitted} chars ... \n "
+                omitted_chunks = chunk['properties']['chunk_index'] - next_expected
+omitted_tag =  f"...omitted {omitted_chunks} chunks ... \n "
                 #chunk count is 1 based, chunk index is 0 based
                 chunk_tag = f"{omitted}chunk {stored_chunk['properties']['chunk_index'] + 1} of {stored_chunk['properties']['chunk_count']}:"
             

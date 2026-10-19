@@ -19,7 +19,7 @@ from toolbox.read_file import read_file
 from toolbox.write_file import write_file
 from toolbox.edit_file import edit_file
 from toolbox.run_command import run_command
-from toolbox.run_in_workspace import run_in_workspace
+from toolbox.repurpose import repurpose
 
 from contracts.inference_contracts.agent_state import AgentState
 
@@ -46,7 +46,7 @@ def create_llms(config: AgentRequest) -> Tuple[ChatOllama, ChatOllama]:
 
 def get_toolchain(llm: ChatOllama) -> Tuple[dict, ChatOllama]:
     TOOLS = [list_files, read_file, write_file, edit_file,
-             search_file, search_evidence, run_command, web_search, web_fetch, run_in_workspace]
+             search_file, search_evidence, run_command, web_search, web_fetch, run_in_workspace, repurpose]
     llm_with_tools = llm.bind_tools(TOOLS)
     TOOLS_BY_NAME = {tool.name: tool for tool in TOOLS}
     return TOOLS_BY_NAME, llm_with_tools
