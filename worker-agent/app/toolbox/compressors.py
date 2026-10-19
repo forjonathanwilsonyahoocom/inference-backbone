@@ -88,18 +88,58 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
     if it.tool_call_result_chunks is not None:
         # Build compressed string from chunks up to limit
         compressed_chunks = []
+        re_ordered_chunks = []
+        remaining_limit = limit
+        min_distance = it.tool_call_result_chunks[0]["distance"]
         for i, stored_chunk in enumerate(it.tool_call_result_chunks):
-            chunk = stored_chunk["properties"]
-            chunk_tag = f"chunk {chunk.get('chunk_index', 0)} of {chunk.get('chunk_count', 0)}"
-            if "content" in chunk:
-                so_far = len("\n".join(compressed_chunks))
-                if limit - so_far <= 0:
+            if "content" in stored_chunk["properties"]:
+                remaining_limit -= len(stored_chunk["properties"]["content"])
+                if remaining_limit <=0 and i > 0: #first collect at least one of the closest chunks
+                    #do not collect additional chunks after the closest if they exceed limit
                     break
-                if so_far + len(chunk["content"]) > limit:
-                    compressed_chunks.append(f"{chunk_tag}:{middle_slice(chunk['content'], limit - so_far)}")
-                    break
-                else:
-                    compressed_chunks.append(f"{chunk_tag}:{chunk['content']}")
+                re_ordered_chunks.append(stored_chunk)
+            
+        #then sort them in the order they occur in the result
+        re_ordered_chunks.sort(key=lambda x: x['properties']['chunk_index'])
+        
+        next_expected = 0
+        done = False
+        for i, stored_chunk in enumerate(it.re_ordered_chunks):
+            if done == True
+                break
+            chunk = stored_chunk["properties"]["content"]
+            chunk_tag = ""
+            omitted = 0
+            #derive the omitted section length
+            if next_expected < stored_chunk['properties']['chunk_index']:
+                omitted = (re_ordered_chunks[0]['properties']['chunk_index'] - next_expected) * 700 #tune with backbone-api chunk size
+                
+            if next_expected == stored_chunk['properties']['chunk_index'] and next_expected > 0:
+                #slice off the overlap from this chunk
+                chunk = chunk[200:]
+                
+            so_far = len("\n".join(compressed_chunks))
+            if limit - so_far <= 0:
+                break
+                
+            if so_far + len(chunk) > limit and i == 0:
+                chunk_middle = middle_slice(chunk, limit - so_far)
+                omitted += len(chunk) - len(chunk_middle)
+                chunk = chunk_middle
+                done = True
+                
+            if ommited > 0:
+                omitted_tag =  f"...omitted approx {omitted} chars ... \n "
+                #chunk count is 1 based, chunk index is 0 based
+                chunk_tag = f"{ommited}chunk {chunk.get('chunk_index', 0) + 1} of {chunk.get('chunk_count', 0)}:"
+            
+            compressed_chunks.append(f"{chunk_tag}{chunk}")
+            next_expected = stored_chunk['properties']['chunk_index'] + 1
+            
+        #derive approximate amount of truncation
+        if next_expected < it.tool_call_result_chunks[0]['properties']['chunk_count']
+            compressed_chunks.append(f"...truncated approx {(it.tool_call_result_chunks[0]['properties']['chunk_count'] - next_expected) * 700 } chars") 
+            
         compressed_result = "\n".join(compressed_chunks).strip()
         
         metrics.emit(metrics.get_counter_message("compression_semantic_compressor_compressed", "compression event"))
