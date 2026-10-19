@@ -104,7 +104,7 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
         
         metrics.emit(metrics.get_counter_message("compression_semantic_compressor_compressed", "compression event"))
         print(f"semantic compressor found: \n {compressed_result}")
-        if len(compressed_result) == 0
+        if len(compressed_result) == 0:
             compressed_result = None
         
     return compressed_result
