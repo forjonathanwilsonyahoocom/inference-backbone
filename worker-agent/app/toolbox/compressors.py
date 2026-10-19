@@ -105,7 +105,7 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
         next_expected = 0
         done = False
         for i, stored_chunk in enumerate(it.re_ordered_chunks):
-            if done == True
+            if done == True:
                 break
             chunk = stored_chunk["properties"]["content"]
             chunk_tag = ""
