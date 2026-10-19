@@ -76,10 +76,7 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
                         "instance_number" : it.tool_call_result_instance_number, 
                         "execution_id" : config.execution_id}
                 raw_chunks = search_evidence.invoke(args)
-                print(args)
-                print(raw_chunks)
                 chunks = json.loads(raw_chunks)
-                print(chunks)
                 it.tool_call_result_chunks = chunks
             
             metrics.emit(metrics.get_counter_message("compression_semantic_compressor_got_chunks", "compression event"))
@@ -96,6 +93,8 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
             chunk_tag = f"chunk {chunk.get('chunk_index', 0)} of {chunk.get('chunk_count', 0)}"
             if "content" in chunk:
                 so_far = len("\n".join(compressed_chunks))
+                if limit - so_far <= 0:
+                    break
                 if so_far + len(chunk["content"]) > limit:
                     compressed_chunks.append(f"{chunk_tag}:{middle_slice(chunk['content'], limit - so_far)}")
                     break
@@ -105,6 +104,8 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
         
         metrics.emit(metrics.get_counter_message("compression_semantic_compressor_compressed", "compression event"))
         print(f"semantic compressor found: \n {compressed_result}")
+        if len(compressed_result) == 0
+            compressed_result = None
         
     return compressed_result
 
