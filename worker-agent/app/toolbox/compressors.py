@@ -128,16 +128,20 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
                 done = True
                 
             if omitted > 0:
-                omitted_tag =  f"...omitted approx {omitted} chars ... \n "
+                # compute how many chunks were omitted between expected and current
+                omitted_chunks = stored_chunk['properties']['chunk_index'] - next_expected
+                omitted_tag = f"...omitted {omitted_chunks} chunks ... \n "
                 #chunk count is 1 based, chunk index is 0 based
-                chunk_tag = f"{omitted}chunk {stored_chunk['properties']['chunk_index'] + 1} of {stored_chunk['properties']['chunk_count']}:"
+                chunk_tag = f"{omitted_chunks}chunk {stored_chunk['properties']['chunk_index'] + 1} of {stored_chunk['properties']['chunk_count']}:"
             
             compressed_chunks.append(f"{chunk_tag}{chunk}")
             next_expected = stored_chunk['properties']['chunk_index'] + 1
             
         #derive approximate amount of truncation
         if next_expected < it.tool_call_result_chunks[0]['properties']['chunk_count']:
-            compressed_chunks.append(f"...truncated approx {(it.tool_call_result_chunks[0]['properties']['chunk_count'] - next_expected) * 700 } chars") 
+            # compute how many chunks were omitted at the end
+            omitted_chunks_end = it.tool_call_result_chunks[0]['properties']['chunk_count'] - next_expected
+            compressed_chunks.append(f"...truncated {omitted_chunks_end} chunks") 
             
         compressed_result = "\n".join(compressed_chunks).strip()
         
