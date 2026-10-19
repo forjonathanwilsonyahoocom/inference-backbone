@@ -91,7 +91,8 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
     if it.tool_call_result_chunks is not None:
         # Build compressed string from chunks up to limit
         compressed_chunks = []
-        for i, chunk in enumerate(it.tool_call_result_chunks):
+        for i, stored_chunk in enumerate(it.tool_call_result_chunks):
+            chunk = stored_chunk["properties"]
             chunk_tag = f"chunk {chunk.get('chunk_index', 0)} of {chunk.get('chunk_count', 0)}"
             if "content" in chunk:
                 so_far = len("\n".join(compressed_chunks))
