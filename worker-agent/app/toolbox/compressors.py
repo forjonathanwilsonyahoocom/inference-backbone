@@ -70,12 +70,16 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
             purpose = get_tool_call_purpose(it.model_response)
             print(f"semantic compressor purpose: {purpose}")
             if(purpose):
-                raw_chunks = search_evidence.invoke({"purpose" : "find compression chunks", 
-                                                     "query" : purpose, 
-                                                     "limit" : num_chunks, 
-                                                     "instance_number" : it.tool_call_result_instance_number, 
-                                                     "execution_id" : config.execution_id})
+                args = {"purpose" : "find compression chunks", 
+                        "query" : purpose, 
+                        "limit" : num_chunks + 1, 
+                        "instance_number" : it.tool_call_result_instance_number, 
+                        "execution_id" : config.execution_id}
+                raw_chunks = search_evidence.invoke(args)
+                print(args)
+                print(raw_chunks)
                 chunks = json.loads(raw_chunks)
+                print(chunks)
                 it.tool_call_result_chunks = chunks
             
             metrics.emit(metrics.get_counter_message("compression_semantic_compressor_got_chunks", "compression event"))
