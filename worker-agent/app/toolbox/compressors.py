@@ -77,7 +77,11 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
                         "execution_id" : config.execution_id}
                 raw_chunks = search_evidence.invoke(args)
                 chunks = json.loads(raw_chunks)
-                it.tool_call_result_chunks = chunks
+                if len(chunks) > 0:
+                    it.tool_call_result_chunks = chunks
+                else:
+                    print(f"semantic compressor found no chunks for instance_number : {it.tool_call_result_instance_number}")
+                    it.tool_call_result_chunks = None
             
             metrics.emit(metrics.get_counter_message("compression_semantic_compressor_got_chunks", "compression event"))
         except Exception as e:
