@@ -70,11 +70,11 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
             purpose = get_tool_call_purpose(it.model_response)
             print(f"semantic compressor purpose: {purpose}")
             if(purpose):
-                raw_chunks = search_evidence(purpose="find compression chunks", 
-                                             query=purpose, 
-                                             limit=num_chunks, 
-                                             instance_number=it.tool_call_result_instance_number, 
-                                             execution_id=config.execution_id)
+                raw_chunks = search_evidence.invoke({"purpose" : "find compression chunks", 
+                                                     "query" : purpose, 
+                                                     "limit" : num_chunks, 
+                                                     "instance_number" : it.tool_call_result_instance_number, 
+                                                     "execution_id" : config.execution_id})
                 chunks = json.loads(raw_chunks)
                 it.tool_call_result_chunks = chunks
             
@@ -84,7 +84,7 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
             metrics.emit(metrics.get_counter_message("compression_semantic_compressor_error", "failed to fetch evidence chunks")) 
     
     compressed_result = None
-    if it.tool_call_result_chunks:
+    if it.tool_call_result_chunks is not None:
         # Build compressed string from chunks up to limit
         compressed_chunks = []
         for i, chunk in enumerate(it.tool_call_result_chunks):
