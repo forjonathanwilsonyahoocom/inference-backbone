@@ -137,7 +137,7 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
             next_expected = stored_chunk['properties']['chunk_index'] + 1
             
         #derive approximate amount of truncation
-        if next_expected < it.tool_call_result_chunks[0]['properties']['chunk_count']
+        if next_expected < it.tool_call_result_chunks[0]['properties']['chunk_count']:
             compressed_chunks.append(f"...truncated approx {(it.tool_call_result_chunks[0]['properties']['chunk_count'] - next_expected) * 700 } chars") 
             
         compressed_result = "\n".join(compressed_chunks).strip()
