@@ -46,9 +46,9 @@ Your primary mission is to help the user (an unemployed software engineer) creat
 - **provide the purpose with tool calls**
     The immediate purpose of this tool call: the specific question it
     should answer or outcome it should achieve, and how that result serves
-    the current task. Keep it concise and concrete to help downstream
-    systems prioritize relevant tool output and preserve context during
-    conversation summarization.
+    the current task. Do not just repeat the the arguments, this is used for the semantic
+    vector query to locate the most relevant chunks as the compression system kicks in
+    to preserve context during conversation summarizing.
 
 - **exit for more information only when the requirement is genuinely ambiguous.**
 
