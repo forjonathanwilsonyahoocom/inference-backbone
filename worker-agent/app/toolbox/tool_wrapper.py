@@ -19,22 +19,19 @@ class ToolWrapper:
     
     @tool
     def repurpose(self, instance_number: int, new_purpose: str):
-        """Update the purpose of a previous tool call.
+        """Update the purpose of a previous tool call to refocus the semantic compressor
 
-        This tool is intended to be called after a tool has already been
-        executed.  It finds the iteration whose
-        ``tool_call_result_instance_number`` matches ``instance_number`` and
-        rewrites the stored ``tool_calls[0].args['purpose']`` to
-        ``new_purpose``.  It also clears the compression state so that the
-        next compression pass will re‑compress the raw result.
+        This tool is intended to be called after one of
+        "read_file", "web_fetch", "run_in_workspace"
+        has already been executed. use the instance_number stamped on the tool result
+        to rewrite the stored purpose to `new_purpose` 
 
         Parameters
         ----------
         instance_number: int
-            The ``tool_call_result_instance_number`` of the iteration to
-            modify.
+            The `instance_number` from the compressed tool result to refocus semantic compression.
         new_purpose: str
-            The new purpose string to inject.
+            The new purpose string to use for the semantic compression
 
         Returns
         -------
