@@ -5,7 +5,7 @@ this README.md is a bit of a mess, I've been focused on experimenting with featu
 
 ## Overview
 
-`inference-backbone` is a self‑sustaining compute backbone that **powers a human + AI ecosystem**. It orchestrates data ingestion, semantic enrichment, vector similarity, and inference across a distributed knowledge‑graph stack.
+`inference-backbone` is an experiment in learning about an  **human + AI ecosystem**. It orchestrates data ingestion, semantic enrichment, vector similarity, and inference across a knowledge‑graph stack.
 
 ### Core Components
 
@@ -14,7 +14,7 @@ this README.md is a bit of a mess, I've been focused on experimenting with featu
 - **FastAPI** – API gateway exposing ingestion, retrieval, and validation endpoints.
 - **Worker Agent** – runs inference loops, collects telemetry, and pushes results to GraphDB/Weaviate.
 - **Validator Agent** – verifies claims against the knowledge base.
-- **Docker Broker** – handles launch of execution environments for node / go / rust / php .
+- **Docker Broker** – handles launch of execution environments for python / node / go / rust / php.
 
 ### Flow
 
