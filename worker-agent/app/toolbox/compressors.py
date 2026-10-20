@@ -67,7 +67,7 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
                     largest_tier_limit = t[1]
                     
             num_chunks = largest_tier_limit // 1000 #match with backbone-api chunk size
-            query = it.tool_call_result_chunk_query | get_tool_call_purpose(it.model_response)
+            query = it.tool_call_result_chunk_query or get_tool_call_purpose(it.model_response)
             print(f"semantic compressor query: {query}")
             if(query):
                 raw_chunks = search_history_function("find compression chunks",
