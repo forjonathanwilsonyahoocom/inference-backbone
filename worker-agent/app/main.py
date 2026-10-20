@@ -52,7 +52,7 @@ def get_toolchain(config: AgentRequest, llm: ChatOllama) -> Tuple[dict, ChatOlla
              search_file, search_history_wrapper.get_search_history(), assess_result_wrapper.get_assess_result(), run_command, web_search, web_fetch, run_in_workspace]
     llm_with_tools = llm.bind_tools(TOOLS)
     TOOLS_BY_NAME = {tool.name: tool for tool in TOOLS}
-    return TOOLS_BY_NAME, llm_with_tools, focus_wrapper.iterations
+    return TOOLS_BY_NAME, llm_with_tools, search_history_wrapper.iterations
 
 app = FastAPI()
 
