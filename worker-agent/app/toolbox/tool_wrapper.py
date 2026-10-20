@@ -17,7 +17,7 @@ class ToolWrapper:
         self.config: AgentRequest = config
         
     
-    @tool
+    @tool(parse_docstring=True)
     def repurpose(self, instance_number: int, new_purpose: str):
         """Update the purpose of a previous tool call to refocus the semantic compressor
 
@@ -26,22 +26,17 @@ class ToolWrapper:
         has already been executed. use the instance_number stamped on the tool result
         to rewrite the stored purpose to `new_purpose` 
 
-        Parameters
-        ----------
-        instance_number: int
-            The `instance_number` from the compressed tool result to refocus semantic compression.
-        new_purpose: str
-            The new purpose string to use for the semantic compression
+        Args:
+            instance_number: The `instance_number` from the first line of the target tool result
+            new_purpose: The new purpose string to use for refocusing the semantic compression
 
-        Returns
-        -------
-        str
-            Confirmation message.
+        Returns:
+            Confirmation that the target semantic compression is refocused
         """
         
         return repurpose_function(self.iterations, instance_number, new_purpose)
         
-    @tool
+    @tool(parse_docstring=True)
     def search_evidence(self, purpose: str, query: str, limit: int = 3, instance_number: int | None = None) -> str:
         """
         Search for specific information within large texts already retrieved in previous turns.
@@ -52,23 +47,14 @@ class ToolWrapper:
         This is the mandatory next step after using web_fetch or read_file to isolate 
         relevant sections of a large document without reloading the entire source.
 
-        Parameters
-        ----------
-        purpose: str
-            The specific piece of information you are looking for.
-        query: str
-            Search query string focused on the target information.
-        limit: int, optional
-            Max number of results to return.
-        instance_number: int, optional
-            Filter by instance number to narrow search to a specific previous iteration.
+        Args:
+            purpose: the reason you are performing this search, used for future summary.
+            query: Search query string focused on the target information.
+            limit: Max number of results to return, default 3.
+            instance_number: optional Filter by instance_number to focus on a specific instance.
             
-        Returns
-        -------
-        string representation of List[Dict]
-            A list of the most relevant ranked chunks. Each chunk includes an 
-            instance_number; use this as a filter to refine 
-            your search within a specific turn.
+        Returns:
+            A list of the most relevant ranked chunks. Each chunk includes source instance_number
         """
         return search_evidence_function(purpose, query, limit, instance_number, self.config.execution_id)
             
