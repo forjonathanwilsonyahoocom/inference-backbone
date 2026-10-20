@@ -17,7 +17,7 @@ class AssessResultWrapper:
     
     def get_assess_result(self):
         @tool
-        def assess_result(instance_number: int, utility: float, better_focus: Optional[str] = None):
+        def assess_result(instance_number: int, utility: float, better_focus: Optional[str] = None) -> str:
             """Use to update a tool result in history to assess its utility in the current thread and refocus the chunk compressor query
 
             This tool is intended to be called after one of
@@ -42,9 +42,7 @@ class AssessResultWrapper:
             return assess_result_function(self.iterations, instance_number, relevance, better_focus)
         return assess_result
             
-
-
-def assess_result_function(iterations: List[Iteration], instance_number: int, utility: float, better_focus: str | None) -> str:
+def assess_result_function(iterations: List[Iteration], instance_number: int, utility: float, better_focus: Optional[str]) -> str:
     """
     same as for @tool with the addition of
     iterations: List[Iteration]
@@ -75,7 +73,7 @@ def assess_result_function(iterations: List[Iteration], instance_number: int, ut
         target.compression_limit = None
         target.tool_call_result_chunks = None
         
-    if utility != target.tool_call_result_utility:
+    if utility != target.tool_call_result_utility 
         target.tool_call_result_utility = utility
         target.compression_limit = None        
         
