@@ -10,11 +10,28 @@ def list_files(
     limit: int = 300,
 ) -> str:
     """List files and directories in the current project workspace.
-    only returns the top limit entries, glob_filter_to or exclude to focus if required
-    glob_filter_to is a glob string pattern
-    exclude is a string set of directories
-    glob_filter docs: https://docs.python.org/3/library/glob.html#glob.glob
-     """
+
+The tool accepts a glob pattern and an optional set of directories to exclude.
+It returns a JSON‑encoded string containing the first ``limit`` entries.
+
+Parameters
+----------
+purpose : str
+    The immediate purpose of this call.
+path : str, optional
+    The directory to list, relative to the workspace root. Defaults to ``"."``.
+glob_filter_to : str, optional
+    Glob pattern to filter the results. Defaults to ``"*"``.
+exclude : set[str] | None, optional
+    Directories to exclude from the listing.
+limit : int, optional
+    Maximum number of entries to return.
+
+Returns
+-------
+str
+    JSON‑encoded list of file paths.
+"""
     exclude = EXCLUDED_DIRS | (exclude or set())
     target_path = safe_path(path)
 
