@@ -5,7 +5,7 @@ from typing import List, Dict, Any
 
 from langchain.tools import tool
 from typing import List, Dict, Optional
-from agent.models import AgentRequest
+from agent.models import AgentRequest, Iteration
 import json
 
 
@@ -14,8 +14,9 @@ class SearchHistoryWrapper:
     * holds the config AgentRequest
     * provides @tool curry interface from signature shown to llm to what function requires 
     """
-    def __init__(self, config: AgentRequest):
+    def __init__(self, config: AgentRequest, iterations:  Optional[List[Iteration]] = None):
         self.config: AgentRequest = config
+        self.iterations:  List[Iteration] = iterations or []
         
     def get_search_history(self):
         @tool
