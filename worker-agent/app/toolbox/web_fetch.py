@@ -5,15 +5,22 @@ import json
 
 @tool
 def web_fetch(purpose: str, url: str) -> str:
-    """Visits a specific URL found from a web search
-    Use this tool on URL returned from a web_search call
+    """Visits a specific URL found from a web search.
+    Use this tool on a URL returned from a web_search call
     when you need deeper information than the short body provided.
-    
-    Args:
-        purpose: str
-           The immediate purpose of this call
-        url: str 
-            The absolute web address (including http/https).
+
+    Parameters
+    ----------
+    purpose : str
+        The immediate purpose of this call.
+    url : str
+        The absolute web address (including http/https).
+
+    Returns
+    -------
+    str
+        JSON-encoded response from the web-tools API, or an error message
+        if the request fails.
     """
     payload = {"url" : url}
     try:

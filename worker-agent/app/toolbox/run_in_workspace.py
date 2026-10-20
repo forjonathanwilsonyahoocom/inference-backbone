@@ -17,8 +17,26 @@ def run_in_workspace(
     """Run a command in the current workspace using an approved language runtime.
 
     Supported runtimes: python, node, go, rust, php. The command can read and modify workspace files
-    from a brokered docker runtime, Returns the command output and exit status. Execution is
+    from a brokered docker runtime. Returns the command output and exit status. Execution is
     subject to time and resource limits; do not use this tool for unrelated system administration.
+
+    Parameters
+    ----------
+    purpose : str
+        The immediate purpose of this call.
+    runtime : str
+        The language runtime to use (python, node, go, rust, php).
+    command : list[str]
+        The command and its arguments to execute.
+    cwd : str
+        The working directory, relative to the workspace root.
+    timeout_seconds : int
+        Maximum execution time in seconds (default 300).
+
+    Returns
+    -------
+    str
+        JSON-encoded response from the docker-broker API, containing logs and exit status.
     """
     #this fails with exception if path is not safe
     workspace_path = safe_path(cwd)

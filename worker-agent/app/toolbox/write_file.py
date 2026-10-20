@@ -5,8 +5,8 @@ from typing import Any, Mapping
 
 @tool
 def write_file(purpose: str, path: str, content: Any, overwrite: bool = False) -> str:
-    """
-    Write `content` to `path`.  
+    """Write `content` to `path`.
+
     - If the file exists and `overwrite` is False (default), the call is a no‑op
       and you get a short “file exists” message.
     - If `overwrite` is True, the existing file is simply replaced.
@@ -14,7 +14,21 @@ def write_file(purpose: str, path: str, content: Any, overwrite: bool = False) -
         • a mapping → pretty‑printed JSON (unless it contains a single string)
         • a string → written verbatim (real newlines, no `\\n`)
 
-    Returns a status message.
+    Parameters
+    ----------
+    purpose : str
+        The immediate purpose of this call.
+    path : str
+        The file path to write to (relative to the workspace root).
+    content : Any
+        The content to write. A mapping is pretty-printed as JSON; a string is written verbatim.
+    overwrite : bool
+        If True, replace the existing file. If False (default), return a "file exists" message.
+
+    Returns
+    -------
+    str
+        A status message indicating success or that the file already exists.
     """
 
     file_path = safe_path(path)

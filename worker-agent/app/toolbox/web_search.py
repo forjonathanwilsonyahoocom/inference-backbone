@@ -9,10 +9,18 @@ def web_search(purpose: str, query: str) -> str:
     Use this first to find relevant URLs and snippets when asked about
     current events, weather, news, or fresh updates.
 
-    Args:
-        purpose: str
-           The immediate purpose of this call
-        query: A standard web search keyword query.
+    Parameters
+    ----------
+    purpose : str
+        The immediate purpose of this call.
+    query : str
+        A standard web search keyword query.
+
+    Returns
+    -------
+    str
+        JSON-encoded search results from the web-tools API, or an error
+        message if the request fails.
     """
     clean_query = query.strip()
     if not clean_query:
