@@ -42,7 +42,7 @@ class SearchHistoryWrapper:
                 your search within a specific turn.
             """
             return search_history_function(purpose, query, limit, self.config.execution_id, instance_number)
-        return search_evidence
+        return search_history
                 
 
 def search_history_function(purpose: str, query: str, limit: int, execution_id: str, instance_number: int | None) -> str:
@@ -77,7 +77,7 @@ def search_history_function(purpose: str, query: str, limit: int, execution_id: 
         return json.dumps([{"error": str(e)}], ensure_ascii=False, indent=2)
         
 def compress_search_history(result: Any, limit: int) -> str:
-    """Return compressed evidence chunks and a preview of the first."""
+    """Return compressed evidence chunks."""
     
     try:
         parsed = json.loads(result)
