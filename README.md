@@ -5,7 +5,11 @@ this README.md is a bit of a mess, I've been focused on experimenting with featu
 
 ## Overview
 
-`inference-backbone` is an experiment in learning about an  **human + AI ecosystem**. It orchestrates data ingestion, semantic enrichment, vector similarity, and inference across a knowledge‑graph stack.
+`inference-backbone` is an experiment in learning about a  **human + AI ecosystem**. It orchestrates data ingestion, semantic enrichment, vector similarity, and inference across a knowledge‑graph stack.
+
+This project is teaching me about semantic compression of tool results, how to keep a meaningful context small, and how to isolate llms from tools that might accidentally be used harmfully
+
+not to mention that i should have written the tests first!
 
 ### Core Components
 
