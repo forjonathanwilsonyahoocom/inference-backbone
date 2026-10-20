@@ -34,6 +34,7 @@ class SearchHistoryWrapper:
                 Max number of chunks to return.
             instance_number: 
                 Filter by instance_number to narrow search to a specific previous iteration.
+                If None, searches across all iterations.
                 
             Returns
             -------
@@ -41,6 +42,11 @@ class SearchHistoryWrapper:
                 the most relevant ranked chunks. Each chunk includes an 
                 instance_number; use this as a filter to refine 
                 your search within a specific turn.
+
+            Notes
+            -----
+            * If no matching chunks are found, an empty JSON array (`[]`) is returned.
+            * The search is performed against the backbone-api evidence store.
             """
             return search_history_function(purpose, query, limit, self.config.execution_id, instance_number)
         return search_history
