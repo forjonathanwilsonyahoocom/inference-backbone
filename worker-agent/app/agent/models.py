@@ -33,6 +33,7 @@ class Iteration(BaseModel):
     tool_call_result_compressed: Any = None
     tool_call_result_chunks: List[Dict] = None
     tool_call_result_chunk_query: str = None
+    tool_call_result_utility: float = None
     tool_call_fingerprint: Optional[str] = None
     result_fingerprint: Optional[str] = None
     compression_limit: Optional[int] = None

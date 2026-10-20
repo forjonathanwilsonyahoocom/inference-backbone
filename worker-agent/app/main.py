@@ -19,8 +19,8 @@ from toolbox.write_file import write_file
 from toolbox.edit_file import edit_file
 from toolbox.run_command import run_command
 from toolbox.run_in_workspace import run_in_workspace
-from toolbox.focus import FocusWrapper
-from toolbos.search_history import SearchHistoryWrapper
+from toolbox.assess_result import AssessResultWrapper
+from toolbox.search_history import SearchHistoryWrapper
 
 from contracts.inference_contracts.agent_state import AgentState
 
@@ -46,10 +46,10 @@ def create_llms(config: AgentRequest) -> Tuple[ChatOllama, ChatOllama]:
     return llm, distill_llm
 
 def get_toolchain(config: AgentRequest, llm: ChatOllama) -> Tuple[dict, ChatOllama]:
-    focus_wrapper = FocusWrapper(config)
+    assess_result_wrapper = AssessResultWrapper(config)
     search_evidence_wrapper = SearchEvidenceWrapper(config)
     TOOLS = [list_files, read_file, write_file, edit_file,
-             search_file, search_evidence_wrapper.get_search_evidence(), focus_wrapper.get_repurpose(), run_command, web_search, web_fetch, run_in_workspace]
+             search_file, search_evidence_wrapper.get_search_evidence(), assess_result_wrapper.get_assess_result(), run_command, web_search, web_fetch, run_in_workspace]
     llm_with_tools = llm.bind_tools(TOOLS)
     TOOLS_BY_NAME = {tool.name: tool for tool in TOOLS}
     return TOOLS_BY_NAME, llm_with_tools, focus_wrapper.iterations

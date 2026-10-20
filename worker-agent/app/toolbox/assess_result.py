@@ -4,7 +4,7 @@ from agent.models import Iteration, AgentRequest
 import json
 
 
-class FocusWrapper:
+class AssessResultWrapper:
     """
     * Holds the list of Iterations
     * holds the config AgentRequest
@@ -15,20 +15,22 @@ class FocusWrapper:
         self.config: AgentRequest = config
         
     
-    def get_focus(self):
+    def get_assess_result(self):
         @tool
-        def focus(instance_number: int, better_focus: str):
-            """Update a tool result in history to refocus the chunk compressor query
+        def assess_result(instance_number: int, utility: float, better_focus: Optional[str] = None):
+            """Use to update a tool result in history to assess its utility in the current thread and refocus the chunk compressor query
 
             This tool is intended to be called after one of
             "read_file", "web_fetch", "run_in_workspace"
             has already been executed. use the instance_number stamped on the tool result
-            to update chunk query to better_focus
+            to update chunk query to better_focus and 
 
             Parameters
             ----------
             instance_number:
                 The `instance_number` from the compressed tool result to refocus semantic compression.
+            utility: 
+                measures how much the result actually helps achieve your objective
             better_focus:
                 The new focus query for chunked compression
 
@@ -37,16 +39,16 @@ class FocusWrapper:
                 Confirmation message.
             """
             
-            return focus_function(self.iterations, instance_number, better_focus)
-        return repurpose
+            return assess_result_function(self.iterations, instance_number, relevance, better_focus)
+        return assess_result
             
 
 
-def focus_function(iterations: List[Iteration], instance_number: int, better_focus: str) -> str:
+def assess_result_function(iterations: List[Iteration], instance_number: int, utility: float, better_focus: str | None) -> str:
     """
     same as for @tool with the addition of
-    new_purpose: str
-        The new purpose string to inject.
+    iterations: List[Iteration]
+        the current execution history.
 
     Returns
     -------
@@ -63,13 +65,18 @@ def focus_function(iterations: List[Iteration], instance_number: int, better_foc
     if target is None:
         return f"No iteration with instance_number {instance_number} found."
 
-    if target.model_response and target.model_response.tool_calls:
-        target.tool_call_result_chunk_query = better_focus
-    else:
-        print(f"Iteration {instance_number} has no tool call to update.")
-        return f"Iteration {instance_number} has no tool call to update."
+    if  better_focus is not None:
+        if target.model_response and target.model_response.tool_calls:
+            target.tool_call_result_chunk_query = better_focus
+        else:
+            print(f"Iteration {instance_number} has no tool call to update.")
+            return f"Iteration {instance_number} has no tool call to update."
 
-    target.compression_limit = None
-    target.tool_call_result_chunks = None
-    
-    return f"Updated purpose of iteration {instance_number} to '{new_purpose}'."
+        target.compression_limit = None
+        target.tool_call_result_chunks = None
+        
+    if utility != target.tool_call_result_utility:
+        target.tool_call_result_utility = utility
+        target.compression_limit = None        
+        
+    return f"Updated assessment of result instance_number {instance_number} utility {utility} with focus: '{better_focus | target.tool_call_result_chunk_query } '."

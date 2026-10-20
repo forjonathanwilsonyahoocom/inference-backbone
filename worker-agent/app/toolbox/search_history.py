@@ -41,27 +41,15 @@ class SearchHistoryWrapper:
                 instance_number; use this as a filter to refine 
                 your search within a specific turn.
             """
-            return search_history_function(purpose, query, limit, instance_number, self.config.execution_id)
+            return search_history_function(purpose, query, limit, self.config.execution_id, instance_number)
         return search_evidence
                 
 
-
-
-
-
-
-def search_history_function(purpose: str, query: str, limit: int = 8, instance_number: int | None = None, execution_id: str) -> str:
-    """Search for specific information within large texts already retrieved in previous turns.
-
-    CRITICAL: Use this tool INSTEAD of re-reading a file or re-fetching a URL if the content 
-    was already retrieved once. Reading a full file again is inefficient and wasteful. 
-
-    This is the mandatory next step after using web_fetch or read_file to isolate 
-    relevant sections of a large document without reloading the entire source.
-
+def search_history_function(purpose: str, query: str, limit: int, execution_id: str, instance_number: int | None) -> str:
+    """
     Parameters
     ----------
-    save as for @tool with the addition of:
+    same as for @tool with the addition of:
     execution_id: str:
         Overridden by framework to current execution_id.
 
