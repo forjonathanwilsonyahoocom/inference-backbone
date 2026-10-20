@@ -42,7 +42,7 @@ class ToolWrapper:
         return repurpose_function(self.iterations, instance_number, new_purpose)
         
     @tool
-    def search_evidence(self, purpose: str, query: str, limit: int = 8, instance_number: int | None = None) -> str:
+    def search_evidence(self, purpose: str, query: str, limit: int = 3, instance_number: int | None = None) -> str:
         """
         Search for specific information within large texts already retrieved in previous turns.
 
@@ -62,15 +62,13 @@ class ToolWrapper:
             Max number of results to return.
         instance_number: int, optional
             Filter by instance number to narrow search to a specific previous iteration.
-        execution_id: str, optional:
-            Overridden by framework to current execution_id.
-
+            
         Returns
         -------
         string representation of List[Dict]
             A list of the most relevant ranked chunks. Each chunk includes an 
-            instance_number; use this as a filter in subsequent calls to refine 
-            your search within a specific document version.
+            instance_number; use this as a filter to refine 
+            your search within a specific turn.
         """
         return search_evidence_function(purpose, query, limit, instance_number, self.config.execution_id)
             
