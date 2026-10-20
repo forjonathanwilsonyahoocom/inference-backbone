@@ -140,6 +140,7 @@ def run_agent(
         #NOTE there will only be one tool call per the current rules
         tool_name = tool_call["name"]
         tool_args = tool_call.get("args", {})
+        tool_args.pop("self", None)
 
         selected_tool = tools.get(tool_name)
 
