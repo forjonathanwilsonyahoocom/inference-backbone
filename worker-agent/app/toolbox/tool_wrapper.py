@@ -41,6 +41,7 @@ class ToolWrapper:
             """
             
             return repurpose_function(self.iterations, instance_number, new_purpose)
+        return repurpose
             
     def get_search_evidence(self):
         @tool
@@ -67,6 +68,7 @@ class ToolWrapper:
                 your search within a specific turn.
             """
             return search_evidence_function(purpose, query, limit, instance_number, self.config.execution_id)
+        return search_evidence
                 
 
 
