@@ -16,7 +16,7 @@ from langchain_core.messages import AIMessage
 
 from observability.metrics import MetricsWrapper
 from agent.models import Iteration, AgentRequest
-from toolbox.compressors import get_compressor
+from toolbox.compressors import get_compressor, semantic_compressor
 
 def limit_for_age(config: AgentRequest, age: int) -> Optional[int]:
     """Return the character limit for a given iteration age.
@@ -115,7 +115,10 @@ def compress_history(config: AgentRequest, metrics: MetricsWrapper, history: Lis
         if limit is None or it.compression_limit == limit:
             continue
         
-        compressed_result = get_compressor(it.tool_name)(it.tool_call_result, limit)
+        compressed_result = semantic_compressor(config, metrics, it, limit)
+        if compressed_result is None:
+            compressed_result = get_compressor(it.tool_name)(it.tool_call_result, limit)
+            
         #only use compressed tool result if it's worth adding the annotations
         omitted = len(str(it.tool_call_result)) - len(str(compressed_result))
         if omitted > 100:

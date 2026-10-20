@@ -15,7 +15,7 @@ def run_command(purpose: str, command: str, cwd: str = ".") -> str:
     """
     Run a non-interactive shell command in a workspace-relative directory.
 
-    Use this for tests, formatting, compilation, inspection, and other
+    Use this for inspection, moving, delete, and other
     non-interactive development commands.
 
     cwd must be relative to the workspace root. Use "." to run from the

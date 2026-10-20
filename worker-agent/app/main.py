@@ -13,13 +13,13 @@ from observability.metrics import MetricsWrapper
 from toolbox.web_search import web_search
 from toolbox.web_fetch import web_fetch
 from toolbox.search_file import search_file
-from toolbox.search_evidence import search_evidence
 from toolbox.list_files import list_files
 from toolbox.read_file import read_file
 from toolbox.write_file import write_file
 from toolbox.edit_file import edit_file
 from toolbox.run_command import run_command
 from toolbox.run_in_workspace import run_in_workspace
+from toolbox.tool_wrapper import ToolWrapper
 
 from contracts.inference_contracts.agent_state import AgentState
 
@@ -44,12 +44,13 @@ def create_llms(config: AgentRequest) -> Tuple[ChatOllama, ChatOllama]:
     )
     return llm, distill_llm
 
-def get_toolchain(llm: ChatOllama) -> Tuple[dict, ChatOllama]:
+def get_toolchain(config: AgentRequest, llm: ChatOllama) -> Tuple[dict, ChatOllama]:
+    tool_wrapper = ToolWrapper(config)
     TOOLS = [list_files, read_file, write_file, edit_file,
-             search_file, search_evidence, run_command, web_search, web_fetch, run_in_workspace]
+             search_file, tool_wrapper.get_search_evidence(), tool_wrapper.get_repurpose(), run_command, web_search, web_fetch, run_in_workspace]
     llm_with_tools = llm.bind_tools(TOOLS)
     TOOLS_BY_NAME = {tool.name: tool for tool in TOOLS}
-    return TOOLS_BY_NAME, llm_with_tools
+    return TOOLS_BY_NAME, llm_with_tools, tool_wrapper.iterations
 
 app = FastAPI()
 
@@ -69,12 +70,14 @@ def startup_event():
 async def run_agent_endpoint(config: AgentRequest):
     llm, distill_llm = create_llms(config)
     distill_llm_typed = distill_llm.with_structured_output(AgentState)
-    tools, llm_with_tools = get_toolchain(llm)
+    tools, llm_with_tools, iteration_list = get_toolchain(config, llm)
+    print(f"enabled tools: {tools}")
     METRICS.clear_counters()
     result = run_agent(
         metrics=METRICS,
         config=config,
         tools=tools,
+        full_thread_history = iteration_list,
         llm_with_tools=llm_with_tools,
         distillation_llm=distill_llm_typed
     )

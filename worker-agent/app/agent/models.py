@@ -1,4 +1,4 @@
-from typing import Tuple, Any, Optional, List
+from typing import Tuple, Any, Optional, List, Dict
 import uuid
 from pydantic import BaseModel
 
@@ -31,6 +31,7 @@ class Iteration(BaseModel):
     tool_call_result: Any = None
     tool_call_result_instance_number: int = None
     tool_call_result_compressed: Any = None
+    tool_call_result_chunks: List[Dict] = None
     tool_call_fingerprint: Optional[str] = None
     result_fingerprint: Optional[str] = None
     compression_limit: Optional[int] = None

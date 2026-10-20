@@ -29,6 +29,7 @@ def run_agent(
     metrics: MetricsWrapper,
     config: AgentRequest,
     tools: dict,
+    full_thread_history: List[Iteration] , #model message list is derived from this
     llm_with_tools: ChatOllama,
     distillation_llm: ChatOllama,
 ) -> Dict:
@@ -50,8 +51,6 @@ def run_agent(
     iteration = 0
     event_counter = 0
     step_counts = {} #count of fingerprints to occurances
-    
-    full_thread_history: List[Iteration]  = []#model message list is derived from this
     
     current_compaction: Compaction = Compaction()
     
@@ -140,6 +139,7 @@ def run_agent(
         #NOTE there will only be one tool call per the current rules
         tool_name = tool_call["name"]
         tool_args = tool_call.get("args", {})
+        tool_args.pop("self", None)
 
         selected_tool = tools.get(tool_name)
 
@@ -152,8 +152,6 @@ def run_agent(
             metrics.emit(failure_metric_labeler({"failure": f"unknown tool {tool_name}"}))
         else:
             this_iteration.tool_name = tool_name
-            if tool_name == "search_evidence":
-                tool_args["execution_id"] = config.execution_id
             try:
                 metrics.emit(tool_call_metric_labeler({"tool_call": tool_name}))
                 result = selected_tool.invoke(tool_args)

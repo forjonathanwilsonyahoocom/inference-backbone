@@ -1,9 +1,11 @@
 ![Sweet image from https://freegen.app/ after having duck.ai cinematize a prompt made by local agent system using gpt-oss:20b](./readme/freegen_inference_backbone.jpg)
 # inference-backbone
 
+this README.md is a bit of a mess, I've been focused on experimenting with features more than docs... 
+
 ## Overview
 
-`inference-backbone` is a self‑sustaining compute backbone that **powers a human + AI ecosystem**. It orchestrates data ingestion, semantic enrichment, vector similarity, and inference across a distributed knowledge‑graph stack.
+`inference-backbone` is an experiment in learning about an  **human + AI ecosystem**. It orchestrates data ingestion, semantic enrichment, vector similarity, and inference across a knowledge‑graph stack.
 
 ### Core Components
 
@@ -12,7 +14,7 @@
 - **FastAPI** – API gateway exposing ingestion, retrieval, and validation endpoints.
 - **Worker Agent** – runs inference loops, collects telemetry, and pushes results to GraphDB/Weaviate.
 - **Validator Agent** – verifies claims against the knowledge base.
-- **Docker Broker** – handles launch of execution environments for node / go / rust / php .
+- **Docker Broker** – handles launch of execution environments for python / node / go / rust / php.
 
 ### Flow
 
@@ -235,11 +237,24 @@ relies on http callable LLM that handles tool calls, all tests have been done wi
 ### worker-agent context management
 as the workers context reaches a threshold, it is distilled and truncated to compress the context
 
+## Compression Strategy
+
+The worker‑agent now supports a **semantic compression** mode that replaces large tool‑call results with concise, purpose‑driven excerpts.  The implementation lives in `worker‑agent/app/agent/compression.py` and the per‑tool hooks are defined in `worker‑agent/app/toolbox/compressors.py`.
+
+### How it works
+
+1. **Detection** – When a tool call returns a string longer than the configured threshold, the agent checks if the tool has a registered compressor.
+2. **Purpose‑driven search** – The compressor calls `search_evidence` with the tool‑call *purpose* as the query.  The vector search endpoint returns the most relevant chunks.
+3. **Chunk selection** – The compressor keeps the top‑scoring chunks up to the tier‑defined limit.  If the result is still too long, it is clipped with a head‑tail strategy.
+4. **Storage** – The compressed representation is stored in `Iteration.tool_call_result_compressed` and is used by the message‑derivation logic.
+
+### Configuration
+
+The compression tiers are defined in `AgentRequest.compression_tiers` (e.g. `[(0, 2000), (30, 4000)]`).  The agent automatically selects the appropriate limit based on the age of the iteration.
+
 **Compression / Distillation / Ingestion of the Agent‑State Contract**
 
 The backbone’s core workflow turns a raw agent execution into a compact, query‑ready knowledge graph.  
-Below is a concise, high‑level description that can be inserted into the README.
-
 ---
 
 ### 1️⃣  Compression  
@@ -257,7 +272,9 @@ Below is a concise, high‑level description that can be inserted into the READM
 * **What it does** – The distilled summary is sent to the `/ingest_agent_state` FastAPI endpoint on backbone-api.  
 * **Storage** –  
   * **Weaviate** – Vector embeddings of the distilled text are stored for semantic similarity search.  
-
+  * **File** –  the full file is stored in datasets/backbone-api.  
+  * **GraphDb** –  nodes linked to the file are indexed into graph
+  
 Feel free to tweak the compression strategy or distillation prompt to suit your workload. The code is fully modular, so you can swap in a different LLM backend or a custom compression algorithm without touching the rest of the stack.
 
 ### validator agent extracts claims and examines tool calls as evidence of claim support
@@ -281,7 +298,7 @@ as implemented uses nomic embeddings for indexing
 ---
 
 ### graphdb ingest of claims and evidence
-current ingest of claims are only from the validator agent, not from the distillations, only evidence determined by the validator agent to support claims is added / linked
+only evidence determined by the validator agent to support claims is added / linked
 
 if you are not running this on the same machine you control it from, i recommend just ssh tunneling to the backbone-api/jupyter notebook/graphdb panel/grafana panel if you run this from a machine separate from your workstation
 ```bash

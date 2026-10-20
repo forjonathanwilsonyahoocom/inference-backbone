@@ -16,6 +16,7 @@ docker_client = docker.from_env()
 # The caller chooses a logical runtime, never an arbitrary image.
 RUNTIME_IMAGES = {
     "node": "node:22-trixie-slim",
+    "python" : "python:3.12-slim-trixie",
     "go": "golang:1.24-trixie",
     "rust": "rust:1.88-slim-trixie",
     "php": "php:8.4-cli-trixie",

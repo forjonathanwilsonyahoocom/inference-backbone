@@ -16,10 +16,9 @@ def run_in_workspace(
 ) -> str:
     """Run a command in the current workspace using an approved language runtime.
 
-    Supported runtimes: node, go, rust, php. The command can read and modify
-    workspace files. Returns the command output and exit status. Execution is
-    subject to time and resource limits; do not use this tool for unrelated
-    system administration.
+    Supported runtimes: python, node, go, rust, php. The command can read and modify workspace files
+    from a brokered docker runtime, Returns the command output and exit status. Execution is
+    subject to time and resource limits; do not use this tool for unrelated system administration.
     """
     #this fails with exception if path is not safe
     workspace_path = safe_path(cwd)
