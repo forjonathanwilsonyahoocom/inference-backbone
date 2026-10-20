@@ -433,21 +433,6 @@ currently only one dashboard is init for worker agent and validator as shown abo
 
 **Guiding principle:** Preserve not just what the system currently believes, but why it believes it, where that belief applies, and what remains unresolved.
 
-# KNOWN BUGS
-sometimes docker compose up will crash with:
-
-[+] up 7/7
- ✘ Network inference-backbone_data            Error error during connect: Post "http://%2Fvar%2Fru...  0.0s
- ✘ Network inference-backbone_worker-api      Error error during connect: Post "http://%2Fvar%2Fru...  0.0s
- ✘ Network inference-backbone_web-tool-egress Error error during connect: Post "http://%2Fvar%2Fru...  0.0s
- ✘ Network inference-backbone_docker-broker   Error error during connect: Post "http://%2Fvar%2Fru...  0.0s
- ✘ Network inference-backbone_worker-webtools Error Error response from daemon: invalid pool reque...  0.0s
- ✘ Network inference-backbone_validator-api   Error error during connect: Post "http://%2Fvar%2Fru...  0.0s
- ✘ network:worker-webtools                    failed to create network inference-backbone_worker-we... 0.0s
-failed to create network inference-backbone_worker-webtools: Error response from daemon: invalid pool request: Pool overlaps with other one on this address space
-
-usually docker compose down then up (some times more than once) will usually fix this, I believe it has to do with the static ips being assigned to nodes on the worker-webtools docker network, but i have not dug in here yet
-
 ### 🏗️ System Architecture Flow
 ```text
                         ┌───────────────┐
@@ -483,3 +468,38 @@ usually docker compose down then up (some times more than once) will usually fix
            GraphDB          Weaviate          Prometheus
 
 ```
+
+
+
+# KNOWN "BUGS"
+sometimes docker compose up will crash with:
+
+[+] up 7/7
+...
+ ✘ Network inference-backbone_worker-webtools Error Error response from daemon: invalid pool reque...  0.0s
+...
+✘ network:worker-webtools                    failed to create network inference-backbone_worker-we... 0.0s
+failed to create network inference-backbone_worker-webtools: Error response from daemon: invalid pool request: Pool overlaps with other one on this address space
+
+might also be some other network 
+
+usually docker compose down then up (some times more than once) will usually fix this, I believe it has to do with the static ips being assigned to nodes on the worker-webtools docker network
+
+after a little digging i allocated all of them explicitly, and i still saw the trouble but on a different network
+
+the actual conflict was with another docker network that i wasn't even using
+
+Leftover networks from other projects or a half-failed run can hold the range: shows what’s taking what.
+so check:
+```bash
+docker network ls 
+docker network inspect $(docker network ls -q) --format '{{.Name}}: {{range .IPAM.Config}}{{.Subnet}} {{end}}' 
+```
+shows what’s taking what.
+i just did:
+```bash
+docker network prune
+```
+
+however if you have stuff that you want to keep running, the only network where the range matters is worker-webtools, any of the other ranges are not mentioned anywhere
+
