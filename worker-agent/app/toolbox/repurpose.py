@@ -36,7 +36,9 @@ def repurpose_function(iterations: List[Iteration], instance_number: int, new_pu
         return f"No iteration with instance_number {instance_number} found."
 
     if target.model_response and target.model_response.tool_calls:
-        target.model_response.tool_calls[0].args["purpose"] = new_purpose
+        modified_args = target.model_response.tool_calls[0].get("args", {})
+        modified_args["purpose"] = new_purpose
+        target.model_response.tool_calls[0]["args"] = modified_args
     else:
         return f"Iteration {instance_number} has no tool call to update."
 

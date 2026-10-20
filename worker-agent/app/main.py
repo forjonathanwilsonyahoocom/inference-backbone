@@ -71,6 +71,7 @@ async def run_agent_endpoint(config: AgentRequest):
     llm, distill_llm = create_llms(config)
     distill_llm_typed = distill_llm.with_structured_output(AgentState)
     tools, llm_with_tools = get_toolchain(config, llm)
+    print(f"enabled tools: {tools}")
     METRICS.clear_counters()
     result = run_agent(
         metrics=METRICS,
