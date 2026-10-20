@@ -15,7 +15,7 @@ returned unchanged.
 from typing import Any, Callable, Dict, Set
 from toolbox.run_command import compress_run_command
 from toolbox.search_file import compress_search_file
-from toolbox.search_evidence import compress_search_evidence, search_evidence_function
+from toolbox.search_history import compress_search_history, search_history_function
 from toolbox.web_search import compress_web_search
 from toolbox.web_fetch import compress_web_fetch
 from toolbox.run_in_workspace import compress_run_in_workspace
@@ -37,7 +37,7 @@ COMPRESSORS: Dict[str, Callable[[Any, int], Any]] = {
     "read_file": compress_read_file,
     "run_command": compress_run_command,
     "search_file": compress_search_file,
-    "search_evidence": compress_search_evidence,
+    "search_history": compress_search_history,
     "web_search": compress_web_search,
     "web_fetch": compress_web_fetch,
     "run_in_workspace" : compress_run_in_workspace,
@@ -67,10 +67,14 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
                     largest_tier_limit = t[1]
                     
             num_chunks = largest_tier_limit // 1000 #match with backbone-api chunk size
-            purpose = get_tool_call_purpose(it.model_response)
-            print(f"semantic compressor purpose: {purpose}")
-            if(purpose):
-                raw_chunks = search_evidence_function("find compression chunks", purpose, num_chunks + 1,  it.tool_call_result_instance_number, config.execution_id)
+            query = it.tool_call_result_chunk_query | get_tool_call_purpose(it.model_response)
+            print(f"semantic compressor query: {query}")
+            if(query):
+                raw_chunks = search_history_function("find compression chunks",
+                                                     query,
+                                                     num_chunks + 1, 
+                                                     it.tool_call_result_instance_number, 
+                                                     config.execution_id)
                 chunks = json.loads(raw_chunks)
                 if len(chunks) > 0:
                     it.tool_call_result_chunks = chunks

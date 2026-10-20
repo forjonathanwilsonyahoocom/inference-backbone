@@ -3,7 +3,54 @@ import requests
 import json
 from typing import List, Dict, Any
 
-def search_evidence_function(purpose: str, query: str, limit: int = 8, instance_number: int | None = None, execution_id: str  | None = None) -> str:
+from langchain.tools import tool
+from typing import List, Dict, Optional
+from agent.models import AgentRequest
+import json
+
+
+class SearchHistoryWrapper:
+    """
+    * holds the config AgentRequest
+    * provides @tool curry interface from signature shown to llm to what function requires 
+    """
+    def __init__(self, config: AgentRequest):
+        self.config: AgentRequest = config
+        
+    def get_search_history(self):
+        @tool
+        def search_history(purpose: str, query: str, limit: int = 3, instance_number: int | None = None) -> str:
+            """
+            Use to Search for specific information from previous turns. CRITICAL: Use this tool INSTEAD of re-reading a file or re-fetching a URL if the content is truncated during compression. Reading a full website again is inefficient and wasteful. This is the recommended next step after using web_fetch to isolate relevant sections of a large document without reloading the entire source.
+
+            Parameters
+            ----------
+            purpose:
+                focus hint when history is compacted
+            query:
+                Search query string focused on the target information.
+            limit: 
+                Max number of chunks to return.
+            instance_number: 
+                Filter by instance_number to narrow search to a specific previous iteration.
+                
+            Returns
+            -------
+            str
+                the most relevant ranked chunks. Each chunk includes an 
+                instance_number; use this as a filter to refine 
+                your search within a specific turn.
+            """
+            return search_history_function(purpose, query, limit, instance_number, self.config.execution_id)
+        return search_evidence
+                
+
+
+
+
+
+
+def search_history_function(purpose: str, query: str, limit: int = 8, instance_number: int | None = None, execution_id: str) -> str:
     """Search for specific information within large texts already retrieved in previous turns.
 
     CRITICAL: Use this tool INSTEAD of re-reading a file or re-fetching a URL if the content 
@@ -14,15 +61,8 @@ def search_evidence_function(purpose: str, query: str, limit: int = 8, instance_
 
     Parameters
     ----------
-    purpose: str
-        The specific piece of information you are looking for.
-    query: str
-        Search query string focused on the target information.
-    limit: int, optional
-        Max number of results to return.
-    instance_number: int, optional
-        Filter by instance number to narrow search to a specific previous iteration.
-    execution_id: str, optional:
+    save as for @tool with the addition of:
+    execution_id: str:
         Overridden by framework to current execution_id.
 
     Returns
@@ -48,8 +88,8 @@ def search_evidence_function(purpose: str, query: str, limit: int = 8, instance_
     except Exception as e:
         return json.dumps([{"error": str(e)}], ensure_ascii=False, indent=2)
         
-def compress_search_evidence(result: Any, limit: int) -> str:
-    """Return the number of evidence chunks and a preview of the first."""
+def compress_search_history(result: Any, limit: int) -> str:
+    """Return compressed evidence chunks and a preview of the first."""
     
     try:
         parsed = json.loads(result)
