@@ -108,10 +108,10 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
                 break
             chunk = stored_chunk["properties"]["content"]
             chunk_tag = ""
-            omitted = 0
+            omitted = False
             #derive the omitted section length
             if next_expected < stored_chunk['properties']['chunk_index']:
-                omitted = (re_ordered_chunks[0]['properties']['chunk_index'] - next_expected) * 700 #tune with backbone-api chunk size
+                omitted = True
                 
             if next_expected == stored_chunk['properties']['chunk_index'] and next_expected > 0:
                 #slice off the overlap from this chunk
@@ -127,7 +127,7 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
                 chunk = chunk_middle
                 done = True
                 
-            if omitted > 0:
+            if omitted:
                 # compute how many chunks were omitted between expected and current
                 omitted_chunks = stored_chunk['properties']['chunk_index'] - next_expected
                 omitted_tag = f"...omitted {omitted_chunks} chunks ... \n "
