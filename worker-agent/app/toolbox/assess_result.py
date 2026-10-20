@@ -63,17 +63,16 @@ def assess_result_function(iterations: List[Iteration], instance_number: int, ut
     if target is None:
         return f"No iteration with instance_number {instance_number} found."
 
-    if  better_focus is not None:
+    if better_focus:
         if target.model_response and target.model_response.tool_calls:
             target.tool_call_result_chunk_query = better_focus
         else:
-            print(f"Iteration {instance_number} has no tool call to update.")
-            return f"Iteration {instance_number} has no tool call to update."
+            print(f"Iteration {instance_number} has no tool call to update for better_focus {better_focus}")
 
         target.compression_limit = None
         target.tool_call_result_chunks = None
         
-    if utility != target.tool_call_result_utility 
+    if utility != target.tool_call_result_utility:
         target.tool_call_result_utility = utility
         target.compression_limit = None        
         
