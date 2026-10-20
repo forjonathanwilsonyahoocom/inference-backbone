@@ -2,7 +2,6 @@ from toolbox.util import safe_path, WORKSPACE, EXCLUDED_DIRS
 from langchain_core.tools import tool
 
 @tool
-
 def list_files(
     purpose: str, 
     path: str = ".",

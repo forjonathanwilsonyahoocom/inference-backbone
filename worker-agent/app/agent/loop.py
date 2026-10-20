@@ -29,6 +29,7 @@ def run_agent(
     metrics: MetricsWrapper,
     config: AgentRequest,
     tools: dict,
+    full_thread_history: List[Iteration] , #model message list is derived from this
     llm_with_tools: ChatOllama,
     distillation_llm: ChatOllama,
 ) -> Dict:
@@ -50,8 +51,6 @@ def run_agent(
     iteration = 0
     event_counter = 0
     step_counts = {} #count of fingerprints to occurances
-    
-    full_thread_history: List[Iteration]  = []#model message list is derived from this
     
     current_compaction: Compaction = Compaction()
     

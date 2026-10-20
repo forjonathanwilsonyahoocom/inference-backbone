@@ -47,10 +47,10 @@ def create_llms(config: AgentRequest) -> Tuple[ChatOllama, ChatOllama]:
 def get_toolchain(config: AgentRequest, llm: ChatOllama) -> Tuple[dict, ChatOllama]:
     tool_wrapper = ToolWrapper(config)
     TOOLS = [list_files, read_file, write_file, edit_file,
-             search_file, tool_wrapper.search_evidence, tool_wrapper.repurpose, run_command, web_search, web_fetch, run_in_workspace]
+             search_file, tool_wrapper.get_search_evidence(), tool_wrapper.get_repurpose(), run_command, web_search, web_fetch, run_in_workspace]
     llm_with_tools = llm.bind_tools(TOOLS)
     TOOLS_BY_NAME = {tool.name: tool for tool in TOOLS}
-    return TOOLS_BY_NAME, llm_with_tools
+    return TOOLS_BY_NAME, llm_with_tools, tool_wrapper.iterations
 
 app = FastAPI()
 
@@ -70,13 +70,14 @@ def startup_event():
 async def run_agent_endpoint(config: AgentRequest):
     llm, distill_llm = create_llms(config)
     distill_llm_typed = distill_llm.with_structured_output(AgentState)
-    tools, llm_with_tools = get_toolchain(config, llm)
+    tools, llm_with_tools, iteration_list = get_toolchain(config, llm)
     print(f"enabled tools: {tools}")
     METRICS.clear_counters()
     result = run_agent(
         metrics=METRICS,
         config=config,
         tools=tools,
+        full_thread_history = iteration_list,
         llm_with_tools=llm_with_tools,
         distillation_llm=distill_llm_typed
     )
