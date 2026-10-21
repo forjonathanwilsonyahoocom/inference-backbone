@@ -5,31 +5,20 @@ import json
 
 @tool
 def web_search(purpose: str, query: str) -> str:
-    """Executes a keyword search on the live internet via DuckDuckGo.
-    Use this first to find relevant URLs and snippets when asked about
-    current events, weather, news, or fresh updates.
+    """Search the web via DuckDuckGo.
 
     Parameters
     ----------
     purpose : str
-        The immediate purpose of this call.
+        The purpose of the search.
     query : str
-        A standard web search keyword query.
+        Search query string.
 
     Returns
     -------
     str
-        JSON-encoded search results from the web-tools API.
-        On success, a JSON list of dicts, each with keys:
-            * `title` – the result title
-            * `href` – the result URL
-            * `body` – a short snippet of the result body
-        On failure, a JSON array with an `error` key holding the exception
-        message.
-    Notes
-    -----
-    * The backend service may cache results; repeated identical queries
-      within the cache window return the cached response.
+        JSON string of results: list of dicts with keys `title`, `href`, `body`,
+        or an `error` key on failure.
     """
     clean_query = query.strip()
     if not clean_query:

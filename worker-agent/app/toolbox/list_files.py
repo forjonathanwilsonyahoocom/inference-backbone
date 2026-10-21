@@ -11,20 +11,16 @@ def list_files(
 ) -> str:
     """List files and directories in the current project workspace.
 
-The tool accepts a glob pattern and an optional set of directories to exclude.
-It returns a JSON‑encoded string containing the first ``limit`` entries.
-
 Parameters
 ----------
 purpose : str
     The immediate purpose of this call.
 path : str, optional
-    The directory to list, relative to the workspace root. Defaults to ``"."``.
-    The path is resolved through ``safe_path`` which validates it is within the workspace.
+    Directory to list, relative to workspace root. Defaults to ".".
 glob_filter_to : str, optional
-    Glob pattern to filter the results. Defaults to ``"*"``.
+    Glob pattern to filter results. Defaults to "*".
 exclude : set[str] | None, optional
-    Directories to exclude from the listing.
+    Directories to exclude from listing.
 limit : int, optional
     Maximum number of entries to return.
 
@@ -32,12 +28,6 @@ Returns
 -------
 str
     JSON‑encoded list of file paths.
-
-Notes
------
-* The listing is **recursive** by default: ``rglob`` traverses subdirectories.
-* Entries are returned as relative paths (e.g. ``"worker-agent/app/toolbox"``).
-* Directories are suffixed with ``"/"`` to distinguish them from files.
 """
     exclude = EXCLUDED_DIRS | (exclude or set())
     target_path = safe_path(path)
