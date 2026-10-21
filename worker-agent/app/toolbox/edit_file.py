@@ -1,58 +1,76 @@
+"""Edit a UTF‑8 text file by replacing a single exact occurrence of ``old_text`` with ``new_text``.
+
+This tool performs a *surgical* edit: it searches for the first exact match of ``old_text`` in the file and replaces it with ``new_text``. The operation is intentionally limited to one occurrence to prevent accidental bulk changes. If ``old_text`` appears more than once, the tool returns an error and suggests providing a more specific match.
+
+The file must already exist and be a regular file (not a directory). The content is read using UTF‑8; if decoding fails, Latin‑1 is used as a fallback.
+
+Parameters
+----------
+purpose : str
+    A short description of why the edit is being performed.  It is logged for observability and used by the semantic compressor to tag the result.
+path : str
+    Path to the target file, relative to the workspace root. The path is resolved via :func:`safe_path` to ensure it stays within the workspace.
+old_text : str
+    The exact text to locate.  No fuzzy or partial matching is performed.
+new_text : str
+    The replacement string.
+
+Returns
+-------
+str
+    A status message indicating success (including the number of characters replaced) or an error explaining why the edit could not be applied (missing file, not a file, no match, or multiple matches).
+
+Notes
+-----
+* The tool enforces a single‑occurrence replacement to safeguard against unintended bulk edits.
+* If the target file contains the same ``old_text`` multiple times, provide a longer, more specific snippet that uniquely identifies the intended location.
+* On success the returned message includes the character counts of the replaced and inserted text, which can be used to verify the edit.
+
+Examples
+--------
+>>> edit_file(
+...     purpose="Update license header",
+...     path="src/main.py",
+...     old_text="__author__ = 'old'",
+...     new_text="__author__ = 'new'",
+... )
+'Edited src/main.py: replaced 15 characters with 15 characters.'
+"""
 
 from langchain_core.tools import tool
 from toolbox.util import safe_path, WORKSPACE
 
 @tool
 def edit_file(purpose: str, path: str, old_text: str, new_text: str) -> str:
-    """Edit a UTF-8 text file by replacing one exact occurrence of ``old_text`` with ``new_text``.
+    """Edit a UTF‑8 text file by replacing a single exact occurrence of ``old_text`` with ``new_text``.
 
-    This tool performs a **surgical, single-replacement** edit: it finds the
-    first exact substring match of ``old_text`` in the file and substitutes
-    it with ``new_text``.  The file must already exist and must be a regular
-    file (not a directory).
+    This tool performs a *surgical* edit: it searches for the first exact match of ``old_text`` in the file and replaces it with ``new_text``. The operation is intentionally limited to one occurrence to prevent accidental bulk changes.
 
-    The ``one-occurrence`` constraint is a safety feature, not a limitation.
-    If ``old_text`` appears more than once, the tool refuses to edit and
-    returns an error — this prevents accidentally modifying multiple
-    unrelated sections of a file.  To edit a file that contains repeated
-    text, provide a larger, more specific ``old_text`` block that matches
-    only the intended location.
+    The file must already exist and be a regular file (not a directory).
 
-    The file is read with UTF-8 encoding; if decoding fails, ``latin-1``
-    is used as a fallback.
+    The file is read with UTF‑8 encoding; if decoding fails, Latin‑1 is used as a fallback.
 
     Parameters
     ----------
     purpose : str
-        The immediate purpose of this call.  Recorded for observability
-        and used by the semantic compressor to tag the result.
+        A short description of why the edit is being performed.  It is logged for observability and used by the semantic compressor to tag the result.
     path : str
-        Path to the file to edit (relative to the workspace root).
-        The path is resolved through ``safe_path`` which validates it is
-        within the workspace.
+        Path to the target file, relative to the workspace root. The path is resolved via :func:`safe_path` to ensure it stays within the workspace.
     old_text : str
-        The exact text to find and replace.  Must be an exact substring
-        match — no partial or fuzzy matching.
+        The exact text to locate.  No fuzzy or partial matching is performed.
     new_text : str
-        The replacement text.
+        The replacement string.
 
     Returns
     -------
     str
-        A status message indicating success (with character counts) or
-        an error describing why the edit could not be applied
-        (file missing, not a file, old_text not found, or multiple
-        occurrences detected).
+        A status message indicating success (including the number of characters replaced) or an error explaining why the edit could not be applied (missing file, not a file, no match, or multiple matches).
 
     Notes
     -----
-    * If ``old_text`` appears more than once in the file, the tool
-      returns an error to prevent unintended modifications.
-    * The file is read with UTF-8 encoding; if decoding fails, ``latin-1``
-      is used as a fallback.
-    * On success the returned message includes the number of characters
-      replaced, which is useful for verifying the edit was applied
-      as expected.
+    * The tool enforces a single‑occurrence replacement to safeguard against unintended bulk edits.
+    * If the target file contains the same ``old_text`` multiple times, provide a longer, more specific snippet that uniquely identifies the intended location.
+    * On success the returned message includes the character counts of the replaced and inserted text, which can be used to verify the edit.
     """
     file_path = safe_path(path)
 
@@ -81,9 +99,4 @@ def edit_file(purpose: str, path: str, old_text: str, new_text: str) -> str:
     updated_content = content.replace(old_text, new_text, 1)
     file_path.write_text(updated_content, encoding="utf-8")
 
-    return (
-        f"Edited {file_path.relative_to(WORKSPACE)}: "
-        f"replaced {len(old_text)} characters with {len(new_text)} characters."
-    )
-
-
+    return f"Edited {file_path.relative_to(WORKSPACE)}: replaced {len(old_text)} characters with {len(new_text)} characters."
