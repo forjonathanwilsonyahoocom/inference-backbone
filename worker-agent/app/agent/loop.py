@@ -95,7 +95,7 @@ def run_agent(
                     "final_response": getattr(response, "content", "failure after retries"),
                     "iterations": iteration,
                     "events": events,
-                    "distillation" : getattr(distillation, "content", "distillation failure"),
+                    "distillation" :  distillation,
                     "execution_id" : config.execution_id}
                     
         if config.verbose:
@@ -111,7 +111,7 @@ def run_agent(
                     "final_response": response.content,
                     "iterations": iteration,
                     "events": events,
-                    "distillation" :  getattr(distillation, "content", "distillation failure"),
+                    "distillation" :  distillation,
                     "execution_id" : config.execution_id}
         
         add_tool_event(
@@ -185,6 +185,6 @@ def run_agent(
             "final_response": response.content,
             "iterations": iteration,
             "events": events,
-            "distillation" :  getattr(distillation, "content", "distillation failure"),
+            "distillation" : distillation,
             "execution_id" : config.execution_id}
 

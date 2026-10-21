@@ -116,7 +116,7 @@ def final_distillation(config: AgentRequest,
                        metrics: MetricsWrapper, 
                        distillation_llm: ChatOllama, 
                        compact: Compaction, 
-                       history: List[Iteration]) -> (Compaction, HumanMessage):
+                       history: List[Iteration]) -> (Compaction, str):
     """distill all remaining messages at the end of the thread.
     this is primarily to create the ingested AgentState records
 
@@ -175,10 +175,5 @@ def final_distillation(config: AgentRequest,
     if len(send_to_distill) > 0:
         compact = get_distillation(config, metrics, distillation_llm, compact, history[-1].iteration, send_to_distill)
     summary =  make_summary_message(compact)
-    
-    sm = HumanMessage(content="missing")
-    
-    if len(summary) > 0:
-        sm = summary[0]
         
-    return compact, sm
+    return compact, summary
