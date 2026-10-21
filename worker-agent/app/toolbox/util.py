@@ -16,34 +16,19 @@ WORKSPACE = WORKSPACE.resolve()
 print(WORKSPACE)
 
 def middle_slice(text: str, limit: int) -> str:
-    """
-    Return a substring of `text` that is exactly `limit` characters long
-    and positioned as close to the centre of the original string as possible.
+    """Return a centered substring of `text` up to `limit` characters.
 
     Parameters
     ----------
     text : str
-        The source string.
+        Source string.
     limit : int
-        Desired length of the returned substring. Must be >= 0.
+        Desired length (non‑negative).
 
     Returns
     -------
     str
-        A slice of `text` with length up to `limit`.  
-        If `limit` is larger than the source length, the whole source string
-        is returned.
-
-    Examples
-    --------
-    >>> middle_slice("Hello, world!", 5)
-    'lo, w'
-
-    >>> middle_slice("abcdefgh", 4)
-    'cdef'
-
-    >>> middle_slice("short", 10)
-    'short'
+        Substring of length <= `limit`.
     """
     if limit < 0:
         raise ValueError("limit must be non‑negative")
@@ -88,7 +73,7 @@ def clip_mid(value: Any, limit: int) -> str:
     Parameters
     ----------
     value : Any
-        The value to clip. Non-string values are converted to ``str``.
+        The value to clip. Non‑string values are converted to ``str``.
     limit : int
         Maximum total length of the output string.
 
@@ -108,8 +93,7 @@ def clip_mid(value: Any, limit: int) -> str:
 
 def safe_path(relative_path: str) -> Path:
     """
-    Resolve a user-provided path inside WORKSPACE.
-    Prevents paths such as ../../etc/passwd.
+    Resolve a relative path inside WORKSPACE, preventing escapes.
     """
     path = (WORKSPACE / relative_path).resolve()
 
