@@ -12,15 +12,40 @@ COMMAND_OUTPUT_LIMIT = 2000
 
 @tool
 def run_command(purpose: str, command: str, cwd: str = ".") -> str:
-    """
-    Run a non-interactive shell command in a workspace-relative directory.
+    """Run a non-interactive shell command in a workspace-relative directory.
 
     Use this for inspection, moving, delete, and other
     non-interactive development commands.
 
-    cwd must be relative to the workspace root. Use "." to run from the
-    workspace root. The resolved working directory is included in the
-    result.
+    Parameters
+    ----------
+    purpose : str
+        The immediate purpose of this call.
+    command : str
+        The shell command to execute.
+    cwd : str
+        The working directory, relative to the workspace root. Use "." to run from the workspace root.
+
+    Returns
+    -------
+    str
+        JSON-encoded response containing the command output and exit status.
+        The response dict has keys:
+            * `command` – the original command string
+            * `cwd` – the working directory
+            * `exit_code` – the process return code (or ``None`` on error)
+            * `stdout` – clipped command output
+            * `stderr` – clipped error output
+            * `error` – present only when the command was blocked or failed
+    Notes
+    -----
+    * The command is blocked if it contains any of the dangerous fragments
+      ``rm -rf``, ``shutdown``, ``reboot``, ``mkfs``, ``dd if=``,
+      ``:(){``, ``curl | sh``, ``wget | sh``.
+    * The subprocess call uses a 60-second timeout.
+    * On timeout, a JSON error response with ``exit_code: None`` is returned.
+    * On any other exception, the exception type and message are returned
+      in the ``error`` field.
     """
     blocked_fragments = [
         "rm -rf",

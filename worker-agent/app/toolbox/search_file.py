@@ -24,6 +24,8 @@ def search_file(purpose: str, path: str, query: str) -> str:
         The immediate purpose of this call
     path : str
         Path to the file or directory to search (relative to the workspace).
+        The value is validated through `safe_path` to ensure it resolves
+        within the workspace root.
     query : str
         The exact text to look for (case‑sensitive).
 
@@ -46,6 +48,10 @@ def search_file(purpose: str, path: str, query: str) -> str:
       `max_hits` matches per file (default 10).
     * Very large files (over `max_chars` bytes) are truncated before
       searching; the truncated text ends with `"\n...[truncated]"`.
+    * Binary files (containing null bytes) are detected and skipped silently.
+    * When `path` is a directory, recursive traversal uses `rglob("*")`
+      and excludes paths matching `EXCLUDED_DIRS`.
+    * A global `max_total_hits` of 50 caps the total results across all files.
     """
     
     target_path = safe_path(path)

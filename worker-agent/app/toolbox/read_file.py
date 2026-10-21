@@ -11,8 +11,7 @@ def read_file(
     line_start: Optional[int] = None,
     line_end: Optional[int] = None
 ) -> str:
-    """
-    Read a UTF‑8 text file from the project workspace.
+    """Read a UTF‑8 text file from the project workspace.
 
     Parameters
     ----------
@@ -29,7 +28,17 @@ def read_file(
     -------
     str
         The requested content (possibly truncated to 30 k chars).
-        If the file does not exist or is not a file, a short error string is returned.
+        If the file does not exist or is not a file, a short error string
+        is returned.
+    Notes
+    -----
+    * The file is read as UTF‑8; if decoding fails, it falls back to
+      latin‑1.
+    * If ``line_start`` and/or ``line_end`` are provided, the content is
+      sliced to that 1‑based line range.
+    * An invalid line range (e.g. ``line_start < 0`` or ``line_end <
+      line_start``) returns the literal string
+      ``"Invalid line range specified."``.
     """
     # Resolve path safely
     file_path = safe_path(path)

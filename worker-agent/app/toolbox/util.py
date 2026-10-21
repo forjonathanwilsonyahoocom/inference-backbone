@@ -78,8 +78,24 @@ def clip_mid(value: Any, limit: int) -> str:
     """Return a clipped representation of ``value``.
 
     The function keeps the first 70 % of the string as a *head* and the
-    remainder as a *tail*.  The omitted portion is indicated with a
+    last 30 % as a *tail*.  The omitted middle portion is indicated with a
     ``...[N chars omitted]...`` marker.
+
+    If the input is not a string, it is converted to a string first.
+    If the string length is already within ``limit``, it is returned
+    unchanged.
+
+    Parameters
+    ----------
+    value : Any
+        The value to clip. Non-string values are converted to ``str``.
+    limit : int
+        Maximum total length of the output string.
+
+    Returns
+    -------
+    str
+        The clipped string with the omitted portion marked.
     """
     s = value if isinstance(value, str) else str(value)
     if len(s) <= limit:

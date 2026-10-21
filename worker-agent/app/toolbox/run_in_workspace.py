@@ -17,8 +17,32 @@ def run_in_workspace(
     """Run a command in the current workspace using an approved language runtime.
 
     Supported runtimes: python, node, go, rust, php. The command can read and modify workspace files
-    from a brokered docker runtime, Returns the command output and exit status. Execution is
+    from a brokered docker runtime. Returns the command output and exit status. Execution is
     subject to time and resource limits; do not use this tool for unrelated system administration.
+
+    The request is sent to a docker broker with a timeout of
+    ``timeout_seconds * 1.2`` seconds. If the broker is unreachable or the
+    response cannot be parsed, a synthetic error response is returned.
+
+    Parameters
+    ----------
+    purpose : str
+        The immediate purpose of this call.
+    runtime : str
+        The language runtime to use (python, node, go, rust, php).
+    command : list[str]
+        The command and its arguments to execute.
+    cwd : str
+        The working directory, relative to the workspace root.
+    timeout_seconds : int
+        Maximum execution time in seconds (default 300).
+
+    Returns
+    -------
+    str
+        JSON-encoded response from the docker-broker API, containing logs and exit status.
+        On success the response includes ``exit_code``, ``logs``, and metadata.
+        On failure a synthetic error object is returned with ``exit_code=1``.
     """
     #this fails with exception if path is not safe
     workspace_path = safe_path(cwd)
@@ -51,7 +75,24 @@ def run_in_workspace(
         return error_return.model_dump_json(indent=2)
         
 def compress_run_in_workspace(result: Any, limit: int) -> str:
-    """Return the number of evidence chunks and a preview of the first."""
+    """Parse a previous ``run_in_workspace`` result, clip its logs to ``limit``
+    characters, and return the JSON representation.
+
+    If the input cannot be parsed as a ``RunResponse`` JSON object, the raw
+    input is returned unchanged.
+
+    Parameters
+    ----------
+    result : Any
+        The JSON string returned by ``run_in_workspace``.
+    limit : int
+        Maximum number of characters to keep in the ``logs`` field.
+
+    Returns
+    -------
+    str
+        The clipped JSON representation of the response.
+    """
     
     try:
         parsed = RunResponse.model_validate(json.loads(result))

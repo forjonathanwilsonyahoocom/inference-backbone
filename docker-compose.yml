@@ -191,21 +191,6 @@ volumes:
   firewall-ready:
   
 networks:
-  worker-api:
-    driver: bridge
-
-  validator-api:
-    driver: bridge
-
-  data:
-    driver: bridge
-
-  docker-broker:
-    driver: bridge
-    
-  web-tool-egress:
-    driver: bridge
-    
   worker-webtools:
     driver: bridge
     enable_ipv6: false
@@ -214,4 +199,35 @@ networks:
       config:
         - subnet: 172.21.0.0/29
           gateway: 172.21.0.1
+          
+  worker-api:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/24
+
+  validator-api:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.23.0.0/24
+        
+  data:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.24.0.0/24
+        
+  docker-broker:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/24
+            
+  web-tool-egress:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.26.0.0/24
+
 
