@@ -1,7 +1,7 @@
 #messages.py
 from observability.metrics import MetricsWrapper
 from langchain_ollama import ChatOllama
-from langchain_core.messages import ToolMessage, BaseMessage, HumanMessage
+from langchain_core.messages import ToolMessage, HumanMessage, SystemMessage
 from typing import Any, List
 from agent.models import Iteration, Compaction, AgentRequest
 from agent.compaction import make_summary_message, get_distillation

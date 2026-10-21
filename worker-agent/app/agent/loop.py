@@ -8,13 +8,7 @@ from agent.models import Iteration, Compaction, AgentRequest
 from agent.fingerprint import tool_call_fingerprint, result_fingerprint
 from agent.telemetry import ingest_task, ingest_final_answer
 
-from langchain_core.messages import (
-    AIMessage,
-    HumanMessage,
-    SystemMessage,
-    ToolMessage,
-    BaseMessage
-)
+from langchain_core.messages import HumanMessage, BaseMessage
 
 from langchain_ollama import ChatOllama
 from langchain_core.tools import tool
