@@ -3,18 +3,13 @@ from ddgs import DDGS
 import json
 
 async def web_search(query: str) -> List[Dict]:
-    """Executes a keyword search on DuckDuckGo.
+    """Executes a keyword search on the live internet via DuckDuckGo.
+    Use this first to find relevant URLs and snippets when asked about
+    current events, weather, news, or fresh updates.
 
-Parameters
-----------
-query : str
-    Search query string.
-
-Returns
--------
-List[Dict]
-    List of result dictionaries with keys 'title', 'href', 'body'.
-"""
+    Args:
+        query: A standard web search keyword query.
+    """
     clean_query = query.strip()
     if not clean_query:
         return "Error: The provided search query was empty."
