@@ -105,14 +105,16 @@ def compress_history(config: AgentRequest, metrics: MetricsWrapper, history: Lis
     if not history:
         return history
 
-    newest = history[-1].iteration
-
-    for it in history:
-        if it.iteration <= upto:
+    age = 0
+    for it in reversed(history):
+        if it.is_silenced:
             continue
-        age = newest - it.iteration
+        if it.iteration <= upto:
+            break
+        
         limit = limit_for_age(config, age)
         if limit is None or it.compression_limit == limit:
+            age = age + 1
             continue
         
         compressed_result = semantic_compressor(config, metrics, it, limit)
@@ -132,7 +134,8 @@ def compress_history(config: AgentRequest, metrics: MetricsWrapper, history: Lis
         metrics.emit(metrics.get_counter_message("compression_compressed_response", "compression event"))
             
         it.compression_limit = limit
-
+        
+        age = age + 1
     return history
 
 # End of compression.py

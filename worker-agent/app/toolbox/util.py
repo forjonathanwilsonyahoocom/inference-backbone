@@ -2,6 +2,8 @@ from pathlib import Path
 from typing import Any
 import os
 
+SIDE_EFFECT_TOOLS = {"assess_result"} #these tool call and responses do not get included in the outbound context, they impact the context by side effect only
+
 EXCLUDED_DIRS = {".git", "__pycache__", ".pytest_cache",  ".venv", "venv", ".mypy_cache", ".ruff_cache", ".npm", "node_modules"}
 
 WORKSPACE_PATH = os.getenv(

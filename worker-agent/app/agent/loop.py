@@ -14,6 +14,7 @@ from langchain_ollama import ChatOllama
 from langchain_core.tools import tool
 
 from agent.telemetry import ingest_tool_event, ToolEvent
+from toolbox.util import SIDE_EFFECT_TOOLS
 
 
     
@@ -128,7 +129,6 @@ def run_agent(
         #NOTE there will only be one tool call per the current rules
         tool_name = tool_call["name"]
         tool_args = tool_call.get("args", {})
-        tool_args.pop("self", None)
 
         selected_tool = tools.get(tool_name)
 
@@ -140,6 +140,9 @@ def run_agent(
             result = f"Unknown tool: {tool_name}. Available: {list(tools)}"
             metrics.emit(failure_metric_labeler({"failure": f"unknown tool {tool_name}"}))
         else:
+            if tool_name in SIDE_EFFECT_TOOLS:
+                this_iteration.is_silenced = True
+                
             this_iteration.tool_name = tool_name
             try:
                 metrics.emit(tool_call_metric_labeler({"tool_call": tool_name}))

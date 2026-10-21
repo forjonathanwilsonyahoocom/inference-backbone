@@ -41,6 +41,7 @@ class Iteration(BaseModel):
     compression_limit: Optional[int] = None
     tool_name: Optional[str] = None
     stagnant_count: int = 0
+    is_silenced: bool = False #set to remove from context
 
 
 class Compaction(BaseModel):

@@ -72,6 +72,9 @@ def derive_message_list(config: AgentRequest,
             #distillation LLM gets original uncompressed content
             primary_result_attribute = "tool_call_result"
             primary_response_attribute = "model_response"
+            
+        if upto == 0 and iteration.is_silenced: #we will only send silenced tools to the distillation context
+            continue
         
         try:
             #we add these backwards because we are building from the end of the list
