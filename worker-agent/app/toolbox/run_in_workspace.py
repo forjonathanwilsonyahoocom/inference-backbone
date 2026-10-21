@@ -20,6 +20,10 @@ def run_in_workspace(
     from a brokered docker runtime. Returns the command output and exit status. Execution is
     subject to time and resource limits; do not use this tool for unrelated system administration.
 
+    The request is sent to a docker broker with a timeout of
+    ``timeout_seconds * 1.2`` seconds. If the broker is unreachable or the
+    response cannot be parsed, a synthetic error response is returned.
+
     Parameters
     ----------
     purpose : str
@@ -37,6 +41,8 @@ def run_in_workspace(
     -------
     str
         JSON-encoded response from the docker-broker API, containing logs and exit status.
+        On success the response includes ``exit_code``, ``logs``, and metadata.
+        On failure a synthetic error object is returned with ``exit_code=1``.
     """
     #this fails with exception if path is not safe
     workspace_path = safe_path(cwd)
@@ -69,7 +75,24 @@ def run_in_workspace(
         return error_return.model_dump_json(indent=2)
         
 def compress_run_in_workspace(result: Any, limit: int) -> str:
-    """Return the number of evidence chunks and a preview of the first."""
+    """Parse a previous ``run_in_workspace`` result, clip its logs to ``limit``
+    characters, and return the JSON representation.
+
+    If the input cannot be parsed as a ``RunResponse`` JSON object, the raw
+    input is returned unchanged.
+
+    Parameters
+    ----------
+    result : Any
+        The JSON string returned by ``run_in_workspace``.
+    limit : int
+        Maximum number of characters to keep in the ``logs`` field.
+
+    Returns
+    -------
+    str
+        The clipped JSON representation of the response.
+    """
     
     try:
         parsed = RunResponse.model_validate(json.loads(result))

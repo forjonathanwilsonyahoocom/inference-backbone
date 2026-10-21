@@ -14,6 +14,9 @@ def write_file(purpose: str, path: str, content: Any, overwrite: bool = False) -
         • a mapping → pretty‑printed JSON (unless it contains a single string)
         • a string → written verbatim (real newlines, no `\\n`)
 
+    The parent directory of `path` is created automatically if it does not exist.
+    The file is written with UTF‑8 encoding.
+
     Parameters
     ----------
     purpose : str
