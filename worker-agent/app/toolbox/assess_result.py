@@ -19,28 +19,76 @@ class AssessResultWrapper:
             utility: float,
             better_focus: Optional[str] = None,
         ) -> str:
-            """Update a tool result in history to assess its utility in the current thread
-            and refocus the chunk compressor query.
+            """Refine the semantic compression metadata for a previously produced tool result.
 
-            This tool is intended to be called after one of
-            "read_file", "web_fetch", "run_in_workspace"
-            has already been executed. Use the `instance_number` stamped on the tool result
-            to update the chunk query to `better_focus`.
+            This tool is intended to be called **after** one of the whitelisted
+            tools (``read_file``, ``web_fetch``, ``run_in_workspace``) has
+            already been executed and its result has been chunked and sent to
+            the backbone-api vector store.  It updates the stored assessment
+            of that result so the compressor can prioritize it in future
+            turns.
+
+            The semantic compressor works in two phases:
+
+            1. **Chunking** — after each tool call, the raw result is split
+               into chunks and each chunk is sent to the backbone-api
+               vector store with a ``distance`` score.
+            2. **Retrieval** — when the conversation exceeds a tier's
+               character quota, the compressor queries the vector store for
+               chunks ordered by ``distance`` and fills the quota with the
+               most relevant ones.
+
+            ``assess_result`` updates the metadata that drives phase 2:
+
+            * ``utility`` — a score (0.0–1.0) that measures how much the
+              result actually helped achieve the task objective.  This is
+              recorded and used by the compressor to weight future
+              retrieval.
+            * ``better_focus`` — an optional string that replaces the
+              original ``purpose`` argument sent to the tool.  When
+              provided, it refines the query used to retrieve chunks from
+              the vector store, so future compressions will surface more
+              relevant content.
+
+            When ``better_focus`` is set, the tool also clears the stored
+            chunks and compression limit for that iteration, so the
+            compressor will re-fetch fresh chunks on the next compression
+            pass.
 
             Parameters
             ----------
             instance_number : int
-                The `instance_number` from the Iteration to refocus semantic compression.
+                The ``instance_number`` stamped on the Iteration whose
+                tool result you want to update.  The AIMessage that issued
+                the tool call carries the preceding instance_number —
+                e.g. if the tool call was the 5th action, the AIMessage
+                carries ``instance_number=5`` and the resulting tool
+                result is stamped with ``instance_number=6``.
             utility : float
-                A score (0.0–1.0) measuring how much the result actually helps achieve the objective.
-            better_focus : str, optional
-                The new focus query for chunked compression. When provided, it replaces the
-                original `purpose` argument sent to the tool that produced the result.
+                A score (0.0–1.0) measuring how useful the result was.
+                A score of 1.0 means the result was highly useful; 0.0
+                means it was not useful at all.
+            better_focus : str | None
+                An optional focus query.  When provided, it replaces the
+                original ``purpose`` argument sent to the tool that
+                produced the result.  When ``None``, the existing focus
+                is preserved.
 
             Returns
             -------
             str
-                Confirmation message describing the update applied.
+                A confirmation message describing what was updated
+                (utility score and focus string).
+
+            Notes
+            -----
+            * This tool has no effect if no Iteration with the given
+              ``instance_number`` is found.
+            * The ``utility`` score is the primary signal the compressor
+              uses to decide which chunks to keep when context is
+              limited.
+            * Setting ``better_focus`` clears the cached chunks so the
+              compressor will re-fetch them on the next compression pass.
             """
             return assess_result_function(self.iterations, instance_number, utility, better_focus)
 
