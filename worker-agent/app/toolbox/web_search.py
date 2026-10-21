@@ -19,8 +19,17 @@ def web_search(purpose: str, query: str) -> str:
     Returns
     -------
     str
-        JSON-encoded search results from the web-tools API, or an error
-        message if the request fails.
+        JSON-encoded search results from the web-tools API.
+        On success, a JSON list of dicts, each with keys:
+            * `title` – the result title
+            * `href` – the result URL
+            * `body` – a short snippet of the result body
+        On failure, a JSON array with an `error` key holding the exception
+        message.
+    Notes
+    -----
+    * The backend service may cache results; repeated identical queries
+      within the cache window return the cached response.
     """
     clean_query = query.strip()
     if not clean_query:

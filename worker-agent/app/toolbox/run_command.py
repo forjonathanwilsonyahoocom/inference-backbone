@@ -30,6 +30,22 @@ def run_command(purpose: str, command: str, cwd: str = ".") -> str:
     -------
     str
         JSON-encoded response containing the command output and exit status.
+        The response dict has keys:
+            * `command` – the original command string
+            * `cwd` – the working directory
+            * `exit_code` – the process return code (or ``None`` on error)
+            * `stdout` – clipped command output
+            * `stderr` – clipped error output
+            * `error` – present only when the command was blocked or failed
+    Notes
+    -----
+    * The command is blocked if it contains any of the dangerous fragments
+      ``rm -rf``, ``shutdown``, ``reboot``, ``mkfs``, ``dd if=``,
+      ``:(){``, ``curl | sh``, ``wget | sh``.
+    * The subprocess call uses a 60-second timeout.
+    * On timeout, a JSON error response with ``exit_code: None`` is returned.
+    * On any other exception, the exception type and message are returned
+      in the ``error`` field.
     """
     blocked_fragments = [
         "rm -rf",
