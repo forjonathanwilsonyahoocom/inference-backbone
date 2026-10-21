@@ -19,26 +19,21 @@ class AssessResultWrapper:
             utility: float,
             better_focus: Optional[str] = None,
         ) -> str:
-            """Refine the utility score and retrieval focus for a previously executed tool result.
-
-Call this tool AFTER a whitelisted tool (`read_file`, `web_fetch`, `run_in_workspace`) 
-has run to update how the context compressor prioritizes its results in future turns.
+            """Refine utility score and retrieval focus for a previous tool result.
 
 Parameters
 ----------
 instance_number : int
-    The instance number of the completed Iteration to update.
+    Instance number of the completed iteration.
 utility : float
-    A score (0.0 to 1.0) indicating how helpful the tool result was 
-    for the task (1.0 = highly useful, 0.0 = completely useless).
-better_focus : str | None
-    Optional query to replace the original tool 'purpose'. Providing a string 
-    forces the compressor to clear cached chunks and re-fetch fresh content.
+    Score 0.0–1.0 indicating usefulness.
+better_focus : str | None, optional
+    New focus query to replace original purpose.
 
 Returns
 -------
 str
-    Confirmation message detailing the updated utility score and focus query.
+    Confirmation message.
 """
 
             return assess_result_function(self.iterations, instance_number, utility, better_focus)

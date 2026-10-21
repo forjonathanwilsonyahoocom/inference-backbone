@@ -16,42 +16,21 @@ def _is_binary(file: Path, sample_size: int = 1024) -> bool:
 @tool
 def search_file(purpose: str, path: str, query: str) -> str:
     """
-    Search a local file or all files under a directory for an **exact** text match.
+    Search a file or directory for an exact text match.
 
     Parameters
     ----------
-    purpose: str
-        The immediate purpose of this call
+    purpose : str
+        Immediate purpose of the call.
     path : str
-        Path to the file or directory to search (relative to the workspace).
-        The value is validated through `safe_path` to ensure it resolves
-        within the workspace root.
+        Relative path to file or directory.
     query : str
-        The exact text to look for (case‑sensitive).
+        Exact text to search for (case‑sensitive).
 
     Returns
     -------
     str
-        JSON array of objects, each with:
-            * `file` – relative file path (empty string for single‑file mode)
-            * `line` – 1‑based line number
-            * `text` – the line content (trimmed of trailing newline)
-
-        If the path does not exist or is not a file/directory, a short error message is returned instead of JSON.
-        When no matches are found an empty JSON array (`[]`) is returned.
-
-    Notes
-    -----
-    * The file(s) are read with UTF‑8 encoding; if decoding fails,
-      the fallback encoding `latin‑1` is used.
-    * To keep the agent’s context small, the search stops after
-      `max_hits` matches per file (default 10).
-    * Very large files (over `max_chars` bytes) are truncated before
-      searching; the truncated text ends with `"\n...[truncated]"`.
-    * Binary files (containing null bytes) are detected and skipped silently.
-    * When `path` is a directory, recursive traversal uses `rglob("*")`
-      and excludes paths matching `EXCLUDED_DIRS`.
-    * A global `max_total_hits` of 50 caps the total results across all files.
+        JSON array of matches: {"file": ..., "line": ..., "text": ...}. If no matches, empty array. If path invalid, error string.
     """
     
     target_path = safe_path(path)

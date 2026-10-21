@@ -16,13 +16,9 @@ def read_file(
     Parameters
     ----------
     purpose : str
-        Purpose of the call.
     path : str
-        File path relative to the workspace.
     line_start : int | None, optional
-        First line to return (1‑based). Defaults to start.
     line_end : int | None, optional
-        Last line to return (inclusive). Defaults to end.
 
     Returns
     -------
