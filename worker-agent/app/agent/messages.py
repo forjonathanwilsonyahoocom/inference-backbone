@@ -6,7 +6,7 @@ from typing import Any, List
 from agent.models import Iteration, Compaction, AgentRequest
 from agent.compaction import make_summary_message, get_distillation
 from agent.compression import compress_history
-from prompts.worker import SYSTEM_PROMPT
+
 
 def estimate_tokens(content: Any) -> int:
     return max(1, len(str(content)) // 4)
@@ -105,7 +105,7 @@ def derive_message_list(config: AgentRequest,
     send_to_llm.reverse()
     
     permanent = [
-        SystemMessage(content=SYSTEM_PROMPT),
+        SystemMessage(content=config.system_message),
         HumanMessage(content=f"{config.request}\n{make_summary_message(compact)}"),
     ]
         

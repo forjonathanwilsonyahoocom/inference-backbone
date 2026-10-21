@@ -1,8 +1,10 @@
 from typing import Tuple, Any, Optional, List, Dict
 import uuid
 from pydantic import BaseModel
+from prompts.worker import DEFAULT_SYSTEM_PROMPT
 
 class AgentRequest(BaseModel):
+    system_message: str = DEFAULT_SYSTEM_PROMPT #general system prompt
     request: str #instruction for agent action
     base_url: str #send your local ollama server base url
     execution_id: str = str(uuid.uuid4()) # unique per run
