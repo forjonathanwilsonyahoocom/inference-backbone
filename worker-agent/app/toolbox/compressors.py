@@ -73,8 +73,8 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
                 raw_chunks = search_history_function("find compression chunks",
                                                      query,
                                                      num_chunks + 1, 
-                                                     it.tool_call_result_instance_number, 
-                                                     config.execution_id)
+                                                     config.execution_id,
+                                                     it.tool_call_result_instance_number)
                 chunks = json.loads(raw_chunks)
                 if len(chunks) > 0:
                     it.tool_call_result_chunks = chunks
