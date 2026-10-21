@@ -25,11 +25,11 @@ def merge_summaries(entries: List[dict]) -> dict:
             bucket.extend(x for x in (v if isinstance(v, list) else [v]) if x not in bucket)
     return merged
     
-def make_summary_message(compact: Compaction) -> List[HumanMessage]:
+def make_summary_message(compact: Compaction) -> str:
     if not compact.summary and not compact.fallback:
         return []
     body = json.dumps(merge_summaries(compact.summary), indent=2) if compact.summary else ""
-    return [HumanMessage(content=f"Summary of earlier work (already done, do not repeat):\n{body}\n{compact.fallback}")]
+    return f"Summary of earlier work (already done, do not repeat):\n{body}\n{compact.fallback}"
     
 def fallback_mechanical_summary(msgs: List[BaseMessage]) -> str:
     lines = []

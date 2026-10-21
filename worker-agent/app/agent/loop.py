@@ -19,8 +19,6 @@ from langchain_core.messages import (
 from langchain_ollama import ChatOllama
 from langchain_core.tools import tool
 
-from prompts.worker import SYSTEM_PROMPT
-
 from agent.telemetry import ingest_tool_event, ToolEvent
 
 
@@ -43,10 +41,7 @@ def run_agent(
     failure_metric_labeler = metrics.get_counter_message_labeler("tool_call_failure", "the agent tool fails")
     token_gauge = metrics.get_gauge_func("tokens_in_play", "tokens in current context")
     ingest_task(config.execution_id, config.request, config.worker_model)
-    permanent_messages = [
-        SystemMessage(content=SYSTEM_PROMPT),
-        HumanMessage(content=config.request),
-    ]
+
     events: list[ToolEvent] = []
     iteration = 0
     event_counter = 0
@@ -77,7 +72,7 @@ def run_agent(
         
         tool_calls = []
         response = {}
-        current_compaction, send_to_llm = derive_message_list(config, metrics, distillation_llm, current_compaction, permanent_messages, full_thread_history)
+        current_compaction, send_to_llm = derive_message_list(config, metrics, distillation_llm, current_compaction, full_thread_history)
         retry_notes: list[BaseMessage] = []
         for retry in range(10):
             

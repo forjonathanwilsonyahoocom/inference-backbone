@@ -6,6 +6,7 @@ from typing import Any, List
 from agent.models import Iteration, Compaction, AgentRequest
 from agent.compaction import make_summary_message, get_distillation
 from agent.compression import compress_history
+from prompts.worker import SYSTEM_PROMPT
 
 def estimate_tokens(content: Any) -> int:
     return max(1, len(str(content)) // 4)
@@ -28,7 +29,6 @@ def derive_message_list(config: AgentRequest,
                         metrics: MetricsWrapper, 
                         distillation_llm: ChatOllama, 
                         compact: Compaction, 
-                        permanent: List[BaseMessage],
                         history: List[Iteration]) -> (Compaction, List[Any]):
     """Build the message list to send to the LLM.
 
@@ -103,8 +103,13 @@ def derive_message_list(config: AgentRequest,
         compact = get_distillation(config, metrics, distillation_llm, compact, upto, send_to_distill)
         
     send_to_llm.reverse()
+    
+    permanent = [
+        SystemMessage(content=SYSTEM_PROMPT),
+        HumanMessage(content=f"{config.request}\n{make_summary_message(compact)}"),
+    ]
         
-    return compact, permanent + make_summary_message(compact) + send_to_llm
+    return compact, permanent + send_to_llm
     
 
 def final_distillation(config: AgentRequest,
