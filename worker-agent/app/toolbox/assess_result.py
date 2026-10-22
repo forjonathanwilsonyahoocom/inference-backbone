@@ -28,7 +28,7 @@ instance_number : int
 utility : float
     Score (0.0–1.0) indicating how helpful the result was.
 better_focus : str | None, optional
-    string of target to preserve during compression of target result.
+    short string from target to preserve during compression of target result, no change when None.
 
 Returns
 -------
