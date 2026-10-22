@@ -5,33 +5,20 @@ import json
 
 @tool
 def web_fetch(purpose: str, url: str) -> str:
-    """Visits a specific URL found from a web search.
-    Use this tool on a URL returned from a web_search call
-    when you need deeper information than the short body provided.
+    """Fetches a URL and returns rendered markdown.
 
-    Parameters
-    ----------
-    purpose : str
-        The immediate purpose of this call.
-    url : str
-        The absolute web address (including http/https).
+Parameters
+----------
+purpose : str
+    Reason for fetching.
+url : str
+    Absolute URL to fetch.
 
-    Returns
-    -------
-    str
-        JSON-encoded response from the web-tools API.
-        On success, a dict with a `content` key holding the rendered
-        markdown string.
-        On failure, a JSON array with an `error` key holding the exception
-        message.
-
-    Notes
-    -----
-    * The backend service parses the target URL into markdown and returns
-      the rendered content as a string.
-    * The HTTP request uses a 10-second timeout.
-    * On failure, a JSON error object with an `error` key is returned.
-    """
+Returns
+-------
+str
+    JSON string: on success {"content": "<markdown>"}; on error [{"error": "<msg>"}].
+"""
     payload = {"url" : url}
     try:
         resp = requests.post("http://web-tools:8000/fetch", json=payload, timeout=10)
