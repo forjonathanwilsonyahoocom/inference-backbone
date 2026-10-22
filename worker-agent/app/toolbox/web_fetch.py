@@ -5,7 +5,7 @@ import json
 
 @tool
 def web_fetch(about: str, url: str) -> str:
-    """Fetches a URL and returns rendered markdown.
+    """Fetches a URL and returns rendered markdown. stops at 5 redirects, no authentication
 
 Parameters
 ----------

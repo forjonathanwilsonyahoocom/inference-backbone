@@ -15,7 +15,7 @@ def run_in_workspace(
     timeout_seconds: int = 300,
 ) -> str:
     """
-    Run a command in the workspace using a specified runtime.
+    Synchronously run a containerized command in the workspace using a specified runtime.
 
     Parameters
     ----------
@@ -33,7 +33,7 @@ def run_in_workspace(
     Returns
     -------
     str
-        JSON-encoded response from the docker-broker API.
+        JSON-encoded response from the docker broker.
     """
     #this fails with exception if path is not safe
     workspace_path = safe_path(cwd)

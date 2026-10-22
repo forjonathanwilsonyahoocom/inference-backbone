@@ -9,7 +9,7 @@ def list_files(
     exclude: set[str] | None = None,
     limit: int = 300,
 ) -> str:
-    """List files and directories in the current project workspace.
+    """Recursively list files and directories in the current project workspace.
 
 Parameters
 ----------

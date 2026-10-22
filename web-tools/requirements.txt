@@ -6,3 +6,4 @@ uvicorn
 beautifulsoup4
 prometheus_client>=0.22.1
 trafilatura
+async-lru

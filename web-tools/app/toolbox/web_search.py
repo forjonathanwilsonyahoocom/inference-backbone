@@ -1,11 +1,13 @@
 from typing import Any, List, Dict
+from async_lru import alru_cache
 from ddgs import DDGS
 import json
 
+@alru_cache(maxsize=32)
 async def web_search(query: str) -> List[Dict]:
     """Executes a keyword search on the live internet via DuckDuckGo.
-    Use this first to find relevant URLs and snippets when asked about
-    current events, weather, news, or fresh updates.
+    Use this first to find relevant URLs and snippets as required
+    for current implementation details, lru cached. stop if 202 Ratelimit
 
     Args:
         query: A standard web search keyword query.

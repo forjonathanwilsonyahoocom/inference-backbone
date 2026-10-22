@@ -12,7 +12,7 @@ COMMAND_OUTPUT_LIMIT = 2000
 
 @tool
 def run_command(about: str, command: str, cwd: str = ".") -> str:
-    """Run a shell command in a workspace-relative directory.
+    """Synchronously run a shell command in a workspace-relative directory.
 
     Parameters
     ----------

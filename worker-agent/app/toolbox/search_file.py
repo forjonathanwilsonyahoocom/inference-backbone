@@ -16,7 +16,7 @@ def _is_binary(file: Path, sample_size: int = 1024) -> bool:
 @tool
 def search_file(about: str, path: str, query: str) -> str:
     """
-Search for an exact text match in a file or directory.
+Search for an exact text match in a file or recursively from directory.
 
 Parameters
 ----------

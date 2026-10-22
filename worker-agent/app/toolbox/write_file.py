@@ -5,7 +5,7 @@ from typing import Any, Mapping
 
 @tool
 def write_file(about: str, path: str, content: Any, overwrite: bool = False) -> str:
-    """Write content to a file.
+    """Write utf-8 to a file.
 
     Parameters
     ----------

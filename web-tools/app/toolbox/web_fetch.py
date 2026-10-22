@@ -1,6 +1,7 @@
 import httpx
 from typing import Dict
 from bs4 import BeautifulSoup
+from async_lru import alru_cache
 from urllib.parse import urlparse, urljoin, urlsplit
 from playwright.async_api import async_playwright
 import trafilatura
@@ -94,6 +95,7 @@ def safe_get(url: str) -> httpx.Response:
 
     raise AssertionError("Unreachable")
 
+@alru_cache(maxsize=32)
 async def web_fetch(url: str) -> Dict:
     """Visits a specific URL found from a web search using a series of less trustworthy 
     approaches ending in a headless browser to extract its main text.
