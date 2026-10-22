@@ -85,9 +85,11 @@ def derive_message_list(config: AgentRequest,
             if iteration.stagnant_count >= 2 and upto == 0:
                 metrics.emit(stagnation_metric_labeler({"tool_call" : iteration.tool_name}))
                 tool_content = f"**NOTE**: this call has been used for the same result {iteration.stagnant_count + 1} times, \n **history is de-duplicated**\n do you need to continue calling this? tool result follows:\n{tool_content}"
-                
+            
             if upto == 0:
                 tool_content = f"instance_number={iteration.tool_call_result_instance_number}\n{tool_content}"
+            if iteration.tool_call_result_utility is not None or iteration.tool_call_result_chunk_query is not None:
+                tool_content = f"result_assessed: utility={iteration.tool_call_result_utility}, better_focus={iteration.tool_call_result_chunk_query}\n{tool_content}"
             list_to_add_to.append(
                 ToolMessage(
                     content=tool_content,

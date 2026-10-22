@@ -10,6 +10,13 @@ you will be given everything about to be truncated from the thread context
 
 distill this information down to infer the progress of the thread and help shape the direction of the tool enabled agent
 
+the front matter of ToolMessage result content may contain a line starting with `result_assessed` containing:
+    utility : float
+        A score (0.0–1.0) measuring how much the result actually helps achieve the objective.
+    better_focus : str, optional
+        The new focus query
+when present, use these values to guide how much and what detail you preserve
+
 output **only** a single JSON object with these top‑level keys:
   - artifacts:   [{ "id":"<inferred label>", "type":"<file/web_fetch/llm_intent>", "value":"<snippet from messages>" }]  #only keep important parts of artifacts, not whole files, use the about tool arg to isolate snippet
   - observations:      [{ "statement":"", "source":"", "confidence":0‑1 }] #observations based on agent tools not the human prompt
