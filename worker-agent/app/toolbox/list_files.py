@@ -3,7 +3,7 @@ from langchain_core.tools import tool
 
 @tool
 def list_files(
-    purpose: str, 
+    about: str, 
     path: str = ".",
     glob_filter_to: str = "*",
     exclude: set[str] | None = None,
@@ -13,8 +13,8 @@ def list_files(
 
 Parameters
 ----------
-purpose : str
-    The immediate purpose of this call.
+about : str
+    A short description of what the call is about, hint for summarization and retrieval.
 path : str, optional
     Directory to list, relative to workspace root. Defaults to ".".
 glob_filter_to : str, optional

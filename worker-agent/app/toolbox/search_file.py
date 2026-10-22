@@ -14,14 +14,14 @@ def _is_binary(file: Path, sample_size: int = 1024) -> bool:
         return True
 
 @tool
-def search_file(purpose: str, path: str, query: str) -> str:
+def search_file(about: str, path: str, query: str) -> str:
     """
 Search for an exact text match in a file or directory.
 
 Parameters
 ----------
-purpose : str
-    Reason for the search.
+about : str
+    A short description of what the call is about, hint for summarization and retrieval.
 path : str
     File or directory path relative to workspace.
 query : str

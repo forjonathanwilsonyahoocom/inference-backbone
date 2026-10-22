@@ -2,7 +2,7 @@
 
 Parameters
 ----------
-purpose : str
+about : str
     Reason for the edit.
 path : str
     File path relative to workspace.
@@ -21,7 +21,7 @@ from langchain_core.tools import tool
 from toolbox.util import safe_path, WORKSPACE
 
 @tool
-def edit_file(purpose: str, path: str, old_text: str, new_text: str) -> str:
+def edit_file(about: str, path: str, old_text: str, new_text: str) -> str:
     """Edit a UTF‑8 text file by replacing a single exact occurrence of ``old_text`` with ``new_text``.
 
     This tool performs a *surgical* edit: it searches for the first exact match of ``old_text`` in the file and replaces it with ``new_text``. The operation is intentionally limited to one occurrence to prevent accidental bulk changes.
@@ -32,8 +32,8 @@ def edit_file(purpose: str, path: str, old_text: str, new_text: str) -> str:
 
     Parameters
     ----------
-    purpose : str
-        A short description of why the edit is being performed.  It is logged for observability and used by the semantic compressor to tag the result.
+    about : str
+        A short description of what the call is about, hint for summarization and retrieval.
     path : str
         Path to the target file, relative to the workspace root. The path is resolved via :func:`safe_path` to ensure it stays within the workspace.
     old_text : str

@@ -28,7 +28,7 @@ instance_number : int
 utility : float
     Score (0.0–1.0) indicating how helpful the result was.
 better_focus : str | None, optional
-    New focus query to replace the original purpose.
+    New focus query to replace the original about.
 
 Returns
 -------
@@ -59,7 +59,7 @@ def assess_result_function(
         A score (0.0–1.0) measuring how much the result actually helps achieve the objective.
     better_focus : str, optional
         The new focus query for chunked compression. When provided, it replaces the
-        original `purpose` argument sent to the tool that produced the result.
+        original `about` argument sent to the tool that produced the result.
 
     Returns
     -------

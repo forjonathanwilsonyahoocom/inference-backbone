@@ -8,7 +8,7 @@ from typing import List, Dict, Any
 
 @tool
 def run_in_workspace(
-    purpose: str,
+    about: str,
     runtime: str,
     command: list[str],
     cwd: str,
@@ -19,8 +19,8 @@ def run_in_workspace(
 
     Parameters
     ----------
-    purpose : str
-        The immediate purpose of this call.
+    about : str
+        A short description of what the call is about, hint for summarization and retrieval.
     runtime : str
         Supported runtimes: python, node, go, rust, php.
     command : list[str]

@@ -11,13 +11,13 @@ COMMAND_OUTPUT_LIMIT = 2000
 
 
 @tool
-def run_command(purpose: str, command: str, cwd: str = ".") -> str:
+def run_command(about: str, command: str, cwd: str = ".") -> str:
     """Run a shell command in a workspace-relative directory.
 
     Parameters
     ----------
-    purpose : str
-        The immediate purpose of this call.
+    about : str
+        A short description of what the call is about, hint for summarization and retrieval.
     command : str
         The shell command to execute.
     cwd : str, optional

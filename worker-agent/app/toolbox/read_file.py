@@ -6,7 +6,7 @@ from typing import Optional, Any
 
 @tool
 def read_file(
-    purpose: str,
+    about: str,
     path: str,
     line_start: Optional[int] = None,
     line_end: Optional[int] = None
@@ -15,8 +15,8 @@ def read_file(
 
     Parameters
     ----------
-    purpose: str
-        Purpose of the call.
+    about: str
+        A short description of what the call is about, hint for summarization and retrieval.
     path: str
         File path relative to the workspace.
     line_start: int | None, optional

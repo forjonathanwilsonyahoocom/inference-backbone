@@ -4,13 +4,13 @@ from toolbox.util import safe_path, WORKSPACE_PATH
 from typing import Any, Mapping
 
 @tool
-def write_file(purpose: str, path: str, content: Any, overwrite: bool = False) -> str:
+def write_file(about: str, path: str, content: Any, overwrite: bool = False) -> str:
     """Write content to a file.
 
     Parameters
     ----------
-    purpose : str
-        The purpose of the write operation.
+    about : str
+        A short description of what the call is about, hint for summarization and retrieval.
     path : str
         Relative file path within the workspace.
     content : Any

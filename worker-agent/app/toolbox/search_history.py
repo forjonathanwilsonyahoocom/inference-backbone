@@ -20,13 +20,13 @@ class SearchHistoryWrapper:
         
     def get_search_history(self):
         @tool
-        def search_history(purpose: str, query: str, limit: int = 3, instance_number: int | None = None) -> str:
+        def search_history(about: str, query: str, limit: int = 3, instance_number: int | None = None) -> str:
             """Search the backbone‑api evidence store for previously indexed chunks of tool results.
 
 Parameters
 ----------
-purpose : str
-    A short, focused hint that guides the query.
+about : str
+    A short description of what the call is about, hint for summarization and retrieval.
 query : str
     The search query string.
 limit : int, optional
@@ -39,17 +39,17 @@ Returns
 str
     JSON‑encoded list of ranked evidence chunks. Empty list if none.
 """
-            return search_history_function(purpose, query, limit, self.config.execution_id, instance_number)
+            return search_history_function(about, query, limit, self.config.execution_id, instance_number)
         return search_history
                 
 
 
-def search_history_function(purpose: str, query: str, limit: int, execution_id: str, instance_number: int | None) -> str:
+def search_history_function(about: str, query: str, limit: int, execution_id: str, instance_number: int | None) -> str:
     """Internal helper for :func:`SearchHistoryWrapper.get_search_history`.
 
     Parameters
     ----------
-    purpose : str
+    about : str
         A short, focused hint that guides the query.
     query : str
         The search query string.

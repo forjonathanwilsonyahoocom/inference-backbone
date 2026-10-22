@@ -4,13 +4,13 @@ import requests
 import json
 
 @tool
-def web_search(purpose: str, query: str) -> str:
+def web_search(about: str, query: str) -> str:
     """Search the web via DuckDuckGo.
 
     Parameters
     ----------
-    purpose : str
-        The purpose of the search.
+    about : str
+        A short description of what the call is about, hint for summarization and retrieval.
     query : str
         Search query string.
 

@@ -4,13 +4,13 @@ import requests
 import json
 
 @tool
-def web_fetch(purpose: str, url: str) -> str:
+def web_fetch(about: str, url: str) -> str:
     """Fetches a URL and returns rendered markdown.
 
 Parameters
 ----------
-purpose : str
-    Reason for fetching.
+about : str
+    A short description of what the call is about, hint for summarization and retrieval.
 url : str
     Absolute URL to fetch.
 

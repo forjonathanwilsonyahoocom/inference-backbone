@@ -11,7 +11,7 @@ you will be given everything about to be truncated from the thread context
 distill this information down to infer the progress of the thread and help shape the direction of the tool enabled agent
 
 output **only** a single JSON object with these top‑level keys:
-  - artifacts:   [{ "id":"<inferred label>", "type":"<file/web_fetch/llm_intent>", "value":"<snippet from messages>" }]  #only keep important parts of artifacts, not whole files, use the purpose tool arg to isolate snippet
+  - artifacts:   [{ "id":"<inferred label>", "type":"<file/web_fetch/llm_intent>", "value":"<snippet from messages>" }]  #only keep important parts of artifacts, not whole files, use the about tool arg to isolate snippet
   - observations:      [{ "statement":"", "source":"", "confidence":0‑1 }] #observations based on agent tools not the human prompt
   - understandings:[{ "concept":"<some inferred name>", "detail":"<as these messages support>"}]
   - hypotheses:  [{ "hypothesis":"<some inferred hypothesis>", "status":"pending/confirmed/ruled‑out", "confidence":0‑1 }]
