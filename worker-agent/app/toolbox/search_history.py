@@ -21,7 +21,7 @@ class SearchHistoryWrapper:
     def get_search_history(self):
         @tool
         def search_history(about: str, query: str, limit: int = 3, instance_number: int | None = None) -> str:
-            """Search the backbone‑api evidence store for previously indexed chunks of tool results.
+            """Search current thread history for tool result fragments, use when history compaction obscures information.
 
 Parameters
 ----------

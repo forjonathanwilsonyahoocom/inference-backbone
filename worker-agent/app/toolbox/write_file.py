@@ -12,7 +12,7 @@ def write_file(about: str, path: str, content: Any, overwrite: bool = False) -> 
     about : str
         A short description of what the call is about, hint for summarization and retrieval.
     path : str
-        Relative file path within the workspace.
+        Relative file path within the workspace. path is created as required.
     content : Any
         Data to write; mapping is JSON, string is raw.
     overwrite : bool, optional

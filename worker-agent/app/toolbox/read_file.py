@@ -27,7 +27,7 @@ def read_file(
     Returns
     -------
     str
-        File contents or an error message. Truncated to 30 000 chars if too large.
+        File contents or an error message. Result truncates at 30 000 chars.
     """
     # Resolve path safely
     file_path = safe_path(path)

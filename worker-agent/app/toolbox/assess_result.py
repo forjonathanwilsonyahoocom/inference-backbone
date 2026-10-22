@@ -54,7 +54,7 @@ def assess_result_function(
     iterations : List[Iteration]
         The current execution history.
     instance_number : int
-        The stamped instance number of the Iteration to update.
+        The instance number displayed on result to update.
     utility : float
         A score (0.0–1.0) measuring how much the result actually helps achieve the objective.
     better_focus : str, optional
