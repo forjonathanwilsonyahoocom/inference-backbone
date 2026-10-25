@@ -12,7 +12,7 @@ COMMAND_OUTPUT_LIMIT = 2000
 
 @tool
 def run_command(about: str, command: str, cwd: str = ".") -> str:
-    """Synchronously run a shell command in a workspace-relative directory.
+    """Synchronously run a shell command like mv, cp, rm etc.. that does not impact the environment beyond a workspace-relative directory.
 
     Parameters
     ----------

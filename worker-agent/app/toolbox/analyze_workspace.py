@@ -23,6 +23,7 @@ def analyze_workspace(
     with_tool : str
         Supported tools: 
             ast : (recursive abstract syntax tree digest).
+            text : (recursive text natural language digest).
     cwd : str
         Working directory relative to the workspace root.
     timeout_seconds : int, optional
@@ -40,6 +41,7 @@ def analyze_workspace(
         cwd = cwd[2:]
     
     tool_commands = {"ast" :  ["digest", "./"], #NOTE to developer, the ./ here is relative to the specified cwd
+                    "text" : ["--ext", "*.md"], #NOTE to developer, the ./ here is relative to the specified cwd
                     } 
                     
     command = tool_commands.get(with_tool, None)
