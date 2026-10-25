@@ -43,8 +43,6 @@ services:
     container_name: docker_broker
     shm_size: '2gb'
     user: "10001:10001"
-    ports:
-      - "127.0.0.1:8001:8000"
     group_add:
       - ${DOCKER_SOCKET_USER}
     environment:
