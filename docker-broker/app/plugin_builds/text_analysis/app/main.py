@@ -108,7 +108,7 @@ def compute_stopword_candidates(nlp) -> list[str]:
     return sorted(SPACY_STOP_WORDS)
 
 
-def compute_most_frequent_words(texts: list[str], top_n: int = 10) -> list[tuple[str, int]]:
+def compute_most_frequent_words(texts: list[str], nlp, top_n: int = 10) -> list[tuple[str, int]]:
     """Return the most frequent non‑stop‑word tokens.
 
     Tokens are lower‑cased and filtered to exclude spaCy stop‑words.
@@ -183,14 +183,13 @@ def main(argv=None):
     # Load spaCy model once
     try:
         nlp = spacy.load("en_core_web_sm")
-    except OSError:
-        import spacy.cli
-        spacy.cli.download("en_core_web_sm")
-        nlp = spacy.load("en_core_web_sm")
-
+    except Exception as e:
+        print(r)
+        print("loading en_core_web_sm failed")
+        
     idf_top = compute_idf(texts)
     stopword_candidates = compute_stopword_candidates(nlp)
-    frequent_words = compute_most_frequent_words(texts)
+    frequent_words = compute_most_frequent_words(texts, nlp)
     sentiment = compute_sentiment(texts, file_paths)
     summary = compute_summary(texts)
 
