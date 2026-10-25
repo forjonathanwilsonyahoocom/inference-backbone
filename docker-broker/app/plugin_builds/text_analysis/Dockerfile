@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.13.17-slim-trixie
 
 # Install system dependencies for spaCy and VADER
 RUN apt-get update && apt-get install -y \
