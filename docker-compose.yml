@@ -46,12 +46,12 @@ services:
     ports:
       - "127.0.0.1:8001:8000"
     group_add:
-      - "983"
+      - "973"
     environment:
       WORKSPACE_ROOT: ${WORKSPACE_ROOT:?Set WORKSPACE_ROOT}
     volumes:
       - ${WORKSPACE_ROOT:?Set WORKSPACE_ROOT}:${WORKSPACE_ROOT:?Set WORKSPACE_ROOT}
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ${SOCKET_FILE}:/var/run/docker.sock
     restart: unless-stopped
     networks:
       docker-broker:
@@ -123,6 +123,7 @@ services:
     networks:
       - worker-api
       - validator-api
+      - docker-broker
 
   weaviate:
     image: semitechnologies/weaviate:1.39.3-2489571.amd64

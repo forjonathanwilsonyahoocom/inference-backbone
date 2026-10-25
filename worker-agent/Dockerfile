@@ -1,5 +1,5 @@
 # --- Stage 1: Build virtual environment ---
-FROM python:3.12-slim AS compiler
+FROM python:3.13-slim AS compiler
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app/
 
@@ -11,7 +11,7 @@ COPY ./worker-agent/requirements.txt /app/requirements.txt
 RUN pip install -Ur requirements.txt
 
 # --- Stage 2: Final Runtime ---
-FROM python:3.12-slim AS runner
+FROM python:3.13-slim AS runner
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app/
 

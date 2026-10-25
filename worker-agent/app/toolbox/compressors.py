@@ -19,6 +19,7 @@ from toolbox.search_history import compress_search_history, search_history_funct
 from toolbox.web_search import compress_web_search
 from toolbox.web_fetch import compress_web_fetch
 from toolbox.run_in_workspace import compress_run_in_workspace
+from toolbox.analyze_workspace import compress_analyze_workspace
 from toolbox.read_file import compress_read_file
 from agent.models import Iteration, AgentRequest
 
@@ -41,6 +42,7 @@ COMPRESSORS: Dict[str, Callable[[Any, int], Any]] = {
     "web_search": compress_web_search,
     "web_fetch": compress_web_fetch,
     "run_in_workspace" : compress_run_in_workspace,
+    "analyze_workspace"
 }
 
 # Helper to get a compressor or identity
