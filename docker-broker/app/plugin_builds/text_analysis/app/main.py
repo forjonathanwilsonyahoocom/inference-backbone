@@ -184,7 +184,7 @@ def main(argv=None):
     try:
         nlp = spacy.load("en_core_web_sm")
     except Exception as e:
-        print(r)
+        print(e)
         print("loading en_core_web_sm failed")
         
     idf_top = compute_idf(texts)
