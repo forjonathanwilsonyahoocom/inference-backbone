@@ -78,11 +78,18 @@ def run_agent(
                 
                 tool_calls = response.tool_calls or []
                 content = (response.content or "").strip()
-                if len(tool_calls) == 1 or (not tool_calls and len(content) > 4):
+                
+                looks_like_json = content.startswith("{") or content.startswith("[")
+                
+                if len(tool_calls) == 1 or (not tool_calls and len(content) > 4 and (not looks_like_json)) :
                     break
                 
-                metrics.emit(failure_metric_labeler({"failure": "model response was empty or invalid"}))
-                retry_notes += [response, HumanMessage("Your response was empty or invalid. Return exactly one tool call, or a final answer as content only.")]
+                if looks_like_json:
+                    metrics.emit(failure_metric_labeler({"failure": "model response was empty or invalid"}))
+                    retry_notes += [response, HumanMessage("Your response shows no tool calls, but the content looks like it might be tool args. Return exactly one tool call, or a final answer as string content only.")]
+                else:
+                    metrics.emit(failure_metric_labeler({"failure": "model response was empty or invalid"}))
+                    retry_notes += [response, HumanMessage("Your response was empty or invalid. Return exactly one tool call, or a final answer as content only.")]
             except ResponseError as e:
                 metrics.emit(failure_metric_labeler({"failure": f"model response caused ResponseError"}))
                 retry_notes.append(HumanMessage(f"Last response failed tool-call parsing: {e}. Return exactly one valid tool call, or a final answer as content only."))
