@@ -18,8 +18,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY app/ ./app/
 
+RUN python -m pip install .
+
 # Download spaCy model
 RUN python -m spacy download en_core_web_sm
 
 # Expose entry point
-ENTRYPOINT ["python", "app/main.py"]
+ENTRYPOINT ["text-analysis"]
