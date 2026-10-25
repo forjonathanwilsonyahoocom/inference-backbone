@@ -36,6 +36,7 @@ def run_ondemand_tool(request: RunRequest) -> RunResponse:
     tag_name = path_to_project.split("/")[-1]
 
     image, logs = docker_client.images.build(
+        nocache=request.nocache,
         path=path_to_project,
         tag=f"{tag_name}:latest",
         dockerfile="Dockerfile",  # optional if it's named Dockerfile at the context root
