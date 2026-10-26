@@ -15,7 +15,7 @@ def run_in_workspace(
     timeout_seconds: int = 300,
 ) -> str:
     """
-    Synchronously run a containerized command in the workspace using a specified runtime.
+    Synchronously run a containerized command in the workspace using a specified runtime. Use for test runs, library installs etc, things that impact the environment.
 
     Parameters
     ----------
@@ -35,9 +35,13 @@ def run_in_workspace(
     str
         JSON-encoded response from the docker broker.
     """
+
+    allowed_here = {"python", "node", "go", "rust", "php"}
+    if runtime not in allowed_here:
+        raise Exception(f"requested runtime {runtime} not allowed for run_in_workspace, use one of {allowed_here}")
+        
     #this fails with exception if path is not safe
     workspace_path = safe_path(cwd)
-    
     if cwd.startswith("./"):
         cwd = cwd[2:]
         

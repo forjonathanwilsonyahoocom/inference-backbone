@@ -38,23 +38,30 @@ Metrics are exposed via Prometheus and visualized in Grafana. Key metrics includ
 
 
 ### docker broker detail
-the tools for execution of environmental tools chains for node / go / rust / php are NOT safe
+the tools for execution of environmental tools chains for node / go / rust / php are NOT safe, they can talk to the web and change themselves
 
 **i recommend just not using them...**
 
 although they are incredibly useful
 
-in the docker-compose.yaml notice the group user 10001 is added to,
+in the docker-compose.yaml notice the group user 10001 is added to in the broker service, i've misnamed it `DOCKER_SOCKET_USER`
 
-that may need to change on your box run
+that will need to match your box
 
 ```bash
 stat -c '%u:%g %a %n' /var/run/docker.sock
 ```
+or whatever your socket file is
 
 to Check the socket’s numeric ownership on the host 
 
-also there is a .env file that needs to be updated to the absolute location of your agent workspace if you want to use these
+add an .env file that needs to be updated to the absolute location of your agent workspace and the socket user and location if you want to use these
+
+```.env
+WORKSPACE_ROOT=/some_abolute_path_to/inference-backbone/worker-agent-workspace
+SOCKET_FILE=/var/run/docker.sock
+DOCKER_SOCKET_USER=867
+```
 
 i could not get it to work with relative path
 

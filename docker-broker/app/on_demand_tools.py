@@ -18,6 +18,7 @@ docker_client = docker.from_env()
 # The caller chooses a logical runtime, never an arbitrary image.
 ON_DEMAND_BUILD_DIRS = {
     "ast": "./plugin_builds/ast_outline",
+    "text": "./plugin_builds/text_analysis",
 }
 
 DEFAULT_ENV_PER_IMAGE = {}
@@ -35,6 +36,7 @@ def run_ondemand_tool(request: RunRequest) -> RunResponse:
     tag_name = path_to_project.split("/")[-1]
 
     image, logs = docker_client.images.build(
+        nocache=request.nocache,
         path=path_to_project,
         tag=f"{tag_name}:latest",
         dockerfile="Dockerfile",  # optional if it's named Dockerfile at the context root
