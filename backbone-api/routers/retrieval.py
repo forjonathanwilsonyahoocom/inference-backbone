@@ -145,7 +145,9 @@ async def list_full_trace_files(execution_id: str) -> dict:
     trace_parts = {}
     for file in files:
         parts = str(file).split("/")
-        trace_parts[parts[-2]] = trace_parts.get(parts[-2], []).append(parts[-1].split(".")[0])
+        target = trace_parts.get(parts[-2], [])
+        target.append(parts[-1].split(".")[0])
+        trace_parts[parts[-2]] = target
         
     return {
         "execution_id": execution_id,
