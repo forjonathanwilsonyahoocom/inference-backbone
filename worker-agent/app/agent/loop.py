@@ -84,16 +84,32 @@ def run_agent(
                 if len(tool_calls) == 1 or (not tool_calls and len(content) > 4 and (not looks_like_json)) :
                     break
                 
+                add_tool_event(
+                    ToolEvent(
+                        iteration=iteration,
+                        event_type="invalid_model_response",
+                        model_name=config.worker_model,
+                        tool="invalid",
+                        args={"invalid_tools" : tool_calls,
+                              "ignored_content" : content},
+                    )
+                )
                 if looks_like_json:
                     metrics.emit(failure_metric_labeler({"failure": "model response was empty or invalid"}))
                     retry_notes += [response, HumanMessage("Your response shows no tool calls, but the content looks like it might be tool args. Return exactly one tool call, or a final answer as string content only.")]
                 else:
                     metrics.emit(failure_metric_labeler({"failure": "model response was empty or invalid"}))
                     retry_notes += [response, HumanMessage("Your response was empty or invalid. Return exactly one tool call, or a final answer as content only.")]
-            except ResponseError as e:
-                metrics.emit(failure_metric_labeler({"failure": f"model response caused ResponseError"}))
-                retry_notes.append(HumanMessage(f"Last response failed tool-call parsing: {e}. Return exactly one valid tool call, or a final answer as content only."))
             except Exception as e:
+                add_tool_event(
+                    ToolEvent(
+                        iteration=iteration,
+                        event_type="Exception",
+                        model_name=config.worker_model,
+                        tool="invalid",
+                        args={"Exception" : e},
+                    )
+                )
                 metrics.emit(failure_metric_labeler({"failure": f"model response was unparsible"}))
                 retry_notes.append(HumanMessage(f"Last response failed tool-call parsing: {e}. Return exactly one valid tool call, or a final answer as content only."))
         else:

@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-
+import re
 import anyio
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
@@ -112,7 +112,7 @@ async def list_document_files(doc_type: str, execution_id: str):
     if doc_type not in ALLOWED_DOC_TYPES:
         return {"error": f"unknown doc_type: {doc_type}"}
 
-    import re
+    
     evidence_dir = BASE_DIR / doc_type
     if not evidence_dir.exists():
         return {"error": f"{doc_type} directory not found"}
@@ -129,4 +129,25 @@ async def list_document_files(doc_type: str, execution_id: str):
     return {
         "execution_id": execution_id,
         "evidence_ids": evidence_ids,
+    }
+    
+
+@retrieval_router.get("/full_trace/{execution_id}")
+async def list_full_trace_files(execution_id: str) -> dict:
+    """Return a list of all document identifiers with types for a given execution.
+
+    The function scans the directory ``BASE_DIR`` for files named
+    ``{execution_id}*.json`` and returns the sorted list of
+    identifiers.
+    """
+    
+    files = [file for file in BASE_DIR.rglob(f"{execution_id}-*.json")) if file.is_file()]
+    trace_parts = {}
+    for file in files:
+        parts = str(file).split("/")
+        trace_parts[parts[-2]] = trace_parts.get(parts[-2], []).append(parts[-1].split(".")[0])
+        
+    return {
+        "execution_id": execution_id,
+        "nodes": trace_parts,
     }
