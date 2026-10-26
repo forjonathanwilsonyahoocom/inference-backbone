@@ -42,7 +42,7 @@ COMPRESSORS: Dict[str, Callable[[Any, int], Any]] = {
     "web_search": compress_web_search,
     "web_fetch": compress_web_fetch,
     "run_in_workspace" : compress_run_in_workspace,
-    "analyze_workspace"
+    "analyze_workspace" : compress_analyze_workspace,
 }
 
 # Helper to get a compressor or identity
