@@ -141,7 +141,7 @@ async def list_full_trace_files(execution_id: str) -> dict:
     identifiers.
     """
     
-    files = [file for file in BASE_DIR.rglob(f"{execution_id}-*.json")) if file.is_file()]
+    files = [file for file in BASE_DIR.rglob(f"{execution_id}-*.json") if file.is_file()]
     trace_parts = {}
     for file in files:
         parts = str(file).split("/")
