@@ -93,7 +93,7 @@ def load_texts(workdir: Path, paths: list[Path]) -> list[dict]:
                         "file" :  str(p.relative_to(workdir))}
             texts.append(document)
         except Exception as e:  # pragma: no cover
-            print(f"Warning: could not read {p}: {e}", file=sys.stderr)
+            print(f"Warning: could not read {p}: {e}")
     return texts
 
  
@@ -105,8 +105,8 @@ def compute_idf(texts: list[dict], top_n: int = 50) -> list[tuple[str, float]]:
     vectorizer = TfidfVectorizer(stop_words="english")
     try:
         vectorizer.fit(documents)
-    except ValueError e:  # e.g. empty vocabulary
-        print(f"compute_idf vectorizer failed: {e}", file=sys.stderr)
+    except Exception as e:  # e.g. empty vocabulary
+        print(f"compute_idf vectorizer failed: {e}")
         return []
 
     pairs = sorted(
@@ -170,13 +170,13 @@ def compute_summary(texts: list[dict]) -> tuple[list[dict], str]:
             row["summary"] = summary
         except Exception as e:
             row["summary"] = "text summarize failed"
-            print(f"text summarize failed: {e}", file=sys.stderr)
+            print(f"text summarize failed: {e}")
 
     try:
         overall_summary = summarize_text("\n\n".join(corpus))
     except Exception as e:
         overall_summary = ""
-        print(f"corpus summarize failed: {e}", file=sys.stderr)
+        print(f"corpus summarize failed: {e}")
 
     return texts, overall_summary
 
@@ -185,17 +185,17 @@ def main(argv=None):
     args = parse_args(argv)
     workdir = Path(args.workdir).resolve()
     if not workdir.is_dir():
-        print(f"Error: workdir not found: {workdir}", file=sys.stderr)
+        print(f"Error: workdir not found: {workdir}")
         sys.exit(1)
 
     try:
         file_paths = get_file_paths(workdir, args.file, args.ext)
-    except FileNotFoundError as e:  # pragma: no cover
-        print(str(e), file=sys.stderr)
+    except FileNotFoundError as e: 
+        print(str(e))
         sys.exit(1)
 
     if not file_paths:
-        print("No files found to analyze.", file=sys.stderr)
+        print("No files found to analyze.")
         sys.exit(0)
 
     texts = load_texts(workdir, file_paths)
@@ -204,7 +204,7 @@ def main(argv=None):
     try:
         nlp = spacy.load("en_core_web_sm")
     except Exception as e:
-        print(f"Could not load en_core_web_sm: {e}", file=sys.stderr)
+        print(f"Could not load en_core_web_sm: {e}")
         sys.exit(1)
             
     idf_top = compute_idf(texts)
