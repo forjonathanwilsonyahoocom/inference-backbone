@@ -8,9 +8,9 @@ It can focus on a single file or on all files matching a given extension.
 The analysis includes:
 
 * High inverse document frequency (IDF) words
-* Stop‑word candidate list (from spaCy)
 * Most frequent non‑stop‑word words
 * Overall sentiment (VADER) and lists of positive/negative documents
+* summary of each file
 * A lightweight high‑level summary of the corpus
 
 The script is intended to be the entry point of a Docker container.
@@ -20,23 +20,32 @@ It prints a summary report to stdout and then exits.
 import argparse
 import json
 import sys
+import os
 from pathlib import Path
 from collections import Counter
 
 import spacy
-from spacy.lang.en.stop_words import STOP_WORDS as SPACY_STOP_WORDS
 
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-# gensim summarization may raise ValueError if the text is too short
-try:
-    from gensim.summarization import summarize
-except Exception:  # pragma: no cover
-    summarize = None
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.summarizers.lex_rank import LexRankSummarizer
 
 
+
+
+def summarize_text(text: str, sentence_count: int = 5) -> str:
+    if not text.strip():
+        return ""
+
+    parser = PlaintextParser.from_string(text, Tokenizer("english"))
+    summarizer = LexRankSummarizer()
+    sentences = summarizer(parser.document, sentence_count)
+    return " ".join(str(sentence) for sentence in sentences)
+    
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Recursive text analysis tool")
     parser.add_argument(
@@ -76,89 +85,100 @@ def get_file_paths(workdir: Path, file: str | None, ext: str) -> list[Path]:
     return sorted(workdir.rglob(ext))
 
 
-def load_texts(paths: list[Path]) -> list[str]:
+def load_texts(workdir: Path, paths: list[Path]) -> list[dict]:
     texts = []
     for p in paths:
         try:
-            texts.append(p.read_text(encoding="utf-8"))
+            document = {"text" : p.read_text(encoding="utf-8"),
+                        "file" :  str(p.relative_to(workdir))}
+            texts.append(document)
         except Exception as e:  # pragma: no cover
             print(f"Warning: could not read {p}: {e}", file=sys.stderr)
     return texts
 
-
-def compute_idf(texts: list[str], top_n: int = 10) -> list[tuple[str, float]]:
-    """Return the top_n words with highest IDF values.
-
-    Uses scikit‑learn's TfidfVectorizer to compute IDF across the corpus.
-    """
+ 
+def compute_idf(texts: list[dict], top_n: int = 50) -> list[tuple[str, float]]:
+    documents = [row["text"] for row in texts]
+    if not documents:
+        print("no documents")
+        return []
     vectorizer = TfidfVectorizer(stop_words="english")
-    vectorizer.fit(texts)
-    idf_scores = vectorizer.idf_
-    feature_names = vectorizer.get_feature_names_out()
-    idf_pairs = list(zip(feature_names, idf_scores))
-    idf_pairs.sort(key=lambda x: x[1], reverse=True)
-    return idf_pairs[:top_n]
+    try:
+        vectorizer.fit(documents)
+    except ValueError e:  # e.g. empty vocabulary
+        print(f"compute_idf vectorizer failed: {e}", file=sys.stderr)
+        return []
+
+    pairs = sorted(
+        zip(vectorizer.get_feature_names_out(), vectorizer.idf_),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+    return [
+        (token, score)
+        for token, score in pairs
+        if not any(ch.isdigit() for ch in token)
+    ][:top_n]
 
 
-def compute_stopword_candidates(nlp) -> list[str]:
-    """Return the spaCy stop‑word list.
-
-    The list is sorted alphabetically for readability.
-    """
-    return sorted(SPACY_STOP_WORDS)
-
-
-def compute_most_frequent_words(texts: list[str], nlp, top_n: int = 10) -> list[tuple[str, int]]:
+def compute_most_frequent_words(texts: list[dict], nlp, top_n: int = 10) -> list[tuple[str, int]]:
     """Return the most frequent non‑stop‑word tokens.
 
     Tokens are lower‑cased and filtered to exclude spaCy stop‑words.
     """
     counter = Counter()
-    for doc in nlp.pipe(texts, disable=["parser", "ner"]):
+    text_from_files = []
+    for text in texts:
+        text_from_files.append(text["text"])
+        
+    for doc in nlp.pipe(text_from_files, disable=["parser", "ner"]):
         for token in doc:
             if token.is_alpha and not token.is_stop:
                 counter[token.lemma_.lower()] += 1
     return counter.most_common(top_n)
 
 
-def compute_sentiment(texts: list[str], paths: list[Path]) -> dict:
-    """Return overall sentiment and lists of positive/negative documents.
+def compute_sentiment(texts: list[dict]) -> tuple[list[dict], float]:
+    """Return overall sentiment and augmented with positive/negative documents.
 
     Sentiment is computed using VADER.  Documents with compound score > 0.05
     are considered positive, < -0.05 negative.
     """
     analyzer = SentimentIntensityAnalyzer()
     compound_scores = []
-    positive_docs = []
-    negative_docs = []
-    for text, path in zip(texts, paths):
-        score = analyzer.polarity_scores(text)["compound"]
+    for row in texts:
+        score = analyzer.polarity_scores(row["text"])["compound"]
         compound_scores.append(score)
+        row["sentiment_score"] = score
         if score > 0.05:
-            positive_docs.append(str(path))
+            row["sentiment"] = "positive"
         elif score < -0.05:
-            negative_docs.append(str(path))
+            row["sentiment"] = "negative"
+        else:
+            row["sentiment"] = "neutral"
     overall = sum(compound_scores) / len(compound_scores) if compound_scores else 0.0
-    return {
-        "overall_compound": overall,
-        "positive_docs": positive_docs,
-        "negative_docs": negative_docs,
-    }
+    return (texts, overall)
 
 
-def compute_summary(texts: list[str]) -> str:
-    """Return a lightweight summary of the concatenated corpus.
+def compute_summary(texts: list[dict]) -> tuple[list[dict], str]:
+    corpus = []
+    for row in texts:
+        minimized = row.pop("text", "")[:3000]
+        try:
+            summary = summarize_text(minimized)
+            corpus.append(summary)
+            row["summary"] = summary
+        except Exception as e:
+            row["summary"] = "text summarize failed"
+            print(f"text summarize failed: {e}", file=sys.stderr)
 
-    If gensim summarization is unavailable or the text is too short, a
-    simple truncated preview is returned.
-    """
-    corpus = "\n\n".join(texts)
-    if not summarize:  # pragma: no cover
-        return corpus[:500] + ("…" if len(corpus) > 500 else "")
     try:
-        return summarize(corpus, word_count=200)
-    except Exception:  # pragma: no cover
-        return corpus[:500] + ("…" if len(corpus) > 500 else "")
+        overall_summary = summarize_text("\n\n".join(corpus))
+    except Exception as e:
+        overall_summary = ""
+        print(f"corpus summarize failed: {e}", file=sys.stderr)
+
+    return texts, overall_summary
 
 
 def main(argv=None):
@@ -178,28 +198,26 @@ def main(argv=None):
         print("No files found to analyze.", file=sys.stderr)
         sys.exit(0)
 
-    texts = load_texts(file_paths)
+    texts = load_texts(workdir, file_paths)
 
     # Load spaCy model once
     try:
         nlp = spacy.load("en_core_web_sm")
     except Exception as e:
-        print(e)
-        print("loading en_core_web_sm failed")
-        
+        print(f"Could not load en_core_web_sm: {e}", file=sys.stderr)
+        sys.exit(1)
+            
     idf_top = compute_idf(texts)
-    stopword_candidates = compute_stopword_candidates(nlp)
     frequent_words = compute_most_frequent_words(texts, nlp)
-    sentiment = compute_sentiment(texts, file_paths)
-    summary = compute_summary(texts)
+    texts, overall_sentiment = compute_sentiment(texts)
+    texts, corpus_summary = compute_summary(texts)
 
     report = {
         "idf_top": idf_top,
-        "stopword_candidates": stopword_candidates,
         "frequent_words": frequent_words,
-        "sentiment": sentiment,
-        "summary": summary,
-        "analyzed_files": [str(p) for p in file_paths],
+        "summary": texts,
+        "overall_gist" : corpus_summary,
+        "overall_sentiment" : overall_sentiment,
     }
 
     print(json.dumps(report, indent=2, ensure_ascii=False))

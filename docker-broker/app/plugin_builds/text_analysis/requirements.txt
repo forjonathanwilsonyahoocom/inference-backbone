@@ -2,4 +2,4 @@ preshed==3.0.13
 spacy
 vaderSentiment
 scikit-learn
-gensim
+sumy
