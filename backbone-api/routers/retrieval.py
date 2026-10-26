@@ -119,7 +119,7 @@ async def list_document_files(doc_type: str, execution_id: str):
         return {"error": f"{doc_type} directory not found"}
 
     
-    files = [str(file) for file in evidence_dir.glob(f"{execution_id}-*.*") if file.is_file()]
+    files = [str(file).split("/")[-1] for file in evidence_dir.glob(f"{execution_id}-*.*") if file.is_file()]
     
     evidence_ids = [name.split(".")[0] for name in files]
     evidence_ids = sort_identifiers(evidence_ids)
