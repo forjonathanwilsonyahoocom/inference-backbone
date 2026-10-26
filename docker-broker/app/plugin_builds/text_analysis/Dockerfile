@@ -19,6 +19,8 @@ RUN python -m pip install .
 
 # Download spaCy model
 RUN python -m spacy download en_core_web_sm
+RUN python -m nltk.downloader -d /nltk_data punkt_tab
+ENV NLTK_DATA=/nltk_data
 
 # Expose entry point
 ENTRYPOINT ["text-analysis"]
