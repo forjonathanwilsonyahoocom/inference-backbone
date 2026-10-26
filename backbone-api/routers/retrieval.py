@@ -6,6 +6,7 @@ import re
 import anyio
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
+from util.sorting import sort_identifiers
 
 # Base directory where artifacts are stored
 BASE_DIR = Path("/indexed-artifacts")
@@ -106,7 +107,7 @@ async def list_document_files(doc_type: str, execution_id: str):
     """Return a list of document identifiers for a given execution.
 
     The function scans the directory ``BASE_DIR / doc_type`` for files named
-    ``{execution_id}-{iteration}.json`` and returns the sorted list of
+    ``{execution_id}-{iteration}.*`` and returns the sorted list of
     identifiers.
     """
     if doc_type not in ALLOWED_DOC_TYPES:
@@ -117,15 +118,11 @@ async def list_document_files(doc_type: str, execution_id: str):
     if not evidence_dir.exists():
         return {"error": f"{doc_type} directory not found"}
 
-    pattern = re.compile(rf"^{re.escape(execution_id)}-(\d+)\.json$")
-    files = []
-    for f in evidence_dir.iterdir():
-        m = pattern.match(f.name)
-        if m:
-            iteration = int(m.group(1))
-            files.append((iteration, f.name))
-    files.sort(key=lambda x: x[0])
+    
+    files = [str(file) for file in evidence_dir.glob(f"{execution_id}-*.*") if file.is_file()]
+    
     evidence_ids = [name.split(".")[0] for _, name in files]
+    evidence_ids = sort_identifiers(evidence_ids)
     return {
         "execution_id": execution_id,
         "evidence_ids": evidence_ids,
@@ -136,18 +133,21 @@ async def list_document_files(doc_type: str, execution_id: str):
 async def list_full_trace_files(execution_id: str) -> dict:
     """Return a list of all document identifiers with types for a given execution.
 
-    The function scans the directory ``BASE_DIR`` for files named
-    ``{execution_id}*.json`` and returns the sorted list of
+    The function recursively scans the directory ``BASE_DIR`` for files named
+    ``{execution_id}*.*`` and returns the sorted list of
     identifiers.
     """
     
-    files = [file for file in BASE_DIR.rglob(f"{execution_id}-*.json") if file.is_file()]
+    files = [file for file in BASE_DIR.rglob(f"{execution_id}-*.*") if file.is_file()]
     trace_parts = {}
     for file in files:
         parts = str(file).split("/")
         target = trace_parts.get(parts[-2], [])
         target.append(parts[-1].split(".")[0])
         trace_parts[parts[-2]] = target
+    
+    for k in trace_parts.keys()
+        trace_parts[k] = sort_identifiers(trace_parts[k])
         
     return {
         "execution_id": execution_id,
