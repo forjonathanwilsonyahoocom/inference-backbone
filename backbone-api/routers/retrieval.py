@@ -146,7 +146,7 @@ async def list_full_trace_files(execution_id: str) -> dict:
         target.append(parts[-1].split(".")[0])
         trace_parts[parts[-2]] = target
     
-    for k in trace_parts.keys()
+    for k in trace_parts.keys():
         trace_parts[k] = sort_identifiers(trace_parts[k])
         
     return {
