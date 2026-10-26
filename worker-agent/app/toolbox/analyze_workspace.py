@@ -22,7 +22,7 @@ def analyze_workspace(
         A short description of what the call is about, hint for summarization and retrieval.
     with_tool : str
         Supported tools: 
-            ast : (recursive abstract syntax tree digest).
+            ast : (recursive abstract syntax tree outline).
             text : (recursive text natural language digest).
     cwd : str
         Working directory relative to the workspace root.
@@ -40,8 +40,8 @@ def analyze_workspace(
     if cwd.startswith("./"):
         cwd = cwd[2:]
     
-    tool_commands = {"ast" :  ["digest", "./"], #NOTE to developer, the ./ here is relative to the specified cwd
-                    "text" : ["--ext", "*.md"], #NOTE to developer, the ./ here is relative to the specified cwd
+    tool_commands = {"ast" :  ["outline", "./"], #NOTE to developer, the ./ here is relative to the specified cwd
+                     "text" : ["--ext", "*.*"],
                     } 
                     
     command = tool_commands.get(with_tool, None)
