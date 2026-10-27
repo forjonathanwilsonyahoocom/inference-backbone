@@ -107,7 +107,7 @@ def run_agent(
                         event_type="Exception",
                         model_name=config.worker_model,
                         tool="invalid",
-                        args={"Exception" : e},
+                        args={"Exception" : str(e)},
                     )
                 )
                 metrics.emit(failure_metric_labeler({"failure": f"model response was unparsible"}))
