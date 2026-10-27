@@ -128,6 +128,8 @@ def add_properties(to_dict: dict, v: Any):
     if isinstance(v, dict):
         if v.get("iteration", False):
             to_dict["iteration"] = v["iteration"]
+        if v.get("support", False):
+            to_dict["support"] = v["support"]
         if v.get("source_name", False):
             to_dict["source_name"] = v["source_name"]
         if v.get("source_type", False):
