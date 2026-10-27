@@ -147,6 +147,8 @@ def add_properties(to_dict: dict, v: Any):
         
         if content:
             to_dict["extracted"] = content
+    else:
+        raise Exception("looks like parsing did not find a dict")
         
     return to_dict
 
@@ -156,10 +158,10 @@ def compute_summary(texts: list[dict]) -> tuple[list[dict], str]:
         minimized = ""
         try:
             json_data = json.loads(row.get("text", "{}"))
-            row = add_properties(json_data, row)
+            row = add_properties(row, json_data)
             minimized = row.pop("extracted", "")
         except Exception as e:
-            print(f"summary content extraction failed, falling back to string")
+            print(f"{e}\nsummary content extraction failed, falling back to sub string extractions")
             minimized = row.pop("text", "")[:3000]
         
         if minimized:
