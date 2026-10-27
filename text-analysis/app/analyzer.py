@@ -26,6 +26,7 @@ from collections import Counter
 
 import spacy
 
+from typing import Any
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -121,17 +122,53 @@ def compute_sentiment(texts: list[dict]) -> tuple[list[dict], float]:
     return (texts, overall)
 
 
+def add_properties(to_dict: dict, v: Any):
+    content = ""
+    properties = {}
+    if isinstance(v, dict):
+        if v.get("iteration", False):
+            to_dict["iteration"] = v["iteration"]
+        if v.get("source_name", False):
+            to_dict["source_name"] = v["source_name"]
+        if v.get("source_type", False):
+            to_dict["source_type"] = v["source_type"]
+        if v.get("importance", False):
+            to_dict["importance"] = v["importance"]
+        if v.get("metadata", False):
+            if v["metadata"].get("args", False):
+                content += v["metadata"]["args"].get("about", "")
+                to_dict["args"] = {}
+                for k, val in v["metadata"]["args"].items():
+                    to_dict["args"] = str(val)[:50]
+        if v.get("content", False):
+            content += v["content"]
+            
+            
+        
+        if content:
+            to_dict["extracted"] = content
+        
+    return to_dict
+
 def compute_summary(texts: list[dict]) -> tuple[list[dict], str]:
     corpus = []
     for row in texts:
-        minimized = row.pop("text", "")[:3000]
+        minimized = ""
         try:
-            summary = summarize_text(minimized)
-            corpus.append(summary)
-            row["summary"] = summary
-        except Exception as e:
-            row["summary"] = "text summarize failed"
-            print(f"text summarize failed: {e}")
+            json_data = json.loads(row.get("text", "{}"))
+            row = add_properties(json_data, row)
+            minimized = row.pop("extracted", "")
+        except:
+            minimized = row.pop("text", "")[:3000]
+        
+        if minimized:
+            try:
+                summary = summarize_text(minimized)
+                corpus.append(summary)
+                row["summary"] = summary
+            except Exception as e:
+                row["summary"] = "text summarize failed"
+                print(f"text summarize failed: {e}")
 
     try:
         overall_summary = summarize_text("\n\n".join(corpus))
