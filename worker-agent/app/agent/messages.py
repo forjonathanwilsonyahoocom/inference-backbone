@@ -111,7 +111,7 @@ def derive_message_list(config: AgentRequest,
     
     permanent = [
         SystemMessage(content=config.system_message),
-        HumanMessage(content=f"{config.request}\n{make_summary_message(compact)}"),
+        HumanMessage(content=f"{config.request}\n{make_summary_message(compact, True)}"),
     ]
         
     return compact, permanent + send_to_llm
@@ -135,7 +135,7 @@ def final_distillation(config: AgentRequest,
     the raw value and only send to the distillation agent, we continue 
     until we reach the end.
     """
-
+    print("final_distillation")
     seen_fingerprints = set()
     send_to_distill = []
         
