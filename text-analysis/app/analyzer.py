@@ -141,7 +141,7 @@ def add_properties(to_dict: dict, v: Any):
                 content += v["metadata"]["args"].get("about", "")
                 to_dict["args"] = {}
                 for k, val in v["metadata"]["args"].items():
-                    to_dict["args"] = str(val)[:50]
+                    to_dict["args"][k] = str(val)[:50]
         if v.get("content", False):
             content += v["content"]
             
