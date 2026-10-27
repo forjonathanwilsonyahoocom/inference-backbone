@@ -6,6 +6,7 @@ this just wraps the tat in a fastapi
 """
 from fastapi import FastAPI
 from pathlib import Path
+import os
 from contracts.general_contracts.text_analysis import TextAnalysis, TargetFileList
 from analyzer import analyze
 
