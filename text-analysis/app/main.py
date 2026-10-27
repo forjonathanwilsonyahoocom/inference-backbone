@@ -46,7 +46,7 @@ app = FastAPI()
 
 @app.post("/analyze")
 async def run_analyzer(on_files: TargetFileList):
-    to_analyze = get_file_paths(WORKSPACE, on_files.files)
+    to_analyze = get_file_paths(WORKSPACE, on_files.files, None)
     result = analyze(WORKSPACE, to_analyze)
     return result
 
