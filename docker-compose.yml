@@ -25,7 +25,7 @@ services:
     container_name: text_analysis
     shm_size: '1gb'
     volumes:
-      - /datasets/backbone-api:/srv/corpus
+      - ./datasets/backbone-api:/srv/corpus
     restart: unless-stopped
     networks:
       worker-api:
