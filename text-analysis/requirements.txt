@@ -3,3 +3,5 @@ spacy
 vaderSentiment
 scikit-learn
 sumy
+fastapi
+uvicorn

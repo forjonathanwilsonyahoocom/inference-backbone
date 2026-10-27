@@ -18,6 +18,18 @@ services:
       validator-api:
       data:
 
+  text-analysis:
+    build:
+      context: .
+      dockerfile: text-analysis/Dockerfile
+    container_name: text_analysis
+    shm_size: '1gb'
+    volumes:
+      - /datasets/backbone-api:/srv/corpus
+    restart: unless-stopped
+    networks:
+      worker-api:
+
   worker-agent:
     build:
       context: .
