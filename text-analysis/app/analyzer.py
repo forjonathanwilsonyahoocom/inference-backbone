@@ -104,9 +104,8 @@ def compute_most_frequent_terms_and_entities(texts: list[dict], observed_keys: s
                 
 
         for ent in doc.ents:
-            entity = ent.text.strip().lower()
-            if entity and entity.is_alpha and entity not in observed_keys:
-                entity_counter[(entity, ent.label_)] += 1
+            if ent and ent.is_alpha and ent.text.strip().lower() not in observed_keys:
+                entity_counter[(ent.text.strip().lower(), ent.label_)] += 1
 
     return counter.most_common(top_n), entity_counter.most_common(top_n)
 
