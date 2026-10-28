@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from pathlib import Path
 import os
 from contracts.general_contracts.text_analysis import TextAnalysis, TargetFileList
-from analyzer import analyze
+from analyzer import analyze, hacky_make_input_for_episode_extractor
 
 WORKSPACE_PATH = os.getenv(
     "WORKSPACE",
@@ -49,6 +49,15 @@ async def run_analyzer(on_files: TargetFileList):
     to_analyze = get_file_paths(WORKSPACE, on_files.files, None)
     result = analyze(WORKSPACE, to_analyze)
     return result
+
+
+@app.post("/prep_report")
+async def run_analyzer(on_files: TargetFileList):
+    to_analyze = get_file_paths(WORKSPACE, on_files.files, None)
+    result = analyze(WORKSPACE, to_analyze)
+    report = hacky_make_input_for_episode_extractor(result)
+    return result
+
 
 @app.get("/health")
 def health():

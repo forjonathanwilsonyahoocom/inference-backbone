@@ -40,6 +40,7 @@ from extractors.final_answer import final_answer_extractor
 from extractors.claim import claim_extractor
 from extractors.edge import claim_evidence_edge_extractor
 from extractors.agent_state import agent_state_extractor
+from contracts.general_contracts.text_analysis import TextAnalysis, ReportForEpisodeExtraction
 
 def summarize_text(text: str, sentence_count: int = 3) -> str:
     if not text.strip():
@@ -224,8 +225,71 @@ def compute_summary(texts: list[dict]) -> tuple[list[dict], str]:
 
     return texts, overall_summary, observed_keys
 
+def hacky_make_input_for_episode_extractor(result: TextAnalysis):
+    word_cloud = []
+    for word, idf in result.idf_top:
+        word_cloud.append(word)
+    for word, count in result.frequent_words:
+        if count > 1:
+            word_cloud.append(word)
+    for entity_vec, count in result.frequent_entities:
+        if count > 1:
+            word, entity = entity_vec
+            word_cloud.append(f"{word}_{entity}")
 
-def analyze(workdir: Path, file_paths: list[Path]) -> dict:
+    ref_map = {}
+    type_lookup = {}
+    for item in result.summary:
+        item_type, _ = item["file"].split("/")
+        existing_map = ref_map.get(item_type, {})
+        existing_type_lookup = type_lookup.get(item_type, {}) ##???
+        if item_type == "agent_state":
+            existing_map[item["to"]] = item
+        elif item_type == "claim_evidence_edge":
+            existing_map_list = existing_map.get(item["evidence_id"], [])
+            existing_map_list.append(item)
+            existing_map[item["evidence_id"]] = existing_map_list
+        elif item_type == "evidence":
+            existing_map_list = existing_map.get("list", [])
+            existing_map_list.append(item)
+            existing_map["list"] = existing_map_list
+        elif item_type == "claim":
+            existing_map[item["claim_id"]] = item
+        elif item_type == "task":
+            existing_map[1] = item
+        elif item_type == "final_answer":
+            existing_map[1] = item
+            
+        ref_map[item_type] = existing_map
+
+        
+    report = ["# task"]
+    report.append(ref_map["task"][1]["clean"].strip())
+    report.append("# has trace")
+    for evidence in ref_map["evidence"]["list"]:
+        report.append(f"""## event {evidence["evidence_type"]}, {evidence["summary"]}""")
+        report.append("### supports possible claims:")
+        for edge in ref_map["claim_evidence_edge"].get(evidence["evidence_id"], []):
+            report.append(f""" * {ref_map.get("claim", {}).get(edge["claim_id"], {}).get("summary", "")}""")
+        caused_state_record = ref_map["agent_state"].get(evidence["iteration"], False)
+        if caused_state_record:
+           report.append("summarized as")
+           report.append(caused_state_record["summary"])
+
+    report.append("# agent responded with")
+    report.append(ref_map["final_answer"][1]["clean"].strip())
+    report.append("# overall gist")
+    report.append(result.overall_gist)
+
+            
+
+
+    final = ReportForEpisodeExtraction(word_cloud=",".join(sorted(word_cloud)),
+                                       report="\n".join(report)}
+    
+    return report
+
+def analyze(workdir: Path, file_paths: list[Path]) -> TextAnalysis:
 
     if not file_paths:
         print("No files found to analyze.")
@@ -249,14 +313,12 @@ def analyze(workdir: Path, file_paths: list[Path]) -> dict:
         #remove original text from results
         del row["text"]
         
-    report = {
-        "idf_top": idf_top,
-        "frequent_words": frequent_words,
-        "frequent_entities" : frequent_entities,
-        "summary": texts,
-        "overall_gist" : corpus_summary,
-        "overall_sentiment" : overall_sentiment,
-    }
+    report = TextAnalysis(idf_top=idf_top,
+                          frequent_words=frequent_words,
+                          frequent_entities=frequent_entities,
+                          summary=texts,
+                          overall_gist=corpus_summary,
+                          overall_sentiment=overall_sentiment)
 
     return report
 
