@@ -97,5 +97,5 @@ def evidence_extractor(observed_keys: set, to_dict: dict, v: dict):
         to_dict["summary"] = f"""{v["source_type"]} {v["metadata"]}"""
     
     to_dict["evidence_id"] = v["evidence_id"]
-    to_dict["instance_number"] = v["instance_number"]
+    to_dict["iteration"] = v["iteration"]
     return observed_keys,  to_dict
