@@ -40,7 +40,7 @@ def append_count_json_content(observed_keys: set, to_dict: dict, v):
     to_dict["clean"] = ",".join(value)
     return observed_keys, to_dict
     
-def run_command_extraction(observed_keys: set, to_dict: dict, v dict):
+def run_command_extraction(observed_keys: set, to_dict: dict, v: dict):
     value = []
     for k, v in v["metadata"]["args"].items():
         observed_keys.add(k)
