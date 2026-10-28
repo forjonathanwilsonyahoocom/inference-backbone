@@ -5,7 +5,7 @@ def broker_extractor(observed_keys: set, to_dict: dict, v):
         json_data = json.loads(v)
         for k in json_data.keys():
             observed_keys.add(k)
-        to_dict["summary"] = f"""returned more than {len(json_data["logs"])} of logs"""
+        to_dict["summary"] = f"""returned more than {len(json_data["logs"])/1000}k of logs"""
     except Exception as e:
         to_dict["summary"] = "unparsible"
     return observed_keys, to_dict

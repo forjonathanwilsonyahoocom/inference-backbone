@@ -67,7 +67,7 @@ def compute_idf(texts: list[dict], observed_keys: set, top_n: int = 50) -> list[
     if not documents:
         print("no documents")
         return []
-    vectorizer = TfidfVectorizer(stop_words="english")
+    vectorizer = TfidfVectorizer(stop_words="english", ngram_range=(1, 2))
     try:
         vectorizer.fit(documents)
     except Exception as e:  # e.g. empty vocabulary
@@ -86,21 +86,29 @@ def compute_idf(texts: list[dict], observed_keys: set, top_n: int = 50) -> list[
     ][:top_n]
 
 
-def compute_most_frequent_words(texts: list[dict], observed_keys: set, nlp, top_n: int = 10) -> list[tuple[str, int]]:
+def compute_most_frequent_terms_and_entities(texts: list[dict], observed_keys: set, nlp, top_n: int = 10) -> list[tuple[str, int]]:
     """Return the most frequent non‑stop‑word tokens.
 
     Tokens are lower‑cased and filtered to exclude spaCy stop‑words.
     """
     counter = Counter()
+    entity_counter = Counter()
     text_from_files = []
     for row in texts:
         text_from_files.append(row.get("summary", row.get("clean", row["text"])))
         
-    for doc in nlp.pipe(text_from_files, disable=["parser", "ner"]):
+    for doc in nlp.pipe(text_from_files, disable=["parser"]):
         for token in doc:
             if token.is_alpha and not token.is_stop and not token.text in observed_keys:
                 counter[token.lemma_.lower()] += 1
-    return counter.most_common(top_n)
+                
+
+        for ent in doc.ents:
+            entity = ent.text.strip().lower()
+            if entity and entity not in observed_keys:
+                entity_counter[(entity, ent.label_)] += 1
+
+    return counter.most_common(top_n), entity_counter.most_common(top_n)
 
 
 def compute_sentiment(texts: list[dict]) -> tuple[list[dict], float]:
@@ -225,7 +233,7 @@ def analyze(workdir: Path, file_paths: list[Path]) -> dict:
             
     texts, corpus_summary, observed_keys= compute_summary(texts)
     idf_top = compute_idf(texts, observed_keys)
-    frequent_words = compute_most_frequent_words(texts, observed_keys, nlp)
+    frequent_words, frequent_entities = compute_most_frequent_terms_and_entities(texts, observed_keys, nlp)
     texts, overall_sentiment = compute_sentiment(texts)
 
     for row in texts:
@@ -235,6 +243,7 @@ def analyze(workdir: Path, file_paths: list[Path]) -> dict:
     report = {
         "idf_top": idf_top,
         "frequent_words": frequent_words,
+        "frequent_entities" : frequent_entities,
         "summary": texts,
         "overall_gist" : corpus_summary,
         "overall_sentiment" : overall_sentiment,
