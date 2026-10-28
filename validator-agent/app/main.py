@@ -88,7 +88,7 @@ async def validate(req: ReportForEpisodeExtraction):
         config=config,
         metrics=METRICS,
         llm = episode_llm, 
-        report = req
+        req = req
     )
     return result
 
