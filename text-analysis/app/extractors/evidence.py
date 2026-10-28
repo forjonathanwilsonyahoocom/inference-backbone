@@ -61,7 +61,7 @@ def evidence_extractor(observed_keys: set, to_dict: dict, v: dict):
         observed_keys.add(k)
     
     if v["source_type"] == "tool_call_result":
-        if v["evidence_type"] in {"analyze_workspace", "run_in_workspace"}
+        if v["evidence_type"] in {"analyze_workspace", "run_in_workspace"}:
             observed_keys, to_dict = broker_extractor(observed_keys,  to_dict, v["content"])
         elif v["evidence_type"] == "assess_result":
             observed_keys, to_dict = arg_extraction(observed_keys,  to_dict, v["metadata"]["args"])
