@@ -34,7 +34,12 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sumy.nlp.tokenizers import Tokenizer
 from sumy.parsers.plaintext import PlaintextParser
 from sumy.summarizers.lex_rank import LexRankSummarizer
-
+from extractors.task import task_extractor
+from extractors.evidence import evidence_extractor
+from extractors.final_answer import final_answer_extractor
+from extractors.claim import claim_extractor
+from extractors.edge import claim_evidence_edge_extractor
+from extractors.agent_state import agent_state_extractor
 
 def summarize_text(text: str, sentence_count: int = 3) -> str:
     if not text.strip():
@@ -45,8 +50,6 @@ def summarize_text(text: str, sentence_count: int = 3) -> str:
     sentences = summarizer(parser.document, sentence_count)
     return " ".join(str(sentence) for sentence in sentences)
     
-
-
 def load_texts(workdir: Path, paths: list[Path]) -> list[dict]:
     texts = []
     for p in paths:
@@ -60,7 +63,7 @@ def load_texts(workdir: Path, paths: list[Path]) -> list[dict]:
 
  
 def compute_idf(texts: list[dict], observed_keys: set, top_n: int = 50) -> list[tuple[str, float]]:
-    documents = [row["text"] for row in texts]
+    documents = [row.get("clean", row["text"]) for row in texts]
     if not documents:
         print("no documents")
         return []
@@ -90,8 +93,8 @@ def compute_most_frequent_words(texts: list[dict], observed_keys: set, nlp, top_
     """
     counter = Counter()
     text_from_files = []
-    for text in texts:
-        text_from_files.append(text["text"])
+    for row in texts:
+        text_from_files.append(row.get("clean", row["text"]))
         
     for doc in nlp.pipe(text_from_files, disable=["parser", "ner"]):
         for token in doc:
@@ -109,7 +112,7 @@ def compute_sentiment(texts: list[dict]) -> tuple[list[dict], float]:
     analyzer = SentimentIntensityAnalyzer()
     compound_scores = []
     for row in texts:
-        score = analyzer.polarity_scores(row["text"])["compound"]
+        score = analyzer.polarity_scores(row.get("clean", row["text"]))["compound"]
         compound_scores.append(score)
         row["sentiment_score"] = score
         if score > 0.05:
@@ -151,7 +154,7 @@ def add_properties(observed_keys: set, to_dict: dict, v: Any):
             
         
         if content:
-            to_dict["extracted"] = content
+            to_dict["clean"] = content
     else:
         raise Exception("looks like parsing did not find a dict")
         
@@ -164,8 +167,23 @@ def compute_summary(texts: list[dict]) -> tuple[list[dict], str]:
         minimized = ""
         try:
             json_data = json.loads(row.get("text", "{}"))
-            observed_keys, row = add_properties(observed_keys, row, json_data)
-            minimized = row.pop("extracted", "")
+            if row.get("file", "").startswith("claim_evidence_edge"):
+                observed_keys, row = claim_evidence_edge_extractor(observed_keys, row, json_data)
+            elif row.get("file", "").startswith("claim"):
+                observed_keys, row = claim_extractor(observed_keys, row, json_data)
+            elif row.get("file", "").startswith("evidence"):
+                observed_keys, row = evidence_extractor(observed_keys, row, json_data)
+            elif row.get("file", "").startswith("agent_state"):
+                observed_keys, row = agent_state_extractor(observed_keys, row, json_data)
+            elif row.get("file", "").startswith("task"):
+                observed_keys, row = task_extractor(observed_keys, row, json_data)
+            elif row.get("file", "").startswith("final_answer"):
+                observed_keys, row = final_answer_extractor(observed_keys, row, json_data)
+            else:
+                observed_keys, row = add_properties(observed_keys, row, json_data)
+                
+            
+            minimized = row.get("clean", "")
         except Exception as e:
             print(f"{e}\nsummary content extraction failed, falling back to sub string extractions")
             minimized = row.get("text", "")[:3000]
