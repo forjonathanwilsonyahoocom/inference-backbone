@@ -23,7 +23,7 @@ import sys
 import os
 from pathlib import Path
 from collections import Counter
-
+import re
 import spacy
 
 from typing import Any
@@ -86,6 +86,11 @@ def compute_idf(texts: list[dict], observed_keys: set, top_n: int = 50) -> list[
     ][:top_n]
 
 
+_NUMERIC_ENTITY = re.compile(
+    r"^[\s$€£¥+\-−]?\d[\d,./:\s\-−]*[%$€£¥]?\s*$"
+)
+_NUMERIC_LABELS = {"CARDINAL", "DATE", "TIME", "MONEY", "PERCENT", "QUANTITY"}
+
 def compute_most_frequent_terms_and_entities(texts: list[dict], observed_keys: set, nlp, top_n: int = 10) -> list[tuple[str, int]]:
     """Return the most frequent non‑stop‑word tokens.
 
@@ -104,8 +109,13 @@ def compute_most_frequent_terms_and_entities(texts: list[dict], observed_keys: s
                 
 
         for ent in doc.ents:
-            if ent and ent.is_alpha and ent.text.strip().lower() not in observed_keys:
-                entity_counter[(ent.text.strip().lower(), ent.label_)] += 1
+            entity = ent.text.strip().lower()
+
+            if ent.label_ in _NUMERIC_LABELS or _NUMERIC_ENTITY.fullmatch(ent.text):
+                continue
+
+            if entity and entity not in observed_keys:
+                entity_counter[(entity, ent.label_)] += 1
 
     return counter.most_common(top_n), entity_counter.most_common(top_n)
 
