@@ -164,7 +164,7 @@ def compute_summary(texts: list[dict]) -> tuple[list[dict], str]:
         minimized = ""
         try:
             json_data = json.loads(row.get("text", "{}"))
-            observed_keys, row = add_properties(row, json_data)
+            observed_keys, row = add_properties(observed_keys, row, json_data)
             minimized = row.pop("extracted", "")
         except Exception as e:
             print(f"{e}\nsummary content extraction failed, falling back to sub string extractions")
