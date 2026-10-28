@@ -67,7 +67,7 @@ def compute_idf(texts: list[dict], observed_keys: set, top_n: int = 50) -> list[
     if not documents:
         print("no documents")
         return []
-    vectorizer = TfidfVectorizer(stop_words="english", ngram_range=(1, 2))
+    vectorizer = TfidfVectorizer(stop_words="english")
     try:
         vectorizer.fit(documents)
     except Exception as e:  # e.g. empty vocabulary
@@ -105,7 +105,7 @@ def compute_most_frequent_terms_and_entities(texts: list[dict], observed_keys: s
 
         for ent in doc.ents:
             entity = ent.text.strip().lower()
-            if entity and entity not in observed_keys:
+            if entity and entity.is_alpha and entity not in observed_keys:
                 entity_counter[(entity, ent.label_)] += 1
 
     return counter.most_common(top_n), entity_counter.most_common(top_n)
