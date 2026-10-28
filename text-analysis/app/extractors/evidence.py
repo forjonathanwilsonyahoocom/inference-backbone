@@ -94,6 +94,6 @@ def evidence_extractor(observed_keys: set, to_dict: dict, v: dict):
         to_dict["evidence_type"] = "agent_response"
         to_dict["clean"] = v["content"]
     else:
-        to_dict["clean"] = f"""{v["source_type"]} {v["metadata"]}}"""
+        to_dict["clean"] = f"""{v["source_type"]} {v["metadata"]}"""
         
     return observed_keys,  to_dict
