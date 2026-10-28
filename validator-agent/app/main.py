@@ -8,6 +8,10 @@ from pydantic import BaseModel
 from prometheus_client import start_http_server
 from langchain_ollama import ChatOllama
 from agent.loop import handle_claims_extraction, handle_validation
+from agent.episode import extract_episode
+
+from contracts.general_contracts.text_analysis import ReportForEpisodeExtraction
+from contracts.inference_contracts.episode import Episode
 
 METRICS = None #this global is instantiated during app startup, a reference is sent to the agent runtime
 
@@ -71,6 +75,20 @@ async def validate(req: ValidateRequest):
         llm = llm, 
         claims_map = req.claims_map,
         execution_id = req.execution_id
+    )
+    return result
+    
+
+@app.post("/make_episode")
+async def validate(req: ReportForEpisodeExtraction):
+    config = get_ollama_config()
+    llm = create_llms(config)
+    episode_llm = llm.with_structured_output(Episode)
+    result = await extract_episode(
+        config=config,
+        metrics=METRICS,
+        llm = episode_llm, 
+        report = req
     )
     return result
 
