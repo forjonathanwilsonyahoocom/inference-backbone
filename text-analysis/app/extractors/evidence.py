@@ -10,7 +10,7 @@ def broker_extractor(observed_keys: set, to_dict: dict, v):
         to_dict["clean"] = "unparsible"
     return observed_keys, to_dict
 
-def arg_extraction(observed_keys: set, to_dict: dict, v dict, skip: set = {"content", "old_text", "new_text"}):
+def arg_extraction(observed_keys: set, to_dict: dict, v: dict, skip: set = {"content", "old_text", "new_text"}):
     value = []
     for k, v in v.items():
         observed_keys.add(k)
