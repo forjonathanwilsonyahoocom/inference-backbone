@@ -16,6 +16,6 @@ def agent_state_extractor(observed_keys: set, to_dict: dict, state: dict):
             
     
     to_dict["range"] = f"""instances {state["info"]["instance_number_start"]}-{state["info"]["instance_number_end"]}"""
-    to_dict["compaction"] = "\n\n".join(collected)
+    to_dict["summary"] = "\n\n".join(collected)
         
     return observed_keys,  to_dict

@@ -63,7 +63,7 @@ def load_texts(workdir: Path, paths: list[Path]) -> list[dict]:
 
  
 def compute_idf(texts: list[dict], observed_keys: set, top_n: int = 50) -> list[tuple[str, float]]:
-    documents = [row.get("clean", row["text"]) for row in texts]
+    documents = [row.get("summary", row.get("clean", row["text"])) for row in texts]
     if not documents:
         print("no documents")
         return []
@@ -94,7 +94,7 @@ def compute_most_frequent_words(texts: list[dict], observed_keys: set, nlp, top_
     counter = Counter()
     text_from_files = []
     for row in texts:
-        text_from_files.append(row.get("clean", row["text"]))
+        text_from_files.append(row.get("summary", row.get("clean", row["text"])))
         
     for doc in nlp.pipe(text_from_files, disable=["parser", "ner"]):
         for token in doc:
@@ -112,7 +112,7 @@ def compute_sentiment(texts: list[dict]) -> tuple[list[dict], float]:
     analyzer = SentimentIntensityAnalyzer()
     compound_scores = []
     for row in texts:
-        score = analyzer.polarity_scores(row.get("clean", row["text"]))["compound"]
+        score = analyzer.polarity_scores(row.get("summary", row.get("clean", row["text"])))["compound"]
         compound_scores.append(score)
         row["sentiment_score"] = score
         if score > 0.05:
@@ -184,6 +184,8 @@ def compute_summary(texts: list[dict]) -> tuple[list[dict], str]:
                 
             
             minimized = row.get("clean", "")
+            if not minimized and row.get("summary", ""):
+                corpus.append(row.get("summary", ""))
         except Exception as e:
             print(f"{e}\nsummary content extraction failed, falling back to sub string extractions")
             minimized = row.get("text", "")[:3000]
