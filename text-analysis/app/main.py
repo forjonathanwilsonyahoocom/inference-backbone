@@ -56,7 +56,7 @@ async def run_analyzer(on_files: TargetFileList):
     to_analyze = get_file_paths(WORKSPACE, on_files.files, None)
     result = analyze(WORKSPACE, to_analyze)
     report = hacky_make_input_for_episode_extractor(result)
-    return result
+    return report
 
 
 @app.get("/health")
