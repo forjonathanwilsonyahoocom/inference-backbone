@@ -59,7 +59,7 @@ def load_texts(workdir: Path, paths: list[Path]) -> list[dict]:
     return texts
 
  
-def compute_idf(texts: list[dict], top_n: int = 50) -> list[tuple[str, float]]:
+def compute_idf(texts: list[dict], observed_keys: set, top_n: int = 50) -> list[tuple[str, float]]:
     documents = [row["text"] for row in texts]
     if not documents:
         print("no documents")
@@ -79,11 +79,11 @@ def compute_idf(texts: list[dict], top_n: int = 50) -> list[tuple[str, float]]:
     return [
         (token, score)
         for token, score in pairs
-        if not any(ch.isdigit() for ch in token)
+        if (not any(ch.isdigit() for ch in token) and not str(token) in observed_keys)
     ][:top_n]
 
 
-def compute_most_frequent_words(texts: list[dict], nlp, top_n: int = 10) -> list[tuple[str, int]]:
+def compute_most_frequent_words(texts: list[dict], observed_keys: set, nlp, top_n: int = 10) -> list[tuple[str, int]]:
     """Return the most frequent non‑stop‑word tokens.
 
     Tokens are lower‑cased and filtered to exclude spaCy stop‑words.
@@ -95,7 +95,7 @@ def compute_most_frequent_words(texts: list[dict], nlp, top_n: int = 10) -> list
         
     for doc in nlp.pipe(text_from_files, disable=["parser", "ner"]):
         for token in doc:
-            if token.is_alpha and not token.is_stop:
+            if token.is_alpha and not token.is_stop and not token.text in observed_keys:
                 counter[token.lemma_.lower()] += 1
     return counter.most_common(top_n)
 
@@ -122,10 +122,12 @@ def compute_sentiment(texts: list[dict]) -> tuple[list[dict], float]:
     return (texts, overall)
 
 
-def add_properties(to_dict: dict, v: Any):
+def add_properties(observed_keys: set, to_dict: dict, v: Any):
     content = ""
-    properties = {}
     if isinstance(v, dict):
+        for k in v.keys():
+            observed_keys.add(k)
+            
         if v.get("iteration", False):
             to_dict["iteration"] = v["iteration"]
         if v.get("support", False):
@@ -141,6 +143,7 @@ def add_properties(to_dict: dict, v: Any):
                 content += v["metadata"]["args"].get("about", "")
                 to_dict["args"] = {}
                 for k, val in v["metadata"]["args"].items():
+                    observed_keys.add(k)
                     to_dict["args"][k] = str(val)[:50]
         if v.get("content", False):
             content += v["content"]
@@ -152,20 +155,20 @@ def add_properties(to_dict: dict, v: Any):
     else:
         raise Exception("looks like parsing did not find a dict")
         
-    return to_dict
+    return observed_keys, to_dict
 
 def compute_summary(texts: list[dict]) -> tuple[list[dict], str]:
     corpus = []
+    observed_keys = set()
     for row in texts:
         minimized = ""
         try:
             json_data = json.loads(row.get("text", "{}"))
-            row = add_properties(row, json_data)
+            observed_keys, row = add_properties(row, json_data)
             minimized = row.pop("extracted", "")
-            del row["text"]
         except Exception as e:
             print(f"{e}\nsummary content extraction failed, falling back to sub string extractions")
-            minimized = row.pop("text", "")[:3000]
+            minimized = row.get("text", "")[:3000]
         
         if minimized:
             try:
@@ -182,7 +185,7 @@ def compute_summary(texts: list[dict]) -> tuple[list[dict], str]:
         overall_summary = ""
         print(f"corpus summarize failed: {e}")
 
-    return texts, overall_summary
+    return texts, overall_summary, observed_keys
 
 
 def analyze(workdir: Path, file_paths: list[Path]) -> dict:
@@ -200,11 +203,15 @@ def analyze(workdir: Path, file_paths: list[Path]) -> dict:
         print(f"Could not load en_core_web_sm: {e}")
         sys.exit(1)
             
-    idf_top = compute_idf(texts)
-    frequent_words = compute_most_frequent_words(texts, nlp)
+    texts, corpus_summary, observed_keys= compute_summary(texts)
+    idf_top = compute_idf(texts, observed_keys)
+    frequent_words = compute_most_frequent_words(texts, observed_keys, nlp)
     texts, overall_sentiment = compute_sentiment(texts)
-    texts, corpus_summary = compute_summary(texts)
 
+    for row in texts:
+        #remove original text from results
+        del row["text"]
+        
     report = {
         "idf_top": idf_top,
         "frequent_words": frequent_words,
