@@ -287,7 +287,7 @@ def hacky_make_input_for_episode_extractor(result: TextAnalysis):
     final = ReportForEpisodeExtraction(word_cloud=sorted(word_cloud),
                                        report="\n".join(report))
     
-    return report
+    return final
 
 def analyze(workdir: Path, file_paths: list[Path]) -> TextAnalysis:
 
