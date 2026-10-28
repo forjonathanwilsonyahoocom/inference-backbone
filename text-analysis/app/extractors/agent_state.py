@@ -11,7 +11,7 @@ def agent_state_extractor(observed_keys: set, to_dict: dict, state: dict):
         collected.append(f"""{item["hypothesis"]} confidence: {item["confidence"]}""")
          
     collected.append("agent appears to have: ")
-    for item in state["contains"].get("completed_steps",[{"step" : "nothing", "result" : "nothing"]):
+    for item in state["contains"].get("completed_steps",[{"step" : "nothing", "result" : "nothing"}]):
         collected.append(f"""tried: {item["step"]} saw: {item["result"]}""")
             
     
