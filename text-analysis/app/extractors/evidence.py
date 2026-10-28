@@ -5,9 +5,9 @@ def broker_extractor(observed_keys: set, to_dict: dict, v):
         json_data = json.loads(v)
         for k in json_data.keys():
             observed_keys.add(k)
-        to_dict["clean"] = json_data["logs"]
+        to_dict["summary"] = f"""returned more than {len(json_data["logs"])} of logs"""
     except Exception as e:
-        to_dict["clean"] = "unparsible"
+        to_dict["summary"] = "unparsible"
     return observed_keys, to_dict
 
 def arg_extraction(observed_keys: set, to_dict: dict, v: dict, skip: set = {"content", "old_text", "new_text"}):
@@ -17,12 +17,12 @@ def arg_extraction(observed_keys: set, to_dict: dict, v: dict, skip: set = {"con
         if k not in skip:
             value.append(f"{k}={v}")
     
-    to_dict["clean"] = ",".join(value)
+    to_dict["summary"] = ",".join(value)
     return observed_keys, to_dict
     
 def append_count_json_content(observed_keys: set, to_dict: dict, v):
-    clean = to_dict.get("clean", "")
-    value = clean.split(",")
+    summary = to_dict.get("summary", "")
+    value = summary.split(",")
     try:
         json_data = json.loads(v)
         if not isinstance(list, json_data):
@@ -37,7 +37,7 @@ def append_count_json_content(observed_keys: set, to_dict: dict, v):
     except Exception as e:
         value.append("result_count=unparsible")
        
-    to_dict["clean"] = ",".join(value)
+    to_dict["summary"] = ",".join(value)
     return observed_keys, to_dict
     
 def run_command_extraction(observed_keys: set, to_dict: dict, v: dict):
@@ -53,7 +53,7 @@ def run_command_extraction(observed_keys: set, to_dict: dict, v: dict):
     except Exception as e:
         value.append("exit_code=unparsible")
         
-    to_dict["clean"] = ",".join(value)
+    to_dict["summary"] = ",".join(value)
     return observed_keys, to_dict
     
 def evidence_extractor(observed_keys: set, to_dict: dict, v: dict):
@@ -67,7 +67,7 @@ def evidence_extractor(observed_keys: set, to_dict: dict, v: dict):
             observed_keys, to_dict = arg_extraction(observed_keys,  to_dict, v["metadata"]["args"])
         elif v["evidence_type"] == "edit_file":
             observed_keys, to_dict = arg_extraction(observed_keys,  to_dict, v["metadata"]["args"])
-            to_dict["clean"] = f"""{to_dict["clean"] }, {v["content"]} """
+            to_dict["summary"] = f"""{to_dict["summary"] }, resulting in : {v["content"]} """
         elif v["evidence_type"] == "list_files":
             observed_keys, to_dict = arg_extraction(observed_keys,  to_dict, v["metadata"]["args"])
         elif v["evidence_type"] == "read_file":
@@ -87,13 +87,13 @@ def evidence_extractor(observed_keys: set, to_dict: dict, v: dict):
             observed_keys, to_dict = append_count_json_content(observed_keys, to_dict, v["content"])
         elif v["evidence_type"] == "write_file":
             observed_keys, to_dict = arg_extraction(observed_keys,  to_dict, v["metadata"]["args"])
-            to_dict["clean"] = f"""{to_dict["clean"] }, {v["content"]} """
+            to_dict["summary"] = f"""{to_dict["summary"] }, {v["content"]} """
             
         to_dict["evidence_type"] = v["evidence_type"] 
     elif  v["source_type"] == "agent_response":
         to_dict["evidence_type"] = "agent_response"
         to_dict["clean"] = v["content"]
     else:
-        to_dict["clean"] = f"""{v["source_type"]} {v["metadata"]}"""
+        to_dict["summary"] = f"""{v["source_type"]} {v["metadata"]}"""
         
     return observed_keys,  to_dict
