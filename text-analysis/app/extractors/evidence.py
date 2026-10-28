@@ -90,7 +90,7 @@ def evidence_extractor(observed_keys: set, to_dict: dict, v: dict):
             to_dict["summary"] = f"""{to_dict["summary"] }, {v["content"]} """
             
         to_dict["evidence_type"] = v["evidence_type"] 
-    elif  v["source_type"] == "Exception":
+    elif  v["source_type"] in {"Exception", "invalid_model_response"}:
         observed_keys, to_dict = arg_extraction(observed_keys,  to_dict, v["metadata"]["args"])
         to_dict["evidence_type"] = v["evidence_type"] 
     elif  v["source_type"] == "agent_response":
