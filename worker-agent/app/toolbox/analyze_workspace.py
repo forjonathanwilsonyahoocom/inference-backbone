@@ -14,7 +14,7 @@ def analyze_workspace(
     timeout_seconds: int = 300,
 ) -> str:
     """Use when inspecting an unexplored working directory for summary information
-    Synchronously runs a specified containerized analysis tool in the workspace.
+    Synchronously runs a specified outline digest tool in the workspace.
 
     Parameters
     ----------

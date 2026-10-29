@@ -19,7 +19,7 @@ class AssessResultWrapper:
             utility: float,
             better_focus: Optional[str] = None,
         ) -> str:
-            """tune the retrieval system's focus for future turns, ensure high-value information isn't lost during context compression
+            """tune the context management focus for future turns, ensure high-value information isn't lost during context compression
 
 Parameters
 ----------
