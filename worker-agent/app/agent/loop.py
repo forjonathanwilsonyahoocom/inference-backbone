@@ -80,20 +80,38 @@ def run_agent(
                 content = (response.content or "").strip()
                 
                 looks_like_json = content.startswith("{") or content.startswith("[")
+
+                metrics.emit(token_gauge(getattr(response, "usage_metadata", {}).get("input_tokens", 0)))
                 
                 if len(tool_calls) == 1 or (not tool_calls and len(content) > 4 and (not looks_like_json)) :
                     break
                 
+                add_tool_event(
+                    ToolEvent(
+                        iteration=iteration,
+                        event_type="invalid_model_response",
+                        model_name=config.worker_model,
+                        tool="invalid",
+                        args={"invalid_tools" : tool_calls,
+                              "ignored_content" : content},
+                    )
+                )
                 if looks_like_json:
-                    metrics.emit(failure_metric_labeler({"failure": "model response was empty or invalid"}))
+                    metrics.emit(failure_metric_labeler({"failure": "model response has json content and no tool calls"}))
                     retry_notes += [response, HumanMessage("Your response shows no tool calls, but the content looks like it might be tool args. Return exactly one tool call, or a final answer as string content only.")]
                 else:
                     metrics.emit(failure_metric_labeler({"failure": "model response was empty or invalid"}))
                     retry_notes += [response, HumanMessage("Your response was empty or invalid. Return exactly one tool call, or a final answer as content only.")]
-            except ResponseError as e:
-                metrics.emit(failure_metric_labeler({"failure": f"model response caused ResponseError"}))
-                retry_notes.append(HumanMessage(f"Last response failed tool-call parsing: {e}. Return exactly one valid tool call, or a final answer as content only."))
             except Exception as e:
+                add_tool_event(
+                    ToolEvent(
+                        iteration=iteration,
+                        event_type="Exception",
+                        model_name=config.worker_model,
+                        tool="invalid",
+                        args={"Exception" : str(e)},
+                    )
+                )
                 metrics.emit(failure_metric_labeler({"failure": f"model response was unparsible"}))
                 retry_notes.append(HumanMessage(f"Last response failed tool-call parsing: {e}. Return exactly one valid tool call, or a final answer as content only."))
         else:
@@ -186,7 +204,6 @@ def run_agent(
 
         full_thread_history.append(this_iteration)
             
-        metrics.emit(token_gauge(getattr(response, "usage_metadata", {}).get("input_tokens", 0)))
 
     metrics.emit(operation_metric_labeler({"operation" : "ran out of turns"}))
     current_compaction, distillation = final_distillation(config, metrics, distillation_llm, current_compaction, full_thread_history)

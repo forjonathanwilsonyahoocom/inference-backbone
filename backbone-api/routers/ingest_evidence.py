@@ -54,6 +54,7 @@ async def evidence_preliminary_ingest(payload: Evidence) -> Dict:
                     chunk_id=context_based_id(raw_chunk),
                     execution_id=payload.execution_id,
                     evidence_id=payload.evidence_id,
+                    source_type=payload.source_type,
                     instance_number=payload.instance_number,
                     content=raw_chunk,
                     chunk_index=idx,

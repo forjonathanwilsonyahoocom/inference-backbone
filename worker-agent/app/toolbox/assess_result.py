@@ -19,7 +19,7 @@ class AssessResultWrapper:
             utility: float,
             better_focus: Optional[str] = None,
         ) -> str:
-            """Refine the utility score and retrieval focus for a previously executed tool result.
+            """tune the context management focus for future turns, ensure high-value information isn't lost during context compression
 
 Parameters
 ----------
@@ -33,7 +33,7 @@ better_focus : str | None, optional
 Returns
 -------
 str
-    Confirmation message describing the update.
+    target iteration will be updated next turn with Confirmation message
 """
 
             return assess_result_function(self.iterations, instance_number, utility, better_focus)
