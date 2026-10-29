@@ -267,10 +267,17 @@ def hacky_make_input_for_episode_extractor(result: TextAnalysis):
     report.append(ref_map["task"][1]["clean"].strip())
     report.append("# has trace")
     for evidence in ref_map["evidence"]["list"]:
-        report.append(f"""## event {evidence["evidence_type"]}, {evidence["summary"]}""")
-        report.append("### supports possible claims:")
-        for edge in ref_map["claim_evidence_edge"].get(evidence["evidence_id"], []):
-            report.append(f""" * {ref_map.get("claim", {}).get(edge["claim_id"], {}).get("summary", "")}""")
+               
+        support_edges = ref_map["claim_evidence_edge"].get(evidence["evidence_id"], [])
+        if support_edges:
+            report.append(f"""## evidence from {evidence["evidence_type"]}, {evidence["summary"]}""")
+            report.append("### supports possible claims:")
+            for edge in support_edges:
+                report.append(f""" * {ref_map.get("claim", {}).get(edge["claim_id"], {}).get("summary", "")}""")
+        else:
+            report.append(f"""## event {evidence["evidence_type"]}, {evidence["summary"]}""")
+            report.append("### does not show support for anything")
+            
         caused_state_record = ref_map["agent_state"].get(evidence["iteration"], False)
         if caused_state_record:
            report.append("summarized as")
