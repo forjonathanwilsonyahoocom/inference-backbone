@@ -88,6 +88,8 @@ def evidence_extractor(observed_keys: set, to_dict: dict, v: dict):
         elif v["evidence_type"] == "write_file":
             observed_keys, to_dict = arg_extraction(observed_keys,  to_dict, v["metadata"]["args"])
             to_dict["summary"] = f"""{to_dict["summary"] }, {v["content"]} """
+        else:
+            to_dict["clean"] = v["content"]
             
         to_dict["evidence_type"] = v["evidence_type"] 
     elif  v["source_type"] in {"Exception", "invalid_model_response"}:
