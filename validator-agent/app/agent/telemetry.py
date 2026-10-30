@@ -4,6 +4,19 @@ from typing import List, Dict
 from contracts.inference_contracts.claim import Claim
 from contracts.inference_contracts.claim_evidence_edge import ClaimEvidenceEdge
 
+
+async def build_evidence_text(e: dict) -> str:
+    try:
+        iteration = int(e.get('evidence_id').split('-')[-1])
+        tool = e.get('evidence_type', 'Nothing') #this will be the name of the tool called
+        result = str(e.get('content', 'None' )) #this is the result of the tool call
+        metadata = str(e.get('metadata')) #includes args to tool
+        return f"- iteration {iteration}: called `{tool}` with metadata {metadata} -> result: {result}"
+    except Exception as exc:
+        print(exc)
+        print(e)
+        return ""
+
 # ---------------------------------------------------------------------------
 # Helper: trigger supporting evidence to be fully ingested
 # ---------------------------------------------------------------------------
