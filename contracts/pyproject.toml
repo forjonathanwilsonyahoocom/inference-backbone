@@ -16,6 +16,7 @@ packages = [
     "contracts",
     "contracts.general_contracts",
     "contracts.inference_contracts",
+    "contracts.validation_contracts",
 ]
 
 [tool.setuptools.package-dir]
