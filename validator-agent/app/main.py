@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from contracts.inference_contracts.claim import Claim
 from prometheus_client import start_http_server
 from langchain_ollama import ChatOllama
-from agent.loop import handle_claims_extraction, handle_validation
+from agent.telemetry import fetch_events
 from agent.episode import extract_episode
 
 from typing import List
@@ -37,12 +37,9 @@ def create_llms(config: dict) -> ChatOllama:
     return llm
 
 class ClaimsRequest(BaseModel):
-    task_description: str
-    final_response: str
     execution_id: str
 
 class ValidateRequest(BaseModel):
-    claims_list: List[Claim]
     execution_id: str
     
 app = FastAPI()
@@ -56,7 +53,14 @@ async def extract_claims(req: ClaimsRequest):
     config = get_ollama_config()
     llm = create_llms(config)
     
-    user_content = f"TASK:\n{req.task_description}\n\nFINAL RESPONSE:\n{req.final_response}"
+    task_events = await fetch_events("task", req.execution_id)
+    final_answer_events = await fetch_events("final_answer", req.execution_id)
+    
+    # Assuming the first element contains the required content
+    task_content = task_events[0].get("content", "No task content found.") if task_events else "No task content found."
+    final_answer_content = final_answer_events[0].get("content", "No final answer content found.") if final_answer_events else "No final answer content found."
+    
+    user_content = f"TASK:\n{task_content}\n\nFINAL RESPONSE:\n{final_answer_content}"
     result = await handle_claims_extraction(
         config=config,
         metrics=METRICS,
@@ -71,11 +75,15 @@ async def validate(req: ValidateRequest):
     config = get_ollama_config()
     llm = create_llms(config)
     
+    claim_events = await fetch_events("claim", req.execution_id)
+    # Convert event dicts to Claim objects
+    claims_list = [Claim(**e) for e in claim_events]
+    
     result = await handle_validation(
         config=config,
         metrics=METRICS,
         llm = llm, 
-        claims_list = req.claims_list,
+        claims_list = claims_list,
         execution_id = req.execution_id
     )
     return result
