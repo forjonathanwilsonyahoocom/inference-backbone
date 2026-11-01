@@ -98,17 +98,27 @@ async def ingest_claims(config: dict, execution_id: str, claims_extracted: Extra
                 print(f"[Claim ingestion] failed for claim {claim_id}: {e}")
     return claims_persisted
     
-async def fetch_evidence_events(execution_id: str) -> List[Dict]:
+async def fetch_events(object_type: str, execution_id: str) -> List[Dict]:
     base_url = "http://backbone-api:8000"
     async with httpx.AsyncClient(timeout=10) as client:
-        list_resp = await client.get(f"{base_url}/list/evidence/{execution_id}")
+        # 1. List evidence IDs
+        list_resp = await client.get(f"{base_url}/list/{object_type}/{execution_id}")
         if list_resp.status_code != 200:
-            raise RuntimeError(f"Failed to list evidence for {execution_id}: {list_resp.text}")
+            raise RuntimeError(f"Failed to list {object_type} for {execution_id}: {list_resp.text}")
         list_data = list_resp.json()
-        evidence_ids = list_data.get("evidence_ids") or (list_data if isinstance(list_data, list) else [])
+        
+        # Handle both list of IDs and dict with 'evidence_ids' key
+        if isinstance(list_data, dict) and "evidence_ids" in list_data:
+            evidence_ids = list_data["evidence_ids"]
+        elif isinstance(list_data, list):
+            evidence_ids = list_data
+        else:
+            raise ValueError(f"Unexpected response format for {object_type} list: {list_data}")
+
+        # 2. Fetch file content for each ID
         events = []
         for eid in evidence_ids:
-            file_resp = await client.get(f"{base_url}/file/evidence/{eid}")
+            file_resp = await client.get(f"{base_url}/file/{object_type}/{eid}")
             if file_resp.status_code != 200:
                 continue
             try:

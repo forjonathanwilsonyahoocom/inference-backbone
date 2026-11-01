@@ -91,7 +91,7 @@ async def handle_validation(
         claims_lookup[c.claim_id] = c
 
     try:
-        events = await fetch_evidence_events(execution_id)
+        events = await fetch_events("evidence", execution_id)
     except Exception as exc:
         return {"error": f"Failed to fetch evidence: {exc}"}
 
