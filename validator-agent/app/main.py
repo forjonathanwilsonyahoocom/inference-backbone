@@ -75,7 +75,7 @@ async def validate(req: ValidateRequest):
         config=config,
         metrics=METRICS,
         llm = llm, 
-        claims_map = req.claims_map,
+        claims_list = req.claims_list,
         execution_id = req.execution_id
     )
     return result
