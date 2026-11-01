@@ -121,15 +121,13 @@ except requests.exceptions.RequestException as error:
 The README now contains a high‑level overview, core components, flow diagram, image link, observability section, and a note about detailed docs. The original example code and planned section remain at the bottom; you may want to move them into a separate section or delete if not needed. Let me know if you’d like to tidy that further or add more sections.
 
 
-then pass that return val to the validation agent's claim extraction endpoint like this:
+UPDATED the validation agent's claim extraction endpoint like this:
 
 ```python
 
 url = "http://validator-agent:8000/extract_claims"
 
 payload = {
-    "task_description": task_description,
-    "final_response": result['final_response'] if len(result['final_response'] ) > 5 else "claims to be done",
     "execution_id": result['execution_id'] 
 }
 claim_result = {}
@@ -184,14 +182,13 @@ which will respond with something like:
              'text': 'The example code and planned section could be moved into '
                      'a separate section or deleted if not needed'}]}
 ```
-finally send that claim list back to the validator agent's validation endpoint like:
+UPDATED: the claims list returned is info only,  it has been persisted from a few versions back, and recent builds access those persisted records:
 
 ```python
 
 url = "http://validator-agent:8000/validate"
 
 payload = {
-    "claims_map": str(claim_result),
     "execution_id": result['execution_id'] 
 }
 validation_result = {}
@@ -228,6 +225,81 @@ to get back an assessment of the recorded tool call results support for the clai
                  'e804cb90-9187-4294-8140-61456bb2cbcd': {'09b37264-fb3d-42e0-bae2-80f2e7d18443-7': 1},
                  'f7a1f551-018a-4d9e-b29c-6a969c9e402c': {'09b37264-fb3d-42e0-bae2-80f2e7d18443-7': 1}}}
 ```
+
+## there is an example of how to access the currently super hacky episode extraction in the jupyter folder, im still working on that
+
+```python
+
+url = "http://backbone-api:8000/full_trace/c663a07f-7e2c-4448-acaa-134bf5720ff1"
+
+
+response = requests.get(
+    url,
+    timeout=1000,
+)
+
+result = response.json()
+
+files= []
+for k in result["nodes"]:
+    for v in  result["nodes"][k]:
+        files.append(f"{k}/{v}.json")
+
+
+url = "http://text-analysis:8000/prep_report"
+
+payload = {
+  "files": files
+}
+
+response = requests.post(
+    url,
+    json=payload,  # Serializes the dict and sets Content-Type: application/json
+    timeout=1000,
+)
+
+result = response.json()
+
+url = "http://validator-agent:8000/make_episode"
+
+payload = result
+
+response = requests.post(
+    url,
+    json=payload,  # Serializes the dict and sets Content-Type: application/json
+    timeout=1000,
+)
+
+episode = response.json()
+```
+
+and you will end up with a doc that looks like
+
+```json
+{'mission': 'migration_to_structured_output',
+ 'outcome': 'unknown',
+ 'significant_events': ['Agent explored workspace structure and identified key files: extraction and validation prompts, loop handlers, episode agent, existing contracts (claim, episode, validations), telemetry helper, metrics API, and ingestion helper.',
+  'Agent determined that extraction prompt expects JSON of the form {"claims":[{"claim_id", "text", "importance"}]}, while validation prompt expects {"support_map":{"<claim_id>":{"supported":<float>}}}.',
+  'Agent noted that the current Claim contract in contracts/inference_contracts/claim.py is a persistence model with many fields, not suitable for the lightweight extraction output.',
+  'Agent observed that ingest_claims overwrites any claim_id emitted by the LLM with a new id based on execution_id and index, which may affect downstream validation mapping.',
+  'Agent recognized that episode extraction already uses llm.with_structured_output(Episode) and plans to mirror that pattern for extraction and validation.',
+  'Agent raised questions about whether to create new lightweight models for extraction, how to handle unexpected claim ids in metrics, whether to preserve overall_verdict in validation output, and whether to keep the claim_id overwrite behavior.'],
+ 'findings': ['Extraction and validation currently use manual JSON parsing; migration to structured output requires new Pydantic models matching prompt outputs.',
+  'Existing Claim contract is too heavy for extraction; a new ExtractionClaim and ExtractionResult model should be defined in contracts/validation_contracts/.',
+  'Validation output should be a SupportMap model with a dict of claim_id to SupportEntry (supported: float, constrained 0.0-1.0).',
+  'Metrics for unexpected claim ids could be a counter per id or a single counter; decision pending.',
+  'The ingestion step currently overwrites claim ids; decision needed whether to preserve or remove this behavior.'],
+ 'lessons': [],
+ 'unresolved_questions': ['Should the extraction model reuse the existing Claim contract or define a new lightweight model?',
+  'What metric shape is desired for unexpected claim ids?',
+  'Should overall_verdict be retained in the validation structured output?',
+  'Should ingest_claims overwrite claim ids or preserve LLM-generated ids?'],
+ 'evidence_refs': []}
+```
+
+it might have evidence_refs or lessons, current prompting and validation does not insist that all parts are populated
+
+
 
 ## implemented:
 
