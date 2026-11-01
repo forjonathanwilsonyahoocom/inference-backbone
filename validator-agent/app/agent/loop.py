@@ -4,7 +4,7 @@ from prompts.validation import VALIDATION_PROMPT
 from agent.telemetry import (
     promote_supporting_evidence,
     ingest_claims,
-    fetch_evidence_events,
+    fetch_events,
     link_claims_to_evidence,
     build_evidence_text,
     build_clean_claims_list,
