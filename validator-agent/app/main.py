@@ -12,6 +12,7 @@ from agent.telemetry import fetch_events
 from agent.episode import extract_episode
 
 from typing import List
+from agent.loop import handle_claims_extraction, handle_validation
 from contracts.general_contracts.text_analysis import ReportForEpisodeExtraction
 from contracts.inference_contracts.episode import Episode
 
