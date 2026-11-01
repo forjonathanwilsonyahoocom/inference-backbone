@@ -63,7 +63,7 @@ async def ingest_claims(config: dict, execution_id: str, claims_extracted: Extra
     base_url = "http://backbone-api:8000"
     claims_persisted: List[Claim] = []
     async with httpx.AsyncClient(timeout=10) as client:
-        for i, extracted_claim in enumerate(claims_extracted):
+        for i, extracted_claim in enumerate(claims_extracted.claims):
             claim_id = f"{execution_id}-{i}"
             
             claim_to_persist = Claim(
