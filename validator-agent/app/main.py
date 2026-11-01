@@ -5,11 +5,13 @@ from observability.metrics import MetricsWrapper
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+from contracts.inference_contracts.claim import Claim
 from prometheus_client import start_http_server
 from langchain_ollama import ChatOllama
 from agent.loop import handle_claims_extraction, handle_validation
 from agent.episode import extract_episode
 
+from typing import List
 from contracts.general_contracts.text_analysis import ReportForEpisodeExtraction
 from contracts.inference_contracts.episode import Episode
 
@@ -40,7 +42,7 @@ class ClaimsRequest(BaseModel):
     execution_id: str
 
 class ValidateRequest(BaseModel):
-    claims_map: dict
+    claims_list: List[Claim]
     execution_id: str
     
 app = FastAPI()
@@ -73,7 +75,7 @@ async def validate(req: ValidateRequest):
         config=config,
         metrics=METRICS,
         llm = llm, 
-        claims_map = req.claims_map,
+        claims_list = req.claims_list,
         execution_id = req.execution_id
     )
     return result
