@@ -4,6 +4,8 @@ from typing import List, Dict
 from contracts.inference_contracts.claim import Claim
 from contracts.inference_contracts.claim_evidence_edge import ClaimEvidenceEdge
 
+from contracts.validation_contracts.extraction import ExtractionResult, ExtractionClaim
+
 
 async def build_evidence_text(e: dict) -> str:
     try:
@@ -56,33 +58,34 @@ async def link_claims_to_evidence(config: dict, support_map: dict):
 # Helper: send a claim result to the claim ingestion endpoint
 # ---------------------------------------------------------------------------
 
-async def ingest_claims(config: dict, execution_id: str, claims:  List[Dict]) -> List[Dict]:
+async def ingest_claims(config: dict, execution_id: str, claims_extracted: ExtractionResult) -> List[Claim]:
     now = datetime.now(UTC).isoformat()
     base_url = "http://backbone-api:8000"
+    claims_persisted: List[Claim] = []
     async with httpx.AsyncClient(timeout=10) as client:
-        for i, claim in enumerate(claims):
+        for i, extracted_claim in enumerate(claims_extracted):
             claim_id = f"{execution_id}-{i}"
-            claim["claim_id"] = claim_id
             
-            payload = Claim(
+            claim_to_persist = Claim(
                 claim_id=claim_id,
                 instance_number=i,
-                importance=float(claim["importance"]),
+                importance=float(extracted_claim.importance),
                 model_name=config['model'],
                 execution_id=execution_id,
-                content=claim["text"], 
+                content=extracted_claim.text, 
                 observed_at=now,
                 retrieved_at=now,
                 validator_version="1.0.1",
             )
+            claims_persisted.append(claim_to_persist)
             try:
                 await client.post(
                     f"{base_url}/ingest/claim",
-                    json=payload.model_dump(mode="json"),
+                    json=claim_to_persist.model_dump(mode="json"),
                 )
             except Exception as e:
                 print(f"[Claim ingestion] failed for claim {claim_id}: {e}")
-    return claims
+    return claims_persisted
     
 async def fetch_evidence_events(execution_id: str) -> List[Dict]:
     base_url = "http://backbone-api:8000"

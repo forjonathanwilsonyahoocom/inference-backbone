@@ -9,9 +9,10 @@ from agent.telemetry import (
     build_evidence_text,
 )
 from observability.metrics import MetricsWrapper
-from typing import Dict
+from typing import Dict, List
 from langchain_ollama import ChatOllama
 
+from contracts.inference_contracts.claim import Claim
 from contracts.validation_contracts.extraction import ExtractionResult
 from contracts.validation_contracts.validation import ValidationResult
 
@@ -22,7 +23,7 @@ async def handle_claims_extraction(
     llm: ChatOllama,
     user_content: str,
     execution_id: str,
-) -> ExtractionResult | None:
+) -> List[Claim] | None:
     """Extract discrete, checkable claims from an agent's final response.
 
     Mirrors the structured-output pattern used by ``extract_episode``: the LLM
@@ -34,17 +35,17 @@ async def handle_claims_extraction(
 
     metrics.emit(operation_metric_labeler({"operation" : "attempting claims extraction"}))
     messages = [SystemMessage(content=CLAIM_EXTRACTION_PROMPT), HumanMessage(content=user_content)]
-
+    extraction_llm = llm.with_structured_output(ExtractionResult)
     result = None
     last_error = None
     for _ in range(3):
         try:
-            response = await llm.ainvoke(messages)
+            response = await extraction_llm.ainvoke(messages)
             if not isinstance(response, ExtractionResult):
                 raise ValueError(f"expected an ExtractionResult object, got {type(response).__name__}")
 
             metrics.emit(operation_metric_labeler({"operation" : "claims extracted"}))
-            return response
+            result =  await ingest_claims(config, execution_id, response) 
         except Exception as exc:
             metrics.emit(failure_metric_labeler({"failure" : "parsing error"}))
             last_error = str(exc)
@@ -53,14 +54,14 @@ async def handle_claims_extraction(
         metrics.emit(failure_metric_labeler({"failure" : "could not extract claims"}))
         print(f"Claims extraction failed after retries: {last_error}")
 
-    return None
+    return result
 
 
 async def handle_validation(
     config: dict,
     metrics: MetricsWrapper,
     llm: ChatOllama,
-    claims_map: dict,
+    claims_list: list[Claim],
     execution_id: str,
 ) -> Dict:
     """Rate each claim against a single evidence item.
@@ -77,15 +78,13 @@ async def handle_validation(
     claims_lookup = {}
     support_map = {}
 
-    for c in claims_map['claims']:
-        claims_lookup[c['claim_id']] = c
+    for c in claims_list:
+        claims_lookup[c.claim_id] = c
 
     try:
         events = await fetch_evidence_events(execution_id)
     except Exception as exc:
         return {"error": f"Failed to fetch evidence: {exc}"}
-
-    validation_results = []
 
     for e in events:
         metrics.emit(operation_metric_labeler({"operation" : "iterate"}))
@@ -94,13 +93,14 @@ async def handle_validation(
         messages = [SystemMessage(content=VALIDATION_PROMPT), HumanMessage(content=user_content)]
         result = None
         last_error = None
+        validation_llm = llm.with_structured_output(ValidationResult)
         for _ in range(3):
             try:
                 metrics.emit(operation_metric_labeler({"operation" : "invoke_attempt"}))
-                response = await llm.ainvoke(messages)
+                response = await validation_llm.ainvoke(messages)
                 if not isinstance(response, ValidationResult):
                     raise ValueError(f"expected a ValidationResult object, got {type(response).__name__}")
-                validation_results.append(response)
+                result = response
                 break
             except Exception as exc:
                 metrics.emit(failure_metric_labeler({"failure" : "parsing error"}))
@@ -108,16 +108,17 @@ async def handle_validation(
         if result is None:
             metrics.emit(failure_metric_labeler({"failure" : "gave up"}))
             result = {"error": f"Validation failed after retries: {last_error}"}
+            continue
 
         vr = {"evidence_id" : e["evidence_id"], "result" : result}
 
         # add to support map in desired format
         evidence_id = vr.get("evidence_id")
         result = vr.get("result", {})
-        support = result.get("support_map", {})
+        support = result.support_map
 
         for claim_id, support_obj in support.items():
-            val = support_obj.get("supported", 0)
+            val = support_obj.supported
             if claim_id in claims_lookup:
                 if claim_id not in support_map:
                     support_map[claim_id] = {}
