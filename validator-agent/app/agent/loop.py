@@ -36,8 +36,8 @@ async def handle_claims_extraction(
     metrics.emit(operation_metric_labeler({"operation" : "attempting claims extraction"}))
     messages = [SystemMessage(content=CLAIM_EXTRACTION_PROMPT), HumanMessage(content=user_content)]
     extraction_llm = llm.with_structured_output(ExtractionResult)
-    result = None
     last_error = None
+    response = None
     for _ in range(3):
         try:
             response = await extraction_llm.ainvoke(messages)
@@ -45,16 +45,20 @@ async def handle_claims_extraction(
                 raise ValueError(f"expected an ExtractionResult object, got {type(response).__name__}")
 
             metrics.emit(operation_metric_labeler({"operation" : "claims extracted"}))
-            result =  await ingest_claims(config, execution_id, response) 
         except Exception as exc:
             metrics.emit(failure_metric_labeler({"failure" : "parsing error"}))
+            print(exc)
+            response = None
             last_error = str(exc)
 
-    if result is None:
+    if response is None:
         metrics.emit(failure_metric_labeler({"failure" : "could not extract claims"}))
         print(f"Claims extraction failed after retries: {last_error}")
-
-    return result
+    else:
+        result =  await ingest_claims(config, execution_id, response) 
+        return result
+        
+    raise Exception("Failed to extract claims")
 
 
 async def handle_validation(
