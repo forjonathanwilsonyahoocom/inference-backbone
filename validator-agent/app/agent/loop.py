@@ -7,6 +7,7 @@ from agent.telemetry import (
     fetch_evidence_events,
     link_claims_to_evidence,
     build_evidence_text,
+    build_clean_claims_list,
 )
 from observability.metrics import MetricsWrapper
 from typing import Dict, List
@@ -33,8 +34,11 @@ async def handle_claims_extraction(
     operation_metric_labeler = metrics.get_counter_message_labeler("operation", "agent general activity")
     failure_metric_labeler = metrics.get_counter_message_labeler("error", "encountered error")
 
+    token_gauge = metrics.get_gauge_func("tokens_in_play", "tokens in current context")
     metrics.emit(operation_metric_labeler({"operation" : "attempting claims extraction"}))
     messages = [SystemMessage(content=CLAIM_EXTRACTION_PROMPT), HumanMessage(content=user_content)]
+    
+    metrics.emit(token_gauge(len(user_content) // 4))
     extraction_llm = llm.with_structured_output(ExtractionResult)
     last_error = None
     response = None
@@ -77,7 +81,8 @@ async def handle_validation(
     operation_metric_labeler = metrics.get_counter_message_labeler("operation", "agent general activity")
     failure_metric_labeler = metrics.get_counter_message_labeler("error", "encountered error")
     unexpected_claim_id_labeler = metrics.get_counter_message_labeler("failure", "unexpected claim id")
-
+    token_gauge = metrics.get_gauge_func("tokens_in_play", "tokens in current context")
+    
     is_supporting = {}
     claims_lookup = {}
     support_map = {}
@@ -90,14 +95,18 @@ async def handle_validation(
     except Exception as exc:
         return {"error": f"Failed to fetch evidence: {exc}"}
 
+
+    validation_llm = llm.with_structured_output(ValidationResult)
+    clean_claims_list = await build_clean_claims_list(claims_list)
     for e in events:
         metrics.emit(operation_metric_labeler({"operation" : "iterate"}))
         evidence_text = await build_evidence_text(e)
-        user_content = f"CLAIMS:\n{claims_map}\n\nEVIDENCE_ITEM:\n{evidence_text}"
+        user_content = f"CLAIMS:\n{clean_claims_list}\n\nEVIDENCE_ITEM:\n{evidence_text}"
+        
+        metrics.emit(token_gauge(len(user_content) // 4))
         messages = [SystemMessage(content=VALIDATION_PROMPT), HumanMessage(content=user_content)]
         result = None
         last_error = None
-        validation_llm = llm.with_structured_output(ValidationResult)
         for _ in range(3):
             try:
                 metrics.emit(operation_metric_labeler({"operation" : "invoke_attempt"}))

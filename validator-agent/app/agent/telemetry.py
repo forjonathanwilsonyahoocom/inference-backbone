@@ -18,6 +18,17 @@ async def build_evidence_text(e: dict) -> str:
         print(exc)
         print(e)
         return ""
+        
+async def build_clean_claims_list(claims: List[Claim]) -> list[dict]:
+    """
+    trim off persistence details only preserving key elements for llm
+    """
+    return_list = []
+    for claim in claims:
+        return_list.append({"claim_id" : claim.claim_id,
+                            "content" : claim.content,
+                            "importance" : claim.importance})
+    return return_list
 
 # ---------------------------------------------------------------------------
 # Helper: trigger supporting evidence to be fully ingested
