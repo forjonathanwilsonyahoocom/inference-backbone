@@ -24,6 +24,7 @@ class AgentRequest(BaseModel):
     distillation_model: str = "gpt-oss:20b"
     distillation_temp: float = 0.01  #intentionally unbounded for experimentation sake
     distillation_num_ctx: int = 40960  #intentionally unbounded for experimentation sake
+    distillation_delta_model: str = "gpt-oss:20b"
     verbose: bool = False    
     
 class Iteration(BaseModel):

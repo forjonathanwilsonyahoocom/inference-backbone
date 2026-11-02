@@ -12,7 +12,7 @@ from util.sorting import sort_identifiers
 BASE_DIR = Path("/indexed-artifacts")
 
 # Allowed document types based on contracts
-ALLOWED_DOC_TYPES = {"claim", "evidence", "claim_evidence_edge", "agent_state", "final_answer", "task"}
+ALLOWED_DOC_TYPES = {"claim", "evidence", "claim_evidence_edge", "agent_state", "final_answer", "task", "agent_state_delta"}
 
 retrieval_router = APIRouter()
 

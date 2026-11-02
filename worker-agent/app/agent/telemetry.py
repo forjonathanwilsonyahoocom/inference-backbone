@@ -62,6 +62,18 @@ def ingest_agent_state(state: AgentState, info: InfoNode) -> None:
         # Log but do not raise – evidence is observational
         print(f"[AgentState ingestion] failed for state {state}: {e}")
 
+def ingest_agent_state_delta(state: DistillationDelta, info: InfoNode) -> None:
+  
+    try:
+        payload = InfoContainer[DistillationDelta](info=info,
+                                            contains=state)
+   
+        resp = requests.post("http://backbone-api:8000/ingest/agent_state_delta", json=payload.model_dump(mode="json"), timeout=10)
+        resp.raise_for_status()
+    except Exception as e:
+        # Log but do not raise – evidence is observational
+        print(f"[DistillationDelta ingestion] failed for state {state}: {e}")
+
 
 def ingest_task(execution_id: str, instruction: str, model_name: str) -> None:
 

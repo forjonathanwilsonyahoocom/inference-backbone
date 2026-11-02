@@ -1,7 +1,8 @@
 from typing import Dict, Any, List
 from observability.metrics import MetricsWrapper
 from agent.models import Compaction, AgentRequest
-from prompts.distillation import DISTILLATION_PROMPT
+from agent.state import get_delta
+from agent.prompts.distillation import DISTILLATION_PROMPT
 from contracts.inference_contracts.agent_state import AgentState
 from contracts.inference_contracts.info import InfoNode
 
@@ -119,6 +120,7 @@ def get_distillation(config: AgentRequest,
         compact.upto = upto
         compact.summary.append(facts)
         compact.fallback = ""
+        compact = get_delta(config, compact)
         print(f"Distilled upto {upto}:{facts}")
     else:
         metrics.emit(metrics.get_counter_message("distillation_fallback", "distillation mechanical fallback"))
