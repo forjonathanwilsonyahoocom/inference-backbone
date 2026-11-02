@@ -4,6 +4,7 @@ import requests
 from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field
 from contracts.inference_contracts.evidence import Evidence
+from contracts.inference_contracts.agent_state_delta import DistillationDelta
 from contracts.inference_contracts.agent_state import AgentState
 from contracts.inference_contracts.task import Task
 from contracts.inference_contracts.final_answer import FinalAnswer
