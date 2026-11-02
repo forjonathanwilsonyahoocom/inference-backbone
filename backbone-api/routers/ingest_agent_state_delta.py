@@ -17,7 +17,7 @@ from projections.graphdb.turtle import write_object_to_graphdb
 
 ingest_agent_state_delta_router = APIRouter()
 
-@ingest_agent_state_router.post("/ingest/agent_state_delta")
+@ingest_agent_state_delta_router.post("/ingest/agent_state_delta")
 async def agent_state_ingest(payload: InfoContainer[DistillationDelta]) -> Dict:
     """
     /ingest/agent_state_delta endpoint takes the distillation delta object from the distillation delta agent
