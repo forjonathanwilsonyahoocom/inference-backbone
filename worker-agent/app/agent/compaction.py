@@ -74,45 +74,95 @@ def get_distillation(config: AgentRequest,
     
     conv_text = distillation_assembly(distill_these)
     
-    distillation_messages = [
-        SystemMessage(content=DISTILLATION_PROMPT),
-        HumanMessage(content=conv_text),
-    ]
-    facts = None
-    for _ in range(3):
-        agent_state_facts = None
-        try:
-            agent_state_facts = distillation_llm.invoke(distillation_messages)
-            if not isinstance(agent_state_facts, AgentState):
-                raise ValueError(f"expected a AgentState object, got {type(agent_state_facts).__name__}")
+    # Check if we have prior aggregation
+    has_prior = len(compact.summary) > 0
+    
+    if has_prior:
+        # Use delta analysis prompt
+        from prompts.delta_analysis import DELTA_ANALYSIS_PROMPT
+        from agent.delta_aggregation import merge_with_delta
+        
+        # Get the prior aggregation
+        prior_aggregation = compact.summary[-1]
+        
+        # Create delta analysis messages
+        delta_messages = [
+            SystemMessage(content=DELTA_ANALYSIS_PROMPT),
+            HumanMessage(content=f"PRIOR AGGREGATION:\n{json.dumps(prior_aggregation, indent=2)}\n\nNEW TRUNCATED MESSAGES:\n{conv_text}"),
+        ]
+        
+        delta_analysis = None
+        for _ in range(3):
+            try:
+                delta_response = distillation_llm.invoke(delta_messages)
+                if not isinstance(delta_response, str):
+                    raise ValueError(f"expected a string response, got {type(delta_response).__name__}")
                 
-            info = InfoNode(id = f"{config.execution_id}-{upto}",
-                            execution_id=config.execution_id,
-                            instance_number_start=compact.upto,
-                            instance_number_end=upto,
-                            )
-            ingest_agent_state(agent_state_facts, info)
-            facts_dict = agent_state_facts.model_dump()
-            if not isinstance(facts_dict, dict):
-                raise ValueError(f"expected a dict from AgentState.model_dump(), got {type(facts_dict).__name__}")
-            facts = facts_dict
-            metrics.emit(metrics.get_counter_message("distillation_success", "distillation agent worked"))
-            break
-        except Exception as exc:
-            print(f"Distillation failed: {exc}")
-            metrics.emit(metrics.get_counter_message("distillation_failure", "distillation agent crashes"))
-            raw_content = str(agent_state_facts) if agent_state_facts else "(no response)"
-            print(f"Raw model output (truncated): {raw_content[:300]}")
-
-    if facts is not None:
-        compact.upto = upto
-        compact.summary.append(facts)
-        compact.fallback = ""
-        print(f"Distilled upto {upto}:{facts}")
+                # Parse the delta analysis
+                delta_analysis = json.loads(delta_response)
+                metrics.emit(metrics.get_counter_message("delta_analysis_success", "delta analysis agent worked"))
+                break
+            except Exception as exc:
+                print(f"Delta analysis failed: {exc}")
+                metrics.emit(metrics.get_counter_message("delta_analysis_failure", "delta analysis agent crashes"))
+                raw_content = str(delta_response) if delta_response else "(no response)"
+                print(f"Raw model output (truncated): {raw_content[:300]}")
+        
+        if delta_analysis is not None:
+            # Mechanically apply the delta analysis
+            updated_aggregation = merge_with_delta(compact.summary, delta_analysis)
+            
+            compact.upto = upto
+            # Replace the last summary with the updated aggregation
+            compact.summary[-1] = updated_aggregation
+            compact.fallback = ""
+            print(f"Applied delta analysis upto {upto}")
+        else:
+            # Fallback to mechanical summary
+            metrics.emit(metrics.get_counter_message("delta_analysis_fallback", "delta analysis mechanical fallback"))
+            compact.fallback = fallback_mechanical_summary(distill_these)
+            print(f"Delta analysis fallback to {compact.fallback}")
     else:
-        metrics.emit(metrics.get_counter_message("distillation_fallback", "distillation mechanical fallback"))
-        compact.fallback = fallback_mechanical_summary(distill_these)
-        print(f"Distilled fallback to {compact.fallback}")
+        # Use original distillation prompt for first compaction
+        distillation_messages = [
+            SystemMessage(content=DISTILLATION_PROMPT),
+            HumanMessage(content=conv_text),
+        ]
+        facts = None
+        for _ in range(3):
+            agent_state_facts = None
+            try:
+                agent_state_facts = distillation_llm.invoke(distillation_messages)
+                if not isinstance(agent_state_facts, AgentState):
+                    raise ValueError(f"expected a AgentState object, got {type(agent_state_facts).__name__}")
+                    
+                info = InfoNode(id = f"{config.execution_id}-{upto}",
+                                execution_id=config.execution_id,
+                                instance_number_start=compact.upto,
+                                instance_number_end=upto,
+                                )
+                ingest_agent_state(agent_state_facts, info)
+                facts_dict = agent_state_facts.model_dump()
+                if not isinstance(facts_dict, dict):
+                    raise ValueError(f"expected a dict from AgentState.model_dump(), got {type(facts_dict).__name__}")
+                facts = facts_dict
+                metrics.emit(metrics.get_counter_message("distillation_success", "distillation agent worked"))
+                break
+            except Exception as exc:
+                print(f"Distillation failed: {exc}")
+                metrics.emit(metrics.get_counter_message("distillation_failure", "distillation agent crashes"))
+                raw_content = str(agent_state_facts) if agent_state_facts else "(no response)"
+                print(f"Raw model output (truncated): {raw_content[:300]}")
+
+        if facts is not None:
+            compact.upto = upto
+            compact.summary.append(facts)
+            compact.fallback = ""
+            print(f"Distilled upto {upto}:{facts}")
+        else:
+            metrics.emit(metrics.get_counter_message("distillation_fallback", "distillation mechanical fallback"))
+            compact.fallback = fallback_mechanical_summary(distill_these)
+            print(f"Distilled fallback to {compact.fallback}")
     
     return compact 
         
