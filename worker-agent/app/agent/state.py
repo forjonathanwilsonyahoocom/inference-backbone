@@ -12,10 +12,9 @@ we will prompt an llm with the structured output from
 """
 from prompts.distillation_delta import DELTA_ANALYSIS_PROMPT
 from contracts.inference_contracts.agent_state_delta import DistillationDelta
-from agent.models import Compaction
-from agent.models import AgentRequest
+from models import Compaction, AgentRequest
 from langchain_ollama import ChatOllama
-from agent.telemetry import ingest_agent_state_delta
+from telemetry import ingest_agent_state_delta
 
 def create_delta_llm(config: AgentRequest) -> ChatOllama:
     delta_llm = ChatOllama(

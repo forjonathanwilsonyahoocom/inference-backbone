@@ -1,12 +1,11 @@
 from typing import Dict, Any, List
 from observability.metrics import MetricsWrapper
-from agent.models import Compaction, AgentRequest
-from agent.state import get_delta
-from agent.prompts.distillation import DISTILLATION_PROMPT
+from models import Compaction, AgentRequest
+from state import get_delta
+from prompts.distillation import DISTILLATION_PROMPT
 from contracts.inference_contracts.agent_state import AgentState
 from contracts.inference_contracts.info import InfoNode
-
-from agent.telemetry import ingest_agent_state
+from telemetry import ingest_agent_state
 from langchain_ollama import ChatOllama
 import json
 
