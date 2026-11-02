@@ -59,13 +59,23 @@ class Understanding(BaseModel):
 # --------------------------------------------------------------------------- #
 # 4️⃣  Hypothesis
 # --------------------------------------------------------------------------- #
-HypothesisStatus = Literal["pending", "confirmed", "ruled‑out"]
+HypothesisStatus = Literal["pending", "supported", "ruled‑out"]
 
 
 class Hypothesis(BaseModel):
     hypothesis: str
+    source: str
     status: HypothesisStatus
     confidence: float
+
+
+    @field_validator("hypothesis", "source")
+    @classmethod
+    def not_empty(cls, v: str) -> str:
+        if not v:
+            raise ValueError("must not be empty")
+        return v
+
 
     @field_validator("confidence")
     @classmethod

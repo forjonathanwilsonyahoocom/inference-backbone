@@ -46,7 +46,9 @@ class Iteration(BaseModel):
 
 
 class Compaction(BaseModel):
-    summary: List[dict] = []
+    summary: List[dict] = [] #holds the progressive original agent state objects
+    summary_deltas: List[dict] = [] #holds the list of delta update from the summary_aggregate to the latest summary
+    summary_aggregate: dict = {} #holds the latest aggregation of the summary list, this is presented to the llm
     fallback: str = ""  # only holds a mechanically extracted string when llm call fails multiple times
     upto: int = 0       # history[:upto] is folded into summary
 

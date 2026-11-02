@@ -17,6 +17,16 @@ from langchain_core.messages import (
     BaseMessage
 )
 
+
+def stamp_ids(iteration_id: int, on_agent_state: dict) -> dict:
+    for k, v in on_agent_state.items():
+        k_preface = k[:3]
+        for i, item in enumerate(v):
+            item["id"] = f"{k_preface}_{iteration_id}_{i}"
+            
+    print(on_agent_state)
+    return on_agent_state
+    
 def merge_summaries(entries: List[dict]) -> dict:
     merged: Dict[str, list] = {}
     for entry in entries:
@@ -95,7 +105,8 @@ def get_distillation(config: AgentRequest,
             facts_dict = agent_state_facts.model_dump()
             if not isinstance(facts_dict, dict):
                 raise ValueError(f"expected a dict from AgentState.model_dump(), got {type(facts_dict).__name__}")
-            facts = facts_dict
+            
+            facts = stamp_ids(upto, facts_dict)
             metrics.emit(metrics.get_counter_message("distillation_success", "distillation agent worked"))
             break
         except Exception as exc:
