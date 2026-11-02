@@ -17,7 +17,7 @@ from agent.models import AgentRequest
 from langchain_ollama import ChatOllama
 from agent.telemetry import ingest_agent_state_delta
 
-def create_delta_llm(config: AgentRequest) -> Tuple[ChatOllama, ChatOllama]:
+def create_delta_llm(config: AgentRequest) -> ChatOllama:
     delta_llm = ChatOllama(
         model=config.distillation_delta_model,
         base_url=config.base_url,
