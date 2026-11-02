@@ -31,7 +31,7 @@ def get_delta(config: AgentRequest,  compaction: Compaction) -> Compaction:
 
     delta_llm = create_delta_llm(config)
     
-    if len(compaction.summary) > 1
+    if len(compaction.summary) > 1:
         prior = getattr(compaction, "summary_aggregate", compaction.summary[-2])
         conv_text = f"PRIOR_AGGREGATION:{prior}\nLATEST_SUMMARY:{compaction.summary[-1]}"
         delta_messages = [
