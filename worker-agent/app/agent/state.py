@@ -16,6 +16,8 @@ from agent.models import Compaction, AgentRequest
 from langchain_ollama import ChatOllama
 from agent.telemetry import ingest_agent_state_delta
 
+from langchain_core.messages import HumanMessage, SystemMessage
+
 def create_delta_llm(config: AgentRequest) -> ChatOllama:
     delta_llm = ChatOllama(
         model=config.distillation_delta_model,
