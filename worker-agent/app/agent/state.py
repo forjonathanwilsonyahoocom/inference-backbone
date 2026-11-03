@@ -52,12 +52,11 @@ def get_delta(config: AgentRequest, metrics: MetricsWrapper,  compaction: Compac
                 info = InfoNode(id = f"{config.execution_id}-{compaction.upto}",
                                 execution_id=config.execution_id,
                                 instance_number_start=compaction.upto,
+                                instance_number_end=compaction.upto,
                                 )
                 ingest_agent_state_delta(agent_state_delta, info)
 
-                facts_delta = agent_state_delta.model_dump()
-                if not isinstance(facts_delta, dict):
-                    raise ValueError(f"expected a dict from DistillationDelta.model_dump(), got {type(facts_delta).__name__}")
+                facts_delta = agent_state_delta
                 
                 metrics.emit(metrics.get_counter_message("distillation_delta_success", "distillation delta agent worked"))
                 compaction.summary_deltas.append(facts_delta)
