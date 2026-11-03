@@ -13,11 +13,11 @@ ArtifactType = Literal["file", "web_fetch", "llm_intent"]
 
 class Artifact(BaseModel):
     """Represents a useful fragment of a tool’s output."""
-    id: str
+    location: str
     type: ArtifactType
     value: str
 
-    @field_validator("id", "value")
+    @field_validator("location", "value")
     @classmethod
     def not_empty(cls, v: str) -> str:
         if not v:

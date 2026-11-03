@@ -119,7 +119,10 @@ def get_distillation(config: AgentRequest,
         compact.upto = upto
         compact.summary.append(facts)
         compact.fallback = ""
-        compact = get_delta(config, compact)
+        compact = get_delta(config, metrics, compact)
+        if not compact.summary_aggregate:
+            #set the initial state of summary_aggregate
+            compact.summary_aggregate = facts
         print(f"Distilled upto {upto}:{facts}")
     else:
         metrics.emit(metrics.get_counter_message("distillation_fallback", "distillation mechanical fallback"))

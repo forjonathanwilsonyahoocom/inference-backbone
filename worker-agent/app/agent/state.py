@@ -14,6 +14,8 @@ from prompts.distillation_delta import DELTA_ANALYSIS_PROMPT
 from contracts.inference_contracts.agent_state_delta import DistillationDelta
 from agent.models import Compaction, AgentRequest
 from langchain_ollama import ChatOllama
+from contracts.inference_contracts.info import InfoNode
+from observability.metrics import MetricsWrapper
 from agent.telemetry import ingest_agent_state_delta
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -28,7 +30,7 @@ def create_delta_llm(config: AgentRequest) -> ChatOllama:
     
     return delta_llm
 
-def get_delta(config: AgentRequest,  compaction: Compaction) -> Compaction:
+def get_delta(config: AgentRequest, metrics: MetricsWrapper,  compaction: Compaction) -> Compaction:
 
     delta_llm = create_delta_llm(config)
     
