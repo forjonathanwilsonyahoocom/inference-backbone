@@ -291,7 +291,7 @@ def hacky_make_input_for_episode_extractor(result: TextAnalysis):
         caused_state_delta_record = ref_map["agent_state_delta"].get(evidence["iteration"], False)
         if caused_state_delta_record:
            report.append("summary analyzed against priors")
-           report.append(caused_state_record["summary"])
+           report.append(caused_state_delta_record["summary"])
            
     report.append("# agent responded with")
     report.append(ref_map["final_answer"][1]["clean"].strip())
