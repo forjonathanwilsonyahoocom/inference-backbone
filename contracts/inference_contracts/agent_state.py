@@ -13,11 +13,11 @@ ArtifactType = Literal["file", "web_fetch", "llm_intent"]
 
 class Artifact(BaseModel):
     """Represents a useful fragment of a tool’s output."""
-    id: str
+    location: str
     type: ArtifactType
     value: str
 
-    @field_validator("id", "value")
+    @field_validator("location", "value")
     @classmethod
     def not_empty(cls, v: str) -> str:
         if not v:
@@ -59,13 +59,23 @@ class Understanding(BaseModel):
 # --------------------------------------------------------------------------- #
 # 4️⃣  Hypothesis
 # --------------------------------------------------------------------------- #
-HypothesisStatus = Literal["pending", "confirmed", "ruled‑out"]
+HypothesisStatus = Literal["pending", "supported", "ruled‑out"]
 
 
 class Hypothesis(BaseModel):
     hypothesis: str
+    source: str
     status: HypothesisStatus
     confidence: float
+
+
+    @field_validator("hypothesis", "source")
+    @classmethod
+    def not_empty(cls, v: str) -> str:
+        if not v:
+            raise ValueError("must not be empty")
+        return v
+
 
     @field_validator("confidence")
     @classmethod

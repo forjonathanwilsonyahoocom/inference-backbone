@@ -1,6 +1,7 @@
 from typing import Tuple, Any, Optional, List, Dict
 import uuid
 from pydantic import BaseModel
+from contracts.inference_contracts.agent_state_delta import DistillationDelta
 from prompts.worker import DEFAULT_SYSTEM_PROMPT
 
 class AgentRequest(BaseModel):
@@ -24,6 +25,7 @@ class AgentRequest(BaseModel):
     distillation_model: str = "gpt-oss:20b"
     distillation_temp: float = 0.01  #intentionally unbounded for experimentation sake
     distillation_num_ctx: int = 40960  #intentionally unbounded for experimentation sake
+    distillation_delta_model: str = "gpt-oss:20b"
     verbose: bool = False    
     
 class Iteration(BaseModel):
@@ -46,7 +48,9 @@ class Iteration(BaseModel):
 
 
 class Compaction(BaseModel):
-    summary: List[dict] = []
+    summary: List[dict] = [] #holds the progressive original agent state objects
+    summary_deltas: List[DistillationDelta] = [] #holds the list of delta update from the summary_aggregate to the latest summary
+    summary_aggregate: dict = {} #holds the latest aggregation of the summary list, this is presented to the llm
     fallback: str = ""  # only holds a mechanically extracted string when llm call fails multiple times
     upto: int = 0       # history[:upto] is folded into summary
 

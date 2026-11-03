@@ -80,32 +80,7 @@
             ]
           }
         },
-        "overrides": [
-          {
-            "__systemRef": "hideSeriesFrom",
-            "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "worker_agent_tokens_in_play"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": true
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 7,
@@ -312,32 +287,7 @@
             ]
           }
         },
-        "overrides": [
-          {
-            "__systemRef": "hideSeriesFrom",
-            "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "iterate"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": true
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
@@ -432,10 +382,10 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "{__name__=\"worker_agent_distillation_.*_total\"}",
+          "expr": "{__name__=~\"worker_agent_distillation_.*_total\"}",
           "hide": false,
           "instant": false,
-          "legendFormat": "__auto",
+          "legendFormat": "{{__name__}}",
           "range": true,
           "refId": "E"
         }
@@ -593,6 +543,6 @@
   "timezone": "browser",
   "title": "Agent Metrics",
   "uid": "cfz92g6mds2dcf",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }

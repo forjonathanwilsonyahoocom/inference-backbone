@@ -1,11 +1,12 @@
 from typing import Dict, Any, List
 from observability.metrics import MetricsWrapper
 from agent.models import Compaction, AgentRequest
+from agent.state import get_delta
 from prompts.distillation import DISTILLATION_PROMPT
 from contracts.inference_contracts.agent_state import AgentState
 from contracts.inference_contracts.info import InfoNode
-
 from agent.telemetry import ingest_agent_state
+from agent.apply_delta import apply_delta
 from langchain_ollama import ChatOllama
 import json
 
@@ -17,6 +18,16 @@ from langchain_core.messages import (
     BaseMessage
 )
 
+
+def stamp_ids(iteration_id: int, on_agent_state: dict) -> dict:
+    for k, v in on_agent_state.items():
+        k_preface = k[:3]
+        for i, item in enumerate(v):
+            item["id"] = f"{k_preface}_{iteration_id}_{i}"
+            
+    print(on_agent_state)
+    return on_agent_state
+    
 def merge_summaries(entries: List[dict]) -> dict:
     merged: Dict[str, list] = {}
     for entry in entries:
@@ -28,8 +39,12 @@ def merge_summaries(entries: List[dict]) -> dict:
 def make_summary_message(compact: Compaction, is_going_back_to_llm: bool = False) -> str:
     if not compact.summary and not compact.fallback:
         return []
-    body = json.dumps(merge_summaries(compact.summary), indent=2) if compact.summary else ""
     
+    if compact.summary_aggregate:
+        body = json.dumps(compact.summary_aggregate, indent=2)
+    elif compact.summary:
+        body = json.dumps(merge_summaries(compact.summary), indent=2)
+        
     if is_going_back_to_llm:
         return f"the initial {compact.upto} iterations have been truncated from history to reduce context, this is a distillation of that truncated info:\n{body}\n{compact.fallback}"
     else:
@@ -95,7 +110,8 @@ def get_distillation(config: AgentRequest,
             facts_dict = agent_state_facts.model_dump()
             if not isinstance(facts_dict, dict):
                 raise ValueError(f"expected a dict from AgentState.model_dump(), got {type(facts_dict).__name__}")
-            facts = facts_dict
+            
+            facts = stamp_ids(upto, facts_dict)
             metrics.emit(metrics.get_counter_message("distillation_success", "distillation agent worked"))
             break
         except Exception as exc:
@@ -108,6 +124,17 @@ def get_distillation(config: AgentRequest,
         compact.upto = upto
         compact.summary.append(facts)
         compact.fallback = ""
+        compact = get_delta(config, metrics, compact)
+        if compact.summary_aggregate:
+            if len(compact.summary_deltas) > 0:
+                compact.summary_aggregate = apply_delta(metrics,
+                                                        compact.summary_aggregate,
+                                                        facts,
+                                                        compact.summary_deltas[-1])
+        else:
+            #set the initial state of summary_aggregate
+            compact.summary_aggregate = facts
+        
         print(f"Distilled upto {upto}:{facts}")
     else:
         metrics.emit(metrics.get_counter_message("distillation_fallback", "distillation mechanical fallback"))

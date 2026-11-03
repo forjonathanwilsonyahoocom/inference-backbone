@@ -1,0 +1,119 @@
+"""
+routers/ingest_agent_state_delta.py
+"""
+from fastapi import APIRouter
+from contracts.inference_contracts.agent_state_delta import DistillationDelta
+from contracts.inference_contracts.info import InfoContainer, InfoNode
+from contracts.inference_contracts.info_chunk import InfoChunk
+from contracts.inference_contracts.validations import validate_artifact_id
+from util.chunker import chunk_text
+from typing import List, Dict
+from util.embedding_provider import OllamaEmbeddingProvider
+from util.file_persistence import write_to_file
+from util.identity import context_based_id
+from clients.weaviate import get_weaviate_client, ensure_weaviate_collection
+import uuid
+from projections.graphdb.turtle import write_object_to_graphdb
+
+ingest_agent_state_delta_router = APIRouter()
+
+@ingest_agent_state_delta_router.post("/ingest/agent_state_delta")
+async def agent_state_ingest(payload: InfoContainer[DistillationDelta]) -> Dict:
+    """
+    /ingest/agent_state_delta endpoint takes the distillation delta object from the distillation delta agent
+    and chunks into weaviate and saves the state delta object
+    """
+                               
+    weaviate_client = get_weaviate_client()
+    
+    try:
+        print("ingesting agent state delta", validate_artifact_id(payload.info.id))
+        
+        payload.info.content_hash = context_based_id(payload.model_dump_json(indent=2))
+                        
+        file_path = write_to_file(
+                        content=payload,
+                        location="agent_state_delta",
+                        identifier=payload.info.id,
+                    )
+                    
+        print(f"[ingest] Persisted AgentStateDelta to {file_path}")
+
+        ensure_weaviate_collection("InfoChunk")
+        
+        info_chunk_collection = weaviate_client.collections.use("InfoChunk")
+
+        # ---- 1️⃣  Embed with a context‑manager ----
+        async with OllamaEmbeddingProvider() as embedding_provider:
+            total_chunk_count = 0
+            chunk_ids = []
+            for section in ["new_observations",
+                            "updated_observations",
+                            "new_understandings",
+                            "updated_understandings",
+                            "new_hypotheses",
+                            "updated_hypotheses",
+                            "resolved_hypotheses",
+                            "completed_steps",
+                            "new_artifacts",
+                            "contradictions"]:
+                section_id = str(uuid.uuid4())
+                for i, section_item in enumerate(getattr(payload, section, [])):
+                    section_item_id = f"{section_id}-{i}"
+                    section_item_text = ""
+                    for field, field_info in type(section_item).model_fields.items():
+                        section_item_text += str(getattr(section_item, field, ""))
+                                
+                    raw_chunks = chunk_text(section_item_text)
+                    total_chunk_count += len(raw_chunks)
+                    for idx, raw_chunk in enumerate(raw_chunks):
+                        typed_chunk = InfoChunk(
+                            chunk_id=context_based_id(raw_chunk),
+                            execution_id=payload.info.execution_id,
+                            source_id=payload.info.id,
+                            item_id=section_item_id,
+                            info_type=F"AgentStateDelta.{section}",
+                            instance_number_start=payload.info.instance_number_start,
+                            content=raw_chunk,
+                            chunk_index=idx,
+                            chunk_count=len(raw_chunks),
+                        )
+                        # Embed only the center part of the chunk to avoid overlapping context
+                        # If the chunk is shorter than twice the overlap, embed the whole chunk
+                        overlap = 200  # same as chunker default
+                        if len(raw_chunk) > 2 * overlap:
+                            center_chunk = raw_chunk[overlap : len(raw_chunk) - overlap]
+                        else:
+                            center_chunk = raw_chunk
+                        embedding = await embedding_provider.embed(center_chunk)
+                        typed_chunk.embedding_model = embedding_provider.model
+                        chunk_ids.append(
+                            info_chunk_collection.data.insert(
+                                properties=typed_chunk.model_dump(), vector=embedding
+                            )
+                        )
+                        
+                    #we could probably build a subgraph and add the whole thing in one call
+                    await write_object_to_graphdb(InfoContainer[type(section_item)](info=InfoNode(id=section_item_id,
+                                                                                              source_id=payload.info.id,
+                                                                                              execution_id=payload.info.execution_id,
+                                                                                              instance_number_start=payload.info.instance_number_start,
+                                                                                              instance_number_end=payload.info.instance_number_end,
+                                                                                              content_hash=context_based_id(section_item.model_dump_json(indent=2))),
+                                                                                    contains=section_item), "agent_state_delta",  payload.info.id)
+
+        return {
+            "content_hash": payload.info.content_hash,
+            "chunk_count": total_chunk_count,
+            "chunks": chunk_ids,
+            "file_path" : file_path,
+        }
+
+    except Exception as e:
+        print("ingest_agent_state FAILURE", e)
+        raise
+    finally:
+        # ---- 2️⃣  Close the Weaviate client ----
+        weaviate_client.close()
+
+
