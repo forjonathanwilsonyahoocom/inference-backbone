@@ -40,6 +40,7 @@ from extractors.final_answer import final_answer_extractor
 from extractors.claim import claim_extractor
 from extractors.edge import claim_evidence_edge_extractor
 from extractors.agent_state import agent_state_extractor
+from extractors.agent_state_delta import agent_state_delta_extractor
 from contracts.general_contracts.text_analysis import TextAnalysis, ReportForEpisodeExtraction
 
 def summarize_text(text: str, sentence_count: int = 3) -> str:
@@ -191,6 +192,8 @@ def compute_summary(texts: list[dict]) -> tuple[list[dict], str]:
                 observed_keys, row = claim_extractor(observed_keys, row, json_data)
             elif row.get("file", "").startswith("evidence"):
                 observed_keys, row = evidence_extractor(observed_keys, row, json_data)
+            elif row.get("file", "").startswith("agent_state_delta"):
+                observed_keys, row = agent_state_delta_extractor(observed_keys, row, json_data)
             elif row.get("file", "").startswith("agent_state"):
                 observed_keys, row = agent_state_extractor(observed_keys, row, json_data)
             elif row.get("file", "").startswith("task"):
@@ -245,6 +248,8 @@ def hacky_make_input_for_episode_extractor(result: TextAnalysis):
         existing_type_lookup = type_lookup.get(item_type, {}) ##???
         if item_type == "agent_state":
             existing_map[item["to"]] = item
+        if item_type == "agent_state_delta":
+            existing_map[item["to"]] = item
         elif item_type == "claim_evidence_edge":
             existing_map_list = existing_map.get(item["evidence_id"], [])
             existing_map_list.append(item)
@@ -283,6 +288,11 @@ def hacky_make_input_for_episode_extractor(result: TextAnalysis):
            report.append("summarized as")
            report.append(caused_state_record["summary"])
 
+        caused_state_delta_record = ref_map["agent_state_delta"].get(evidence["iteration"], False)
+        if caused_state_delta_record:
+           report.append("summary analyzed against priors")
+           report.append(caused_state_delta_record["summary"])
+           
     report.append("# agent responded with")
     report.append(ref_map["final_answer"][1]["clean"].strip())
     report.append("# overall gist")

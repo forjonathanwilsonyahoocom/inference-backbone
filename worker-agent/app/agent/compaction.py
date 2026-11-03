@@ -51,7 +51,6 @@ def make_summary_message(compact: Compaction, is_going_back_to_llm: bool = False
         print(compact.fallback)
         return body
     
-    
 def fallback_mechanical_summary(msgs: List[BaseMessage]) -> str:
     lines = []
     for m in msgs:
