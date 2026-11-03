@@ -30,12 +30,14 @@ def apply_delta(
 
     for section in ["artifacts", "observations", "understandings", "hypotheses", "completed_steps"]:
         # Process each delta
+        handled_ids = set()
         for delta in getattr(deltas, section, []):
             try:                
                 # 1. Identify the target item in the current state
                 target_item = find_item_by_id(summary_aggregate, section, delta.modifies_id)
                 source_item = find_item_by_id(new_summary, section, delta.latest_id)
-                
+                if delta.latest_id:
+                    handled_ids.add(delta.latest_id)
                 # 2. Apply reconciliation logic based on DeltaAction
                 if delta.action == DeltaAction.APPEND:
                     # New observation/understanding/artifact -> Append
@@ -90,7 +92,13 @@ def apply_delta(
             except Exception as e:
                 print(f"Error applying delta {delta}: {e}")
                 # Log error but continue processing other deltas
-                
+        
+        if section in new_summary:
+            for item in new_summary[section]:
+                if item["id"] not in handled_ids:
+                    metrics.emit(metrics.get_counter_message(f"distillation_delta_{section}_added_unmentioned", "distillation delta agent did not mention item"))
+                    summary_aggregate[section].append(item)
+                    
         remove_index = -1
         if deltas.obsolete_context:
             for identifier in deltas.obsolete_context:

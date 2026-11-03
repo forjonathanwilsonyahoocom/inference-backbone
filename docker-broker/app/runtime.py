@@ -23,7 +23,16 @@ RUNTIME_IMAGES = {
     "php": "php:8.4-cli-trixie",
 }
 
-DEFAULT_ENV_PER_IMAGE = {"node" : {"HOME": "/tmp", "npm_config_cache": "/tmp/.npm"}}
+DEFAULT_ENV_PER_IMAGE = {
+    "node": {
+        "HOME": "/tmp",
+        "npm_config_cache": "/tmp/.npm",
+    },
+    "python": {
+        "HOME": "/tmp",
+        "PIP_CACHE_DIR": "/tmp/.cache/pip",
+    },
+}
 
 @runtime_router.post("/jobs", response_model=RunResponse)
 def run_job(request: RunRequest) -> RunResponse:
