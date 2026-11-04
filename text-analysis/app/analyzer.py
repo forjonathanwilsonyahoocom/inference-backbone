@@ -275,31 +275,30 @@ def hacky_make_input_for_episode_extractor(result: TextAnalysis):
                
         support_edges = ref_map["claim_evidence_edge"].get(evidence["evidence_id"], [])
         if support_edges:
-            report.append(f"""## evidence from {evidence["evidence_type"]}, {evidence["summary"]}""")
-            report.append("### supports possible claims:")
+            report.append(f"""## supporting evidence from {evidence["evidence_type"]}, {evidence["summary"]}""")
+            report.append("### possible support for claims:")
             for edge in support_edges:
                 report.append(f""" * {ref_map.get("claim", {}).get(edge["claim_id"], {}).get("summary", "")}""")
         else:
-            report.append(f"""## event {evidence["evidence_type"]}, {evidence["summary"]}""")
-            report.append("### does not show support for anything")
+            report.append(f"""## additional event {evidence["evidence_type"]}, {evidence["summary"]}""")
             
         caused_state_record = ref_map["agent_state"].get(evidence["iteration"], False)
         if caused_state_record:
-           report.append("summarized as")
+           report.append(f"# evidence up to iteration {evidence['iteration']} summarized as")
            report.append(caused_state_record["summary"])
 
         caused_state_delta_record = ref_map["agent_state_delta"].get(evidence["iteration"], False)
         if caused_state_delta_record:
-           report.append("summary analyzed against priors")
+           report.append("## this summary analyzed as delta against prior summary info")
            report.append(caused_state_delta_record["summary"])
            
     report.append("# agent responded with")
     report.append(ref_map["final_answer"][1]["clean"].strip())
     report.append("# overall gist")
     report.append(result.overall_gist)
-
-            
-
+    
+    report.append("# unfiltered trace contains word cloud of idf and high frequency terms:")
+    report.append(",".join(sorted(word_cloud)))
 
     final = ReportForEpisodeExtraction(word_cloud=sorted(word_cloud),
                                        report="\n".join(report))
