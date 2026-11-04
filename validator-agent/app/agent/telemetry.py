@@ -127,7 +127,7 @@ async def fetch_events(object_type: str, execution_id: str) -> List[Dict]:
         return events
 
 
-async def fetch_closest_evidence(to_claims: list[dict], execution_id: str) -> List[Dict]:
+async def fetch_closest_evidence(to_claims: list[Claim], execution_id: str) -> List[Dict]:
     base_url = "http://backbone-api:8000"
     nearby = set()
     async with httpx.AsyncClient(timeout=10) as client:
@@ -135,7 +135,7 @@ async def fetch_closest_evidence(to_claims: list[dict], execution_id: str) -> Li
         # 2. search for nearby evidence to claim content
         for claim in to_claims:
             payload = {
-              "query": claim["content"],
+              "query": claim.content,
               "limit" : 20,
               "execution_id" : execution_id,
             }
