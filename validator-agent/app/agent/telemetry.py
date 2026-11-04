@@ -1,6 +1,7 @@
 import httpx
 from datetime import datetime, UTC
 from typing import List, Dict
+import json
 from contracts.inference_contracts.claim import Claim
 from contracts.inference_contracts.claim_evidence_edge import ClaimEvidenceEdge
 
@@ -110,8 +111,6 @@ async def fetch_events(object_type: str, execution_id: str) -> List[Dict]:
         # Handle both list of IDs and dict with 'evidence_ids' key
         if isinstance(list_data, dict) and "evidence_ids" in list_data:
             evidence_ids = list_data["evidence_ids"]
-        elif isinstance(list_data, list):
-            evidence_ids = list_data
         else:
             raise ValueError(f"Unexpected response format for {object_type} list: {list_data}")
 
@@ -126,5 +125,46 @@ async def fetch_events(object_type: str, execution_id: str) -> List[Dict]:
             except Exception:
                 continue
         return events
+
+
+async def fetch_closest_evidence(to_claims: list[dict], execution_id: str) -> List[Dict]:
+    base_url = "http://backbone-api:8000"
+    nearby = set()
+    async with httpx.AsyncClient(timeout=10) as client:
+       
+        # 2. search for nearby evidence to claim content
+        for claim in to_claims:
+            payload = {
+              "query": claim["content"],
+              "limit" : 20,
+              "execution_id" : execution_id,
+            }
+            #print(payload)
+            file_resp = await client.post(f"{base_url}/search/evidence",
+                                         data=json.dumps(payload).encode("utf8"),
+                                          headers={"Content-Type": "application/json"})
+            if file_resp.status_code != 200:
+                continue
+            try:
+                search_results = file_resp.json()
+                for y in search_results:
+                    #build up distinct list of evidence with content close to claim content
+                    nearby.add(y["properties"]["evidence_id"])
+            except Exception:
+                continue
+        print(nearby)
+        # 2. Fetch file content for each ID in set
+        events = []
+        for eid in nearby:
+            file_resp = await client.get(f"{base_url}/file/evidence/{eid}")
+            if file_resp.status_code != 200:
+                continue
+            try:
+                events.append(file_resp.json())
+            except Exception:
+                continue
+        print(f"recovered {len(events)} evidence docs")
+        return events
+
 
 
