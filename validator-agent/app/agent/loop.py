@@ -8,6 +8,7 @@ from agent.telemetry import (
     link_claims_to_evidence,
     build_evidence_text,
     build_clean_claims_list,
+    fetch_closest_evidence,
 )
 from observability.metrics import MetricsWrapper
 from typing import Dict, List
