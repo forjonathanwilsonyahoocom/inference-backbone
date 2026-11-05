@@ -135,7 +135,7 @@ def build_node_turtle(
                 )
                 graph.add((node_iri, predicate, term))
         except Exception as e:
-            print(attr_name, predicate, transform )
+            print(attr_name, predicate, transform, transformed)
             print(e)
             raise
             
