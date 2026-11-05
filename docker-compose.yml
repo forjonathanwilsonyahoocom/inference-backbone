@@ -28,7 +28,7 @@ services:
       - ./datasets/backbone-api:/srv/corpus
     restart: unless-stopped
     networks:
-      worker-api:
+      validator-api:
 
   worker-agent:
     build:
