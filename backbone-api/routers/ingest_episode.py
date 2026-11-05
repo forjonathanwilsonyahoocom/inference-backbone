@@ -2,7 +2,7 @@
 routers/ingest_agent_state_delta.py
 """
 from fastapi import APIRouter
-from contracts.inference_contracts.agent_state_delta import DistillationDelta
+from contracts.inference_contracts.episode import Episode
 from contracts.inference_contracts.info import InfoContainer, InfoNode
 from contracts.inference_contracts.info_chunk import InfoChunk
 from contracts.inference_contracts.validations import validate_artifact_id
@@ -53,8 +53,8 @@ async def vector_store_episode_part(embedding_provider, info_chunk_collection, c
 @ingest_episode_router.post("/ingest/episode")
 async def episode_ingest(payload: InfoContainer[Episode]) -> Dict:
     """
-    /ingest/agent_state_delta endpoint takes the distillation delta object from the distillation delta agent
-    and chunks into weaviate and saves the state delta object
+    /ingest/episode endpoint takes the episode object from the episode agent in validator
+    and chunks into weaviate and saves the episode object
     """
                                
     weaviate_client = get_weaviate_client()
