@@ -115,24 +115,30 @@ def build_node_turtle(
     graph.add((node_iri, RDF.type, rdf_type))
 
     for attr_name, predicate, transform in field_mapping:
-        if "." in attr_name:
-            raw_value = get_nested_attr(entity, attr_name)
-        else:
-            raw_value = getattr(entity, attr_name, None)
-        if raw_value is None:
-            continue
-
-        values = raw_value if isinstance(raw_value, list) else [raw_value]
-        for v in values:
-            if v is None:
+        try:
+            if "." in attr_name:
+                raw_value = get_nested_attr(entity, attr_name)
+            else:
+                raw_value = getattr(entity, attr_name, None)
+            if raw_value is None:
                 continue
-            transformed = transform(v) if transform else v
-            term = (
-                transformed
-                if isinstance(transformed, Identifier)
-                else Literal(transformed)
-            )
-            graph.add((node_iri, predicate, term))
+
+            values = raw_value if isinstance(raw_value, list) else [raw_value]
+            for v in values:
+                if v is None:
+                    continue
+                transformed = transform(v) if transform else v
+                term = (
+                    transformed
+                    if isinstance(transformed, Identifier)
+                    else Literal(transformed)
+                )
+                graph.add((node_iri, predicate, term))
+        except Exception as e:
+            print(attr_name, predicate, transform )
+            print(e)
+            raise
+            
 
     return graph
 
