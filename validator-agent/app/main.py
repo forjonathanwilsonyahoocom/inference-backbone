@@ -106,7 +106,7 @@ async def make_episode(req: EpisodeRequest) -> Episode:
         config=config,
         metrics=METRICS,
         llm = episode_llm, 
-        req = req
+        req = report
     )
     await ingest_episode(config, req.execution_id, episode)
     

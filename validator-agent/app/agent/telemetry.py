@@ -5,6 +5,8 @@ import json
 from contracts.inference_contracts.claim import Claim
 from contracts.inference_contracts.claim_evidence_edge import ClaimEvidenceEdge
 
+from contracts.general_contracts.text_analysis import ReportForEpisodeExtraction
+
 from contracts.validation_contracts.extraction import ExtractionResult, ExtractionClaim
 
 from contracts.inference_contracts.episode import Episode
@@ -206,7 +208,7 @@ async def get_full_trace_file_names(execution_id: str) -> List[Dict]:
         return files
 
 
-async def assemble_report_from_files(files: list[str]) -> Dict:
+async def assemble_report_from_files(files: list[str]) -> ReportForEpisodeExtraction:
     base_url = "http://text-analysis:8000"
         
     async with httpx.AsyncClient(timeout=100) as client:
@@ -220,5 +222,7 @@ async def assemble_report_from_files(files: list[str]) -> Dict:
         if file_resp.status_code != 200:
             raise Exception("failed to get report from files")
         
-        return file_resp.json()
+        result = ReportForEpisodeExtraction.model_validate_json(report_resp.json())
+        
+        return result
  
