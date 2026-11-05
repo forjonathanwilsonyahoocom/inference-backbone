@@ -28,7 +28,7 @@ async def vector_store_episode_part(embedding_provider, info_chunk_collection, c
             source_id=payload.info.id,
             item_id=section_item_id,
             info_type=F"Episode.{section}",
-            instance_number_start=0,
+            instance_number=0,
             content=raw_chunk,
             chunk_index=idx,
             chunk_count=len(raw_chunks),
