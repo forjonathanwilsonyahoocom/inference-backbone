@@ -219,7 +219,7 @@ async def assemble_report_from_files(files: list[str]) -> ReportForEpisodeExtrac
         report_resp = await client.post(f"{base_url}/prep_report",
                                       data=json.dumps(payload).encode("utf8"),
                                       headers={"Content-Type": "application/json"})
-        if file_resp.status_code != 200:
+        if report_resp.status_code != 200:
             raise Exception("failed to get report from files")
         
         result = ReportForEpisodeExtraction.model_validate_json(report_resp.json())
