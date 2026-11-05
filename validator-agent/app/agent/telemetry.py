@@ -3,6 +3,7 @@ from datetime import datetime, UTC
 from typing import List, Dict
 import json
 from contracts.inference_contracts.claim import Claim
+from contracts.inference_contracts.info import InfoContainer, InfoNode
 from contracts.inference_contracts.claim_evidence_edge import ClaimEvidenceEdge
 
 from contracts.general_contracts.text_analysis import ReportForEpisodeExtraction
