@@ -21,7 +21,6 @@ async def vector_store_episode_part(embedding_provider, info_chunk_collection, c
     section_item_id = f"{section_id}-{i}"
    
     raw_chunks = chunk_text(section_item)
-    total_chunk_count += len(raw_chunks)
     for idx, raw_chunk in enumerate(raw_chunks):
         typed_chunk = InfoChunk(
             chunk_id=context_based_id(raw_chunk),
@@ -80,7 +79,6 @@ async def episode_ingest(payload: InfoContainer[Episode]) -> Dict:
 
         # ---- 1️⃣  Embed with a context‑manager ----
         async with OllamaEmbeddingProvider() as embedding_provider:
-            total_chunk_count = 0
             chunk_ids = []
             section_id = str(uuid.uuid4())
             chunk_ids = await vector_store_episode_part(embedding_provider, info_chunk_collection, chunk_ids, payload, "mission", section_id, 1, mission_string)
@@ -94,7 +92,7 @@ async def episode_ingest(payload: InfoContainer[Episode]) -> Dict:
 
         return {
             "content_hash": payload.info.content_hash,
-            "chunk_count": total_chunk_count,
+            "chunk_count": len(chunk_ids),
             "chunks": chunk_ids,
             "file_path" : file_path,
         }
