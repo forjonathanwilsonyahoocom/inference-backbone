@@ -222,7 +222,7 @@ async def assemble_report_from_files(files: list[str]) -> ReportForEpisodeExtrac
         if report_resp.status_code != 200:
             raise Exception("failed to get report from files")
         
-        result = ReportForEpisodeExtraction.model_validate_json(report_resp.json())
+        result = ReportForEpisodeExtraction.parse_obj(report_resp.json())
         
         return result
  
