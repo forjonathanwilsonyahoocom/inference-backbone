@@ -15,7 +15,7 @@ from clients.weaviate import get_weaviate_client, ensure_weaviate_collection
 import uuid
 from projections.graphdb.turtle import write_object_to_graphdb
 
-ingest_agent_state_delta_router = APIRouter()
+ingest_episode_router = APIRouter()
 
 async def vector_store_episode_part(embedding_provider, info_chunk_collection, chunk_ids, payload: InfoContainer[Episode], section: str, section_id: str, i: int, section_item: str):
     section_item_id = f"{section_id}-{i}"
@@ -50,7 +50,7 @@ async def vector_store_episode_part(embedding_provider, info_chunk_collection, c
         )
     return chunk_ids
         
-@ingest_agent_state_delta_router.post("/ingest/episode")
+@ingest_episode_router.post("/ingest/episode")
 async def episode_ingest(payload: InfoContainer[Episode]) -> Dict:
     """
     /ingest/agent_state_delta endpoint takes the distillation delta object from the distillation delta agent
