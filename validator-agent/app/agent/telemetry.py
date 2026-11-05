@@ -7,6 +7,7 @@ from contracts.inference_contracts.claim_evidence_edge import ClaimEvidenceEdge
 
 from contracts.validation_contracts.extraction import ExtractionResult, ExtractionClaim
 
+from contracts.inference_contracts.episode import Episode
 
 async def build_evidence_text(e: dict) -> str:
     try:
@@ -61,7 +62,7 @@ async def link_claims_to_evidence(config: dict, support_map: dict):
                 try:
                     await client.post(
                         f"{base_url}/ingest/claim_evidence_edge",
-                        json=payload.model_dump(mode="json"),
+                        json=payload.model_dump(mode="json").encode("utf8"),
                     )
                 except Exception as e:
                     print(f"[Claim ingestion] failed for edge {payload}: {e}")
@@ -98,6 +99,28 @@ async def ingest_claims(config: dict, execution_id: str, claims_extracted: Extra
             except Exception as e:
                 print(f"[Claim ingestion] failed for claim {claim_id}: {e}")
     return claims_persisted
+    
+
+async def ingest_episode(config: dict, execution_id: str, episode: Episode) :
+    now = datetime.now(UTC).isoformat()
+    base_url = "http://backbone-api:8000"
+    info = InfoNode(id=f"{execution_id}-1",
+                    execution_id=execution_id,
+                    model=config["model"],
+                    )
+    async with httpx.AsyncClient(timeout=10) as client:
+        payload = InfoContainer[Episode](info=info,
+                                        contains=episode)
+        try:
+            await client.post(
+                f"{base_url}/ingest/episode",
+                json=payload.model_dump(mode="json").encode("utf8"),
+            )
+        except Exception as e:
+            print(f"[Episode ingestion] failed for episode {episode}: {e}")
+            raise
+    
+
     
 async def fetch_events(object_type: str, execution_id: str) -> List[Dict]:
     base_url = "http://backbone-api:8000"
@@ -141,8 +164,7 @@ async def fetch_closest_evidence(to_claims: list[Claim], execution_id: str) -> L
             }
             #print(payload)
             file_resp = await client.post(f"{base_url}/search/evidence",
-                                         data=json.dumps(payload).encode("utf8"),
-                                          headers={"Content-Type": "application/json"})
+                                          json=json.dumps(payload).encode("utf8"))
             if file_resp.status_code != 200:
                 continue
             try:
@@ -167,4 +189,36 @@ async def fetch_closest_evidence(to_claims: list[Claim], execution_id: str) -> L
         return events
 
 
+async def get_full_trace_file_names(execution_id: str) -> List[Dict]:
+    base_url = "http://backbone-api:8000"
+    async with httpx.AsyncClient(timeout=10) as client:
+        # 1. List evidence IDs
+        trace_resp = await client.get(f"{base_url}/full_trace/{execution_id}")
+        if trace_resp.status_code != 200:
+            raise RuntimeError(f"Failed to get_full_trace_file_names for {execution_id}: {trace_resp.text}")
+        trace_data = trace_resp.json()
+        
+        files= []
+        for k in trace_data["nodes"]:
+            for v in  trace_data["nodes"][k]:
+                files.append(f"{k}/{v}.json")
 
+        return files
+
+
+async def assemble_report_from_files(files: list[str]) -> Dict:
+    base_url = "http://text-analysis:8000"
+        
+    async with httpx.AsyncClient(timeout=100) as client:
+        payload = {
+          "files": files
+        }
+        print(payload)
+        report_resp = await client.post(f"{base_url}/prep_report",
+                                      data=json.dumps(payload).encode("utf8"),
+                                      headers={"Content-Type": "application/json"})
+        if file_resp.status_code != 200:
+            raise Exception("failed to get report from files")
+        
+        return file_resp.json()
+ 
