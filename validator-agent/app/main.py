@@ -95,7 +95,7 @@ async def validate(req: ValidateRequest):
     return result
     
 
-@app.post("/make_episode"):
+@app.post("/make_episode")
 async def make_episode(req: EpisodeRequest) -> Episode:
     file_names = await get_full_trace_file_names(req.execution_id)
     report = await assemble_report_from_files(file_names)
