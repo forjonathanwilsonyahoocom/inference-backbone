@@ -65,7 +65,7 @@ async def link_claims_to_evidence(config: dict, support_map: dict):
                 try:
                     await client.post(
                         f"{base_url}/ingest/claim_evidence_edge",
-                        json=payload.model_dump(mode="json").encode("utf8"),
+                        json=payload.model_dump(mode="json"),
                     )
                 except Exception as e:
                     print(f"[Claim ingestion] failed for edge {payload}: {e}")
@@ -117,7 +117,7 @@ async def ingest_episode(config: dict, execution_id: str, episode: Episode) :
         try:
             await client.post(
                 f"{base_url}/ingest/episode",
-                json=payload.model_dump(mode="json").encode("utf8"),
+                json=payload.model_dump(mode="json"),
             )
         except Exception as e:
             print(f"[Episode ingestion] failed for episode {episode}: {e}")
@@ -167,7 +167,8 @@ async def fetch_closest_evidence(to_claims: list[Claim], execution_id: str) -> L
             }
             #print(payload)
             file_resp = await client.post(f"{base_url}/search/evidence",
-                                          json=json.dumps(payload).encode("utf8"))
+                                          data=json.dumps(payload).encode("utf8"),
+                                          headers={"Content-Type": "application/json"})
             if file_resp.status_code != 200:
                 continue
             try:
