@@ -19,7 +19,7 @@ Design notes:
 import httpx
 from rdflib import RDF, Graph, Literal, Namespace, URIRef
 from rdflib.term import Identifier
-from typing import Callable, Literal, Optional, Tuple, Type, List, Any
+from typing import Callable, Optional, Tuple, Type, List, Any
 from contracts.inference_contracts.info import InfoContainer
 from clients.graphdb_client import post_turtle
 from datetime import datetime
