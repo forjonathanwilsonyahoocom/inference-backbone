@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from contracts.inference_contracts.claim import Claim
 from prometheus_client import start_http_server
 from langchain_ollama import ChatOllama
-from agent.telemetry import fetch_events
+from agent.telemetry import fetch_events, get_full_trace_file_names, assemble_report_from_files, ingest_episode
 from agent.episode import extract_episode
 
 from typing import List
@@ -36,11 +36,16 @@ def create_llms(config: dict) -> ChatOllama:
         num_ctx=40960,
     )
     return llm
-
+    
+#these three types used to have assorted fields,
+#they are only separate to support that possibility  
 class ClaimsRequest(BaseModel):
     execution_id: str
 
 class ValidateRequest(BaseModel):
+    execution_id: str
+    
+class EpisodeRequest(BaseModel):
     execution_id: str
     
 app = FastAPI()
@@ -91,7 +96,24 @@ async def validate(req: ValidateRequest):
     
 
 @app.post("/make_episode")
-async def validate(req: ReportForEpisodeExtraction):
+async def make_episode(req: EpisodeRequest) -> Episode:
+    file_names = await get_full_trace_file_names(req.execution_id)
+    report = await assemble_report_from_files(file_names)
+    config = get_ollama_config()
+    llm = create_llms(config)
+    episode_llm = llm.with_structured_output(Episode)
+    episode = await extract_episode(
+        config=config,
+        metrics=METRICS,
+        llm = episode_llm, 
+        req = report
+    )
+    await ingest_episode(config, req.execution_id, episode)
+    
+    return episode
+
+@app.post("/make_episode_from_report")
+async def make_episode_from_report(req: ReportForEpisodeExtraction):
     config = get_ollama_config()
     llm = create_llms(config)
     episode_llm = llm.with_structured_output(Episode)
