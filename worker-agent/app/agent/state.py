@@ -12,7 +12,8 @@ we will prompt an llm with the structured output from
 """
 from prompts.distillation_delta import DELTA_ANALYSIS_PROMPT
 from contracts.inference_contracts.agent_state_delta import DistillationDelta
-from agent.models import Compaction, AgentRequest
+from agent.models import Compaction
+from contracts.inference_contracts.worker_agent_request import AgentRequest
 from langchain_ollama import ChatOllama
 from contracts.inference_contracts.info import InfoNode
 from observability.metrics import MetricsWrapper

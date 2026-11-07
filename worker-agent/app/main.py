@@ -7,7 +7,8 @@ from prometheus_client import start_http_server
 from fastapi import FastAPI
 
 from agent.loop import run_agent
-from agent.models import AgentRequest
+from agent.models import materialize_agent_request
+from contracts.inference_contracts.worker_agent_request import AgentRequest
 from observability.metrics import MetricsWrapper
 
 from toolbox.web_search import web_search
@@ -71,6 +72,7 @@ def startup_event():
 
 @app.post("/run")
 async def run_agent_endpoint(config: AgentRequest):
+    config = materialize_agent_request(config)
     llm, distill_llm = create_llms(config)
     distill_llm_typed = distill_llm.with_structured_output(AgentState)
     tools, llm_with_tools, iteration_list = get_toolchain(config, llm)
