@@ -68,7 +68,7 @@ def ingest_agent_request(payload: AgentRequest) -> str:
     try:   
         resp = requests.post("http://backbone-api:8000/ingest/agent_request", json=payload.model_dump(mode="json"), timeout=10)
         resp.raise_for_status()
-        result = response.json()
+        result = resp.json()
         return result["id"]
     except Exception as e:
         print(f"[AgentRequest ingestion] failed for state {payload}: {e}")
