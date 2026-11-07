@@ -54,6 +54,7 @@ def derive_message_list(config: AgentRequest,
     last_upto = compact.upto
     primary_result_attribute = "tool_call_result_compressed"
     primary_response_attribute = "model_response_compressed"
+    is_first_message = True
     for iteration in reversed(history):
     
         #only send to distill what has not yet been compacted
@@ -81,14 +82,23 @@ def derive_message_list(config: AgentRequest,
             #we add these backwards because we are building from the end of the list
             token_quota -= iter_tokens(iteration)
             tool_content = f"{getattr(iteration, primary_result_attribute) or iteration.tool_call_result}"
-            
-            #only add stagnant nudge if this is sent to the llm, indicated by upto == 0
-            if iteration.stagnant_count >= 2 and upto == 0:
-                metrics.emit(stagnation_metric_labeler({"tool_call" : iteration.tool_name}))
-                tool_content = f"**NOTE**: this call has been used for the same result {iteration.stagnant_count + 1} times, \n **history is de-duplicated**\n do you need to continue calling this? tool result follows:\n{tool_content}"
-            
+                        
             if upto == 0:
-                tool_content = f"instance_number={iteration.tool_call_result_instance_number}\n{tool_content}"
+                preface = f"instance_number={iteration.tool_call_result_instance_number}\n"
+                if is_first_message:
+                    preface += f"turn {iteration.iteration} of max {config.max_iterations}, {config.max_iterations - iteration.iteration} turns remaining\n"
+                    if config.max_iterations - iteration.iteration <=2:
+                        preface += "# use remaining turns for wrapping up this execution sequence\n"
+                    is_first_message = False
+                #only add stagnant nudge if this is sent to the llm, indicated by upto == 0
+                if iteration.stagnant_count >= 2:
+                    metrics.emit(stagnation_metric_labeler({"tool_call" : iteration.tool_name}))
+                    preface += f"**NOTE**: this call has been used for the same result {iteration.stagnant_count + 1} times, \n **history is de-duplicated**\n do you need to continue calling this? tool result follows:\n{tool_content}"
+
+                print(preface)
+                
+                tool_content = f"{preface}{tool_content}"
+                
             if iteration.tool_call_result_utility is not None or iteration.tool_call_result_chunk_query is not None:
                 tool_content = f"result_assessed: utility={iteration.tool_call_result_utility}, better_focus={iteration.tool_call_result_chunk_query}\n{tool_content}"
             list_to_add_to.append(
