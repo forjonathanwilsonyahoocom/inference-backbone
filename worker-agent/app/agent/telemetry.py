@@ -88,7 +88,7 @@ def ingest_agent_state_delta(state: DistillationDelta, info: InfoNode) -> None:
         print(f"[DistillationDelta ingestion] failed for state {state}: {e}")
 
 
-def ingest_task(execution_id: str, instruction: str, model_name: str, config_id str) -> None:
+def ingest_task(execution_id: str, instruction: str, model_name: str, config_id: str) -> None:
 
     now = datetime.now(UTC).isoformat()
     
