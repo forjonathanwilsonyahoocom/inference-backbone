@@ -33,7 +33,7 @@ async def agent_request_ingest(payload: AgentRequest) -> Dict:
         idempotent_id = context_based_id(persist_version)
         
         file_path = write_to_file(
-            content=persist_version,
+            content = str(persist_version, "utf-8"),
             location="agent_request",
             identifier=idempotent_id)
         
