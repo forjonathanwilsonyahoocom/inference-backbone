@@ -10,7 +10,7 @@ class InfoNode(BaseModel):
     id: ArtifactId
     source_id: ArtifactId | None = None #used when pulling extracting many infoNodes from one source (like AgentState)
     execution_id: str | None 
-    model: str = None #used on episode or other where model is not on contains
+    model: str | None  = None #used on episode or other where model is not on contains
     instance_number_start: int | None = None
     instance_number_end: int | None = None
     content_hash: str | None = None 
