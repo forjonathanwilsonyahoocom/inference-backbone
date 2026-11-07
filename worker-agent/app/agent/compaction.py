@@ -1,6 +1,7 @@
 from typing import Dict, Any, List
 from observability.metrics import MetricsWrapper
-from agent.models import Compaction, AgentRequest
+from agent.models import Compaction
+from contracts.inference_contracts.worker_agent_request import AgentRequest
 from agent.state import get_delta
 from prompts.distillation import DISTILLATION_PROMPT
 from contracts.inference_contracts.agent_state import AgentState

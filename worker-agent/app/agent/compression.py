@@ -15,7 +15,8 @@ from typing import Any, Dict, List, Optional
 from langchain_core.messages import AIMessage
 
 from observability.metrics import MetricsWrapper
-from agent.models import Iteration, AgentRequest
+from agent.models import Iteration
+from contracts.inference_contracts.worker_agent_request import AgentRequest
 from toolbox.compressors import get_compressor, semantic_compressor
 
 def limit_for_age(config: AgentRequest, age: int) -> Optional[int]:

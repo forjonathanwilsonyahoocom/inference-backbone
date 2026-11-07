@@ -5,6 +5,7 @@ from pydantic import BaseModel
 class Task(BaseModel):
     task_id: ArtifactId
     execution_id: str
+    agent_request_hash: str = "" #the params of this request hashed from the persist endpoint
     instance_number: int # numbering within the execution
 
     content: str

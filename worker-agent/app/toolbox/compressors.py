@@ -21,7 +21,8 @@ from toolbox.web_fetch import compress_web_fetch
 from toolbox.run_in_workspace import compress_run_in_workspace
 from toolbox.analyze_workspace import compress_analyze_workspace
 from toolbox.read_file import compress_read_file
-from agent.models import Iteration, AgentRequest
+from agent.models import Iteration
+from contracts.inference_contracts.worker_agent_request import AgentRequest
 
 
 from observability.metrics import MetricsWrapper

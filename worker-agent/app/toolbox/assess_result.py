@@ -1,6 +1,7 @@
 from langchain_core.tools import tool
 from typing import List, Dict, Optional
-from agent.models import Iteration, AgentRequest
+from agent.models import Iteration
+from contracts.inference_contracts.worker_agent_request import AgentRequest
 
 
 class AssessResultWrapper:
