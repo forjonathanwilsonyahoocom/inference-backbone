@@ -15,7 +15,7 @@ def _ensure_dir(path: Path) -> None:
 
 
 def write_to_file(
-    content: BaseModel,
+    content: BaseModel | str,
     location: str,
     identifier: str,
     overwrite: bool = False,
@@ -26,7 +26,7 @@ def write_to_file(
     Parameters
     ----------
     content:
-        Any Pydantic BaseModel instance.
+        Any Pydantic BaseModel instance or a string.
     location:
         Relative subdirectory under BASE_DIR.
     identifier:
@@ -47,11 +47,15 @@ def write_to_file(
     if file_path.exists() and not overwrite:
         return file_path
 
-    file_path.write_text(
-        content.model_dump_json(
+    persist_this = content
+    if isinstance(BaseModel, content):
+        persist_this = content.model_dump_json(
             indent=2,
             ensure_ascii=False,
-        ),
+        )
+
+    file_path.write_text(
+        persist_this,
         encoding="utf-8",
     )
 
