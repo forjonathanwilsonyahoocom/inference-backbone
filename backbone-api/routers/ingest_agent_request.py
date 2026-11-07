@@ -9,6 +9,7 @@ from util.embedding_provider import OllamaEmbeddingProvider
 from clients.weaviate import get_weaviate_client, ensure_weaviate_collection
 from typing import Dict
 from util.identity import context_based_id
+import json
 from projections.graphdb.turtle import write_object_to_graphdb
 from contracts.inference_contracts.worker_agent_request import AgentRequest
 

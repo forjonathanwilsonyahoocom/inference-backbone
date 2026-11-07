@@ -71,7 +71,7 @@ def ingest_agent_request(payload: AgentRequest) -> str:
         result = response.json()
         return result["id"]
     except Exception as e:
-        print(f"[AgentState ingestion] failed for state {state}: {e}")
+        print(f"[AgentRequest ingestion] failed for state {payload}: {e}")
         raise
 
 
