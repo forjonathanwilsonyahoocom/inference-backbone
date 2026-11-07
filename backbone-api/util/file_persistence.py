@@ -48,7 +48,7 @@ def write_to_file(
         return file_path
 
     persist_this = content
-    if isinstance(BaseModel, content):
+    if isinstance(content, BaseModel):
         persist_this = content.model_dump_json(
             indent=2,
             ensure_ascii=False,
