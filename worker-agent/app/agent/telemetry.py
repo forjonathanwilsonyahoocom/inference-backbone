@@ -7,6 +7,7 @@ from contracts.inference_contracts.evidence import Evidence
 from contracts.inference_contracts.agent_state_delta import DistillationDelta
 from contracts.inference_contracts.agent_state import AgentState
 from contracts.inference_contracts.task import Task
+from contracts.inference_contracts.worker_agent_request import AgentRequest
 from contracts.inference_contracts.final_answer import FinalAnswer
 from contracts.inference_contracts.info import InfoContainer, InfoNode
 
@@ -63,6 +64,17 @@ def ingest_agent_state(state: AgentState, info: InfoNode) -> None:
         # Log but do not raise – evidence is observational
         print(f"[AgentState ingestion] failed for state {state}: {e}")
 
+def ingest_agent_request(payload: AgentRequest) -> str:
+    try:   
+        resp = requests.post("http://backbone-api:8000/ingest/agent_request", json=payload.model_dump(mode="json"), timeout=10)
+        resp.raise_for_status()
+        result = response.json()
+        return result["id"]
+    except Exception as e:
+        print(f"[AgentState ingestion] failed for state {state}: {e}")
+        raise
+
+
 def ingest_agent_state_delta(state: DistillationDelta, info: InfoNode) -> None:
   
     try:
@@ -76,12 +88,13 @@ def ingest_agent_state_delta(state: DistillationDelta, info: InfoNode) -> None:
         print(f"[DistillationDelta ingestion] failed for state {state}: {e}")
 
 
-def ingest_task(execution_id: str, instruction: str, model_name: str) -> None:
+def ingest_task(execution_id: str, instruction: str, model_name: str, config_id str) -> None:
 
     now = datetime.now(UTC).isoformat()
     
     task = Task(task_id=f"{execution_id}-1",
                 execution_id=execution_id,
+                agent_request_hash=config_id,
                 instance_number=1,
                 content=instruction,
                 model_name=model_name,

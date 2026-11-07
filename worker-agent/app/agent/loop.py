@@ -4,9 +4,10 @@ from typing import Any, List, Optional, Dict
 from pydantic import BaseModel
 from ollama import ResponseError 
 from agent.messages import derive_message_list, final_distillation
-from agent.models import Iteration, Compaction, AgentRequest
+from agent.models import Iteration, Compaction
+from contracts.inference_contracts.worker_agent_request import AgentRequest
 from agent.fingerprint import tool_call_fingerprint, result_fingerprint
-from agent.telemetry import ingest_task, ingest_final_answer
+from agent.telemetry import ingest_task, ingest_final_answer, ingest_agent_request
 
 from langchain_core.messages import HumanMessage, BaseMessage
 
@@ -35,7 +36,8 @@ def run_agent(
     tool_call_metric_labeler = metrics.get_counter_message_labeler("tool_call", "the agent calls a tool")
     failure_metric_labeler = metrics.get_counter_message_labeler("tool_call_failure", "the agent tool fails")
     token_gauge = metrics.get_gauge_func("tokens_in_play", "tokens in current context")
-    ingest_task(config.execution_id, config.request, config.worker_model)
+    config_id = ingest_agent_request(config)
+    ingest_task(config.execution_id, config.request, config.worker_model, config_id)
 
     events: list[ToolEvent] = []
     iteration = 0
