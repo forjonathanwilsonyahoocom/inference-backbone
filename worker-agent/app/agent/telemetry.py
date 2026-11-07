@@ -63,8 +63,8 @@ def ingest_agent_state(state: AgentState, info: InfoNode) -> None:
     except Exception as e:
         # Log but do not raise – evidence is observational
         print(f"[AgentState ingestion] failed for state {state}: {e}")
-        if resp and getattr(resp, "text", None):
-            print(resp.text)
+        if resp and resp.text():
+            print(resp.text())
             
 def ingest_agent_request(payload: AgentRequest) -> str:
     resp = None
@@ -75,8 +75,8 @@ def ingest_agent_request(payload: AgentRequest) -> str:
         return result["id"]
     except Exception as e:
         print(f"[AgentRequest ingestion] failed for state {payload}: {e}")
-        if resp and getattr(resp, "text", None):
-            print(resp.text)
+        if resp and resp.text():
+            print(resp.text())
         raise
 
 
@@ -91,8 +91,8 @@ def ingest_agent_state_delta(state: DistillationDelta, info: InfoNode) -> None:
     except Exception as e:
         # Log but do not raise – evidence is observational
         print(f"[DistillationDelta ingestion] failed for state {state}: {e}")
-        if resp and getattr(resp, "text", None):
-            print(resp.text)
+        if resp and resp.text():
+            print(resp.text())
 
 def ingest_task(execution_id: str, instruction: str, model_name: str, config_id: str) -> None:
 
