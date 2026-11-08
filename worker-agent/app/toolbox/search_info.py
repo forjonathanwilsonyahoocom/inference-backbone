@@ -57,11 +57,11 @@ str
         "query": query,
         "limit": limit,
     }
-    if instance_number_filter is not None:
+    if instance_number_filter is not None and instance_number_filter > 0:
         payload["instance_number"] = instance_number_filter
-    if execution_id_filter is not None:
+    if execution_id_filter is not None and len(execution_id_filter) > 0:
         payload["execution_id"] = execution_id_filter
-    if info_type_filter is not None:
+    if info_type_filter is not None and len(info_type_filter) > 0:
         payload["info_type"] = info_type_filter
     try:
         resp = requests.post("http://backbone-api:8000/search/info", json=payload, timeout=10)
