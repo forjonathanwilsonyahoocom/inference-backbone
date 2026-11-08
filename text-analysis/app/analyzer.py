@@ -248,7 +248,7 @@ def hacky_make_input_for_episode_extractor(result: TextAnalysis):
         existing_type_lookup = type_lookup.get(item_type, {}) ##???
         if item_type == "agent_state":
             existing_map[item["to"]] = item
-        if item_type == "agent_state_delta":
+        elif item_type == "agent_state_delta":
             existing_map[item["to"]] = item
         elif item_type == "claim_evidence_edge":
             existing_map_list = existing_map.get(item["evidence_id"], [])
