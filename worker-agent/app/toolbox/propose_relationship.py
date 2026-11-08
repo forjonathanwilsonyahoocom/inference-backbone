@@ -54,7 +54,7 @@ str
     return json.dumps(payload, ensure_ascii=False, indent=2)
         
 
-def compress_search_info(result: Any, limit: int) -> str:
+def compress_propose_relationship(result: Any, limit: int) -> str:
     """Return unmodified."""
     
     return result
