@@ -15,9 +15,8 @@ class SearchHistoryWrapper:
     * holds the config AgentRequest
     * provides @tool curry interface from signature shown to llm to what function requires 
     """
-    def __init__(self, config: AgentRequest, iterations:  Optional[List[Iteration]] = None):
+    def __init__(self, config: AgentRequest):
         self.config: AgentRequest = config
-        self.iterations:  List[Iteration] = iterations or []
         
     def get_search_history(self):
         @tool
