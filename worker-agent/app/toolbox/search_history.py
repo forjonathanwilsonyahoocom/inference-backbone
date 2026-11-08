@@ -5,7 +5,8 @@ from typing import List, Dict, Any
 
 from langchain.tools import tool
 from typing import List, Dict, Optional
-from agent.models import AgentRequest, Iteration
+from agent.models import Iteration
+from contracts.inference_contracts.worker_agent_request import AgentRequest
 import json
 
 
