@@ -40,6 +40,17 @@ def append_count_json_content(observed_keys: set, to_dict: dict, v):
     to_dict["summary"] = ",".join(value)
     return observed_keys, to_dict
     
+def append_content(observed_keys: set, to_dict: dict, v):
+    summary = to_dict.get("summary", "")
+    value = summary.split(",")
+    try:
+        value.append(str(v))
+    except Exception as e:
+        value.append("content=unparsible")
+       
+    to_dict["summary"] = ",".join(value)
+    return observed_keys, to_dict
+    
 def run_command_extraction(observed_keys: set, to_dict: dict, v: dict):
     value = []
     for k, v in v["metadata"]["args"].items():
@@ -80,6 +91,11 @@ def evidence_extractor(observed_keys: set, to_dict: dict, v: dict):
         elif v["evidence_type"] == "search_history":
             observed_keys, to_dict = arg_extraction(observed_keys,  to_dict, v["metadata"]["args"])
             observed_keys, to_dict = append_count_json_content(observed_keys, to_dict, v["content"])
+        elif v["evidence_type"] == "search_info":
+            observed_keys, to_dict = arg_extraction(observed_keys,  to_dict, v["metadata"]["args"])
+            observed_keys, to_dict = append_content(observed_keys, to_dict, v["content"])
+        elif v["evidence_type"] == "propose_relationship":
+            observed_keys, to_dict = arg_extraction(observed_keys,  to_dict, v["metadata"]["args"])
         elif v["evidence_type"] == "web_fetch":
             observed_keys, to_dict = arg_extraction(observed_keys,  to_dict, v["metadata"]["args"])
         elif v["evidence_type"] == "web_search":
