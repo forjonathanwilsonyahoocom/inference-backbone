@@ -264,13 +264,17 @@ def hacky_make_input_for_episode_extractor(result: TextAnalysis):
             existing_map[1] = item
         elif item_type == "final_answer":
             existing_map[1] = item
+        else:
+            print(f"unexpected item_type {item_type}")
             
         ref_map[item_type] = existing_map
 
+    a_task = ref_map.get("task", [{}])[1].get("clean", "").strip()
+    if a_task:
+        report = ["# task"]
+        report.append(a_task)
+        report.append("# has trace")
         
-    report = ["# task"]
-    report.append(ref_map["task"][1]["clean"].strip())
-    report.append("# has trace")
     for evidence in ref_map["evidence"]["list"]:
                
         support_edges = ref_map["claim_evidence_edge"].get(evidence["evidence_id"], [])
@@ -280,23 +284,26 @@ def hacky_make_input_for_episode_extractor(result: TextAnalysis):
             for edge in support_edges:
                 report.append(f""" * {ref_map.get("claim", {}).get(edge["claim_id"], {}).get("summary", "")}""")
         else:
-            report.append(f"""## additional event {evidence["evidence_type"]}, {evidence["summary"]}""")
+            report.append(f"""{evidence['iteration']}) additional event {evidence["evidence_type"]}, {evidence["summary"]}""")
             
-        caused_state_record = ref_map["agent_state"].get(evidence["iteration"], False)
+        caused_state_record = ref_map.get("agent_state",{}).get(evidence["iteration"], False)
         if caused_state_record:
-           report.append(f"# evidence up to iteration {evidence['iteration']} summarized as")
+           report.append(f"## evidence up to iteration {evidence['iteration']} summarized as")
            report.append(caused_state_record["summary"])
 
-        caused_state_delta_record = ref_map["agent_state_delta"].get(evidence["iteration"], False)
+        caused_state_delta_record = ref_map.get("agent_state_delta", {}).get(evidence["iteration"], False)
         if caused_state_delta_record:
-           report.append("## this summary analyzed as delta against prior summary info")
+           report.append("### this summary analyzed as delta against prior summary info")
            report.append(caused_state_delta_record["summary"])
-           
-    report.append("# agent responded with")
-    report.append(ref_map["final_answer"][1]["clean"].strip())
+    
+    final_answer= ref_map.get("final_answer", [{}])[1].get("clean","").strip()
+    if final_answer:
+        report.append("# agent responded with")
+        report.append(final_answer)
+        
     report.append("# overall gist")
     report.append(result.overall_gist)
-    
+        
     report.append("# unfiltered trace contains word cloud of idf and high frequency terms:")
     report.append(",".join(sorted(word_cloud)))
 
