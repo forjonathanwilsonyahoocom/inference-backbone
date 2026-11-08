@@ -7,7 +7,7 @@ from prometheus_client import start_http_server
 from fastapi import FastAPI
 
 from agent.loop import run_agent
-from agent.models import materialize_agent_request
+from agent.models import materialize_agent_request, Iteration
 from contracts.inference_contracts.worker_agent_request import AgentRequest
 from observability.metrics import MetricsWrapper
 
