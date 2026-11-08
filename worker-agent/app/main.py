@@ -86,9 +86,9 @@ async def run_agent_endpoint(config: AgentRequest):
     config = materialize_agent_request(config)
     llm, distill_llm = create_llms(config)
     distill_llm_typed = distill_llm.with_structured_output(AgentState)
-    if config.mode = "worker_tools":
+    if config.mode == "worker_tools":
         tools, llm_with_tools, iteration_list = get_toolchain(config, llm)
-    elif config.mode = "knowledge_tools":
+    elif config.mode == "knowledge_tools":
         tools, llm_with_tools, iteration_list = get_knowledge_toolchain(config, llm)
     print(f"enabled tools: {tools}")
     METRICS.clear_counters()
