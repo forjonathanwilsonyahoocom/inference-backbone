@@ -11,9 +11,8 @@ import json
 
 @tool
 def search_info(about: str, query: str, limit: int, info_type_filter: Optional[str], execution_id_filter: Optional[str], instance_number_filter: Optional[int]) -> str:
-    """Internal helper for :func:`SearchHistoryWrapper.get_search_history`.
-
-Search current thread history for tool result fragments, use when history compaction obscures information.
+    """
+Search knowledge base for tool result fragments to propose linkages to
 
 Parameters
 ----------
@@ -25,7 +24,9 @@ limit : int
     Maximum number of chunks to return.
 info_type_filter : Optional[str]
     optional filter for chunk source, type filters available:
-    {"AgentState.artifacts",
+    {"FinalAnswer",
+     "Task",
+     "AgentState.artifacts",
      "AgentState.observations",
      "AgentState.understandings",
      "AgentState.hypotheses",

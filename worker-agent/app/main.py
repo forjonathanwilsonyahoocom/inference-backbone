@@ -51,8 +51,7 @@ def create_llms(config: AgentRequest) -> Tuple[ChatOllama, ChatOllama]:
 
 def get_knowledge_toolchain(config: AgentRequest, llm: ChatOllama) -> Tuple[dict, ChatOllama, List[Iteration]]:
     assess_result_wrapper = AssessResultWrapper(config)
-    search_history_wrapper = SearchHistoryWrapper(config)
-    TOOLS = [search_history_wrapper.get_search_history(), assess_result_wrapper.get_assess_result(), search_info, propose_relationship]
+    TOOLS = [assess_result_wrapper.get_assess_result(), search_info, propose_relationship]
     llm_with_tools = llm.bind_tools(TOOLS)
     TOOLS_BY_NAME = {tool.name: tool for tool in TOOLS}
     return TOOLS_BY_NAME, llm_with_tools, assess_result_wrapper.iterations
@@ -90,6 +89,8 @@ async def run_agent_endpoint(config: AgentRequest):
         tools, llm_with_tools, iteration_list = get_toolchain(config, llm)
     elif config.mode == "knowledge_tools":
         tools, llm_with_tools, iteration_list = get_knowledge_toolchain(config, llm)
+    else:
+        raise Exception(f"unexpected config.mode {config.mode }")
     print(f"enabled tools: {tools}")
     METRICS.clear_counters()
     result = run_agent(
