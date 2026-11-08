@@ -7,7 +7,7 @@ from prometheus_client import start_http_server
 from fastapi import FastAPI
 
 from agent.loop import run_agent
-from agent.models import materialize_agent_request
+from agent.models import materialize_agent_request, Iteration
 from contracts.inference_contracts.worker_agent_request import AgentRequest
 from observability.metrics import MetricsWrapper
 
@@ -23,6 +23,8 @@ from toolbox.run_in_workspace import run_in_workspace
 from toolbox.analyze_workspace import analyze_workspace
 from toolbox.assess_result import AssessResultWrapper
 from toolbox.search_history import SearchHistoryWrapper
+from toolbox.search_info import search_info
+from toolbox.propose_relationship import propose_relationship
 
 from contracts.inference_contracts.agent_state import AgentState
 
@@ -47,7 +49,15 @@ def create_llms(config: AgentRequest) -> Tuple[ChatOllama, ChatOllama]:
     )
     return llm, distill_llm
 
-def get_toolchain(config: AgentRequest, llm: ChatOllama) -> Tuple[dict, ChatOllama]:
+def get_knowledge_toolchain(config: AgentRequest, llm: ChatOllama) -> Tuple[dict, ChatOllama, List[Iteration]]:
+    assess_result_wrapper = AssessResultWrapper(config)
+    TOOLS = [assess_result_wrapper.get_assess_result(), search_info, propose_relationship]
+    llm_with_tools = llm.bind_tools(TOOLS)
+    TOOLS_BY_NAME = {tool.name: tool for tool in TOOLS}
+    return TOOLS_BY_NAME, llm_with_tools, assess_result_wrapper.iterations
+
+
+def get_toolchain(config: AgentRequest, llm: ChatOllama) -> Tuple[dict, ChatOllama, List[Iteration]]:
     assess_result_wrapper = AssessResultWrapper(config)
     search_history_wrapper = SearchHistoryWrapper(config)
     TOOLS = [analyze_workspace, list_files, read_file, write_file, edit_file,
@@ -75,7 +85,12 @@ async def run_agent_endpoint(config: AgentRequest):
     config = materialize_agent_request(config)
     llm, distill_llm = create_llms(config)
     distill_llm_typed = distill_llm.with_structured_output(AgentState)
-    tools, llm_with_tools, iteration_list = get_toolchain(config, llm)
+    if config.mode == "worker_tools":
+        tools, llm_with_tools, iteration_list = get_toolchain(config, llm)
+    elif config.mode == "knowledge_tools":
+        tools, llm_with_tools, iteration_list = get_knowledge_toolchain(config, llm)
+    else:
+        raise Exception(f"unexpected config.mode {config.mode }")
     print(f"enabled tools: {tools}")
     METRICS.clear_counters()
     result = run_agent(

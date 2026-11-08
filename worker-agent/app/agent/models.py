@@ -12,6 +12,7 @@ def materialize_agent_request(scaffold: AgentRequest) -> AgentRequest:
     return AgentRequest(
         request=scaffold.request,
         base_url=scaffold.base_url,
+        mode=scaffold.mode,
         system_message=scaffold.system_message if scaffold.system_message is not None else DEFAULT_SYSTEM_PROMPT,
         execution_id=scaffold.execution_id if scaffold.execution_id is not None else str(uuid.uuid4()),
         max_iterations=scaffold.max_iterations if scaffold.max_iterations is not None else 150,
