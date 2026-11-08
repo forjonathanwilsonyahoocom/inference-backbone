@@ -23,6 +23,8 @@ from toolbox.run_in_workspace import run_in_workspace
 from toolbox.analyze_workspace import analyze_workspace
 from toolbox.assess_result import AssessResultWrapper
 from toolbox.search_history import SearchHistoryWrapper
+from toolbox.search_info import search_info
+from toolbox.propose_relationship import propose_relationship
 
 from contracts.inference_contracts.agent_state import AgentState
 
@@ -47,7 +49,16 @@ def create_llms(config: AgentRequest) -> Tuple[ChatOllama, ChatOllama]:
     )
     return llm, distill_llm
 
-def get_toolchain(config: AgentRequest, llm: ChatOllama) -> Tuple[dict, ChatOllama]:
+def get_knowledge_toolchain(config: AgentRequest, llm: ChatOllama) -> Tuple[dict, ChatOllama, List[Iteration]]:
+    assess_result_wrapper = AssessResultWrapper(config)
+    search_history_wrapper = SearchHistoryWrapper(config)
+    TOOLS = [search_history_wrapper.get_search_history(), assess_result_wrapper.get_assess_result(), search_info, propose_relationship]
+    llm_with_tools = llm.bind_tools(TOOLS)
+    TOOLS_BY_NAME = {tool.name: tool for tool in TOOLS}
+    return TOOLS_BY_NAME, llm_with_tools, assess_result_wrapper.iterations
+
+
+def get_toolchain(config: AgentRequest, llm: ChatOllama) -> Tuple[dict, ChatOllama, List[Iteration]]:
     assess_result_wrapper = AssessResultWrapper(config)
     search_history_wrapper = SearchHistoryWrapper(config)
     TOOLS = [analyze_workspace, list_files, read_file, write_file, edit_file,
@@ -75,7 +86,10 @@ async def run_agent_endpoint(config: AgentRequest):
     config = materialize_agent_request(config)
     llm, distill_llm = create_llms(config)
     distill_llm_typed = distill_llm.with_structured_output(AgentState)
-    tools, llm_with_tools, iteration_list = get_toolchain(config, llm)
+    if config.mode = "worker_tools":
+        tools, llm_with_tools, iteration_list = get_toolchain(config, llm)
+    elif config.mode = "knowledge_tools":
+        tools, llm_with_tools, iteration_list = get_knowledge_toolchain(config, llm)
     print(f"enabled tools: {tools}")
     METRICS.clear_counters()
     result = run_agent(

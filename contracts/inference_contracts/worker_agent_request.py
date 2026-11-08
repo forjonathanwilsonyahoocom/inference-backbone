@@ -8,6 +8,7 @@ from pydantic import BaseModel
 class AgentRequest(BaseModel):
     request: str                    # ← required
     base_url: str                   # ← required
+    mode: str                       # ← required
     system_message: Optional[str] = None
     execution_id: Optional[str] = None
     max_iterations: Optional[int] = None
