@@ -54,7 +54,7 @@ def derive_message_list(config: AgentRequest,
     for i in history:
         if i.iteration > compact.upto:
             live_total += iter_tokens(i)
-            for w in iteration.tool_call_results:
+            for w in i.tool_call_results:
                 live_total += tool_tokens(w)
 
     token_quota = config.distill_to if live_total > config.distill_at else float("inf")
