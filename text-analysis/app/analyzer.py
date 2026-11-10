@@ -274,9 +274,9 @@ def hacky_make_input_for_episode_extractor(result: TextAnalysis):
         report.append(a_task)
         report.append("# has trace")
         
-    for evidence in ref_map["evidence"]["list"]:
+    for evidence in ref_map.get("evidence",{}).get("list", []):
                
-        support_edges = ref_map["claim_evidence_edge"].get(evidence["evidence_id"], [])
+        support_edges = ref_map.get("claim_evidence_edge",{}).get(evidence["evidence_id"], [])
         if support_edges:
             report.append(f"""## supporting evidence from {evidence["evidence_type"]}, {evidence["summary"]}""")
             report.append("### possible support for claims:")
