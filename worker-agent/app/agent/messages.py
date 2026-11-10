@@ -56,66 +56,19 @@ def derive_message_list(config: AgentRequest,
     primary_response_attribute = "model_response_compressed"
     is_first_message = True
     for iteration in reversed(history):
-    
-        #only send to distill what has not yet been compacted
-        if iteration.iteration < last_upto:
-            break
-            
-        fp = (iteration.tool_call_fingerprint, iteration.result_fingerprint)
-        if fp in seen_fingerprints:
-            # Skip earlier duplicate
-            continue
-            
-        seen_fingerprints.add(fp)
-        
-        if token_quota < 0 and upto == 0:
-            list_to_add_to = send_to_distill
-            upto = iteration.iteration
-            #distillation LLM gets original uncompressed content
-            primary_result_attribute = "tool_call_result"
-            primary_response_attribute = "model_response"
-            
-        if upto == 0 and iteration.is_silenced: #we will only send silenced tools to the distillation context
-            continue
-        
-        try:
-            #we add these backwards because we are building from the end of the list
-            token_quota -= iter_tokens(iteration)
-            tool_content = f"{getattr(iteration, primary_result_attribute) or iteration.tool_call_result}"
-                        
-            if upto == 0:
-                preface = f"instance_number={iteration.tool_call_result_instance_number}\n"
-                if is_first_message:
-                    preface += f"turn {iteration.iteration} of max {config.max_iterations}, {config.max_iterations - iteration.iteration} turns remaining\n"
-                    if config.max_iterations - iteration.iteration <=2:
-                        preface += "# use remaining turns for wrapping up this execution sequence\n"
-                    is_first_message = False
-                #only add stagnant nudge if this is sent to the llm, indicated by upto == 0
-                if iteration.stagnant_count >= 2:
-                    metrics.emit(stagnation_metric_labeler({"tool_call" : iteration.tool_name}))
-                    preface += f"**NOTE**: this call has been used for the same result {iteration.stagnant_count + 1} times, \n **history is de-duplicated**\n do you need to continue calling this? tool result follows:\n{tool_content}"
-               
-                tool_content = f"{preface}{tool_content}"
-                
-            if iteration.tool_call_result_utility is not None or iteration.tool_call_result_chunk_query is not None:
-                tool_content = f"result_assessed: utility={iteration.tool_call_result_utility}, better_focus={iteration.tool_call_result_chunk_query}\n{tool_content}"
-            list_to_add_to.append(
+        for wrapper in iteration.tool_call_results:
+            if wrapper.is_silenced:
+                continue
+            if wrapper.tool_call_result_compressed is not None:
+                content = wrapper.tool_call_result_compressed
+            else:
+                content = wrapper.tool_call_result
+            send_to_llm.append(
                 ToolMessage(
-                    content=tool_content,
-                    tool_call_id=iteration.model_response.tool_calls[0]["id"],
+                    content=content,
+                    tool_call_id=wrapper.tool_call_id,
                 )
             )
-
-            list_to_add_to.append(getattr(iteration, primary_response_attribute) or iteration.model_response) 
-        except Exception as e:
-            print(e)
-            print(iteration)
-            raise
-    
-    if len(send_to_distill) > 0:
-        send_to_distill.reverse()
-        compact = get_distillation(config, metrics, distillation_llm, compact, upto, send_to_distill)
-        
     send_to_llm.reverse()
     
     permanent = [

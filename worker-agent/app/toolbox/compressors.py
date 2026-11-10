@@ -64,7 +64,7 @@ def get_tool_call_about(resp: AIMessage):
     return " ".join(about).strip() 
     
 def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Iteration, limit: int, wrapper: ToolCallResultWrapper) -> str | None:
-    if it.tool_name in TRY_SEMANTIC_COMPRESSOR and it.tool_call_result_chunks is None: 
+    if it.tool_name in TRY_SEMANTIC_COMPRESSOR and wrapper.tool_call_result_chunks is None: 
         try:
             # Determine how many chunks to fetch based on tier limit
             #find largest just in case someone is testing a non linear arrangement
@@ -79,17 +79,17 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
             if(query):
                 raw_chunks = search_history_function("find compression chunks",
                                                      query,
-                                                     num_chunks + 1, 
+                                                     num_chunks + 1,
                                                      config.execution_id,
                                                      wrapper.tool_call_result_instance_number)
                 chunks = json.loads(raw_chunks)
                 if len(chunks) > 0:
-                    it.tool_call_result_chunks = chunks
+                    wrapper.tool_call_result_chunks = chunks
                 else:
                     print(f"semantic compressor found no chunks for instance_number : {wrapper.tool_call_result_instance_number}")
-                    it.tool_call_result_chunks = None
-            
-            metrics.emit(metrics.get_counter_message("compression_semantic_compressor_got_chunks", "compression event"))
+                    wrapper.tool_call_result_chunks = None
+
+                metrics.emit(metrics.get_counter_message("compression_semantic_compressor_got_chunks", "compression event"))
         except Exception as e:
             print(e)
             metrics.emit(metrics.get_counter_message("compression_semantic_compressor_error", "failed to fetch evidence chunks")) 
@@ -101,7 +101,7 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
             compressed_chunks = []
             re_ordered_chunks = []
             remaining_limit = limit
-            for i, stored_chunk in enumerate(it.tool_call_result_chunks):
+            for i, stored_chunk in enumerate(wrapper.tool_call_result_chunks):
                 if "content" in stored_chunk["properties"]:
                     remaining_limit -= len(stored_chunk["properties"]["content"])
                     if remaining_limit <=0 and i > 0: #first collect at least one of the closest chunks
@@ -149,9 +149,9 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
                 next_expected = stored_chunk['properties']['chunk_index'] + 1
                 
             #derive approximate amount of truncation
-            if next_expected < it.tool_call_result_chunks[0]['properties']['chunk_count']:
+            if next_expected < wrapper.tool_call_result_chunks[0]['properties']['chunk_count']:
                 # compute how many chunks were omitted at the end
-                omitted_chunks_end = it.tool_call_result_chunks[0]['properties']['chunk_count'] - next_expected
+                omitted_chunks_end = wrapper.tool_call_result_chunks[0]['properties']['chunk_count'] - next_expected
                 compressed_chunks.append(f"...truncated {omitted_chunks_end} chunks") 
                 
             compressed_result = "\n".join(compressed_chunks).strip()
@@ -162,8 +162,8 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
                 compressed_result = None
         except Exception as e:
             print(e)
-            print(it.tool_call_result_chunks)
-            it.tool_call_result_chunks = None
+            print(wrapper.tool_call_result_chunks)
+            wrapper.tool_call_result_chunks = None
             metrics.emit(metrics.get_counter_message("compression_semantic_assembly_error", "failed to assemble chunked message")) 
             return None
     

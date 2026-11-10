@@ -206,14 +206,17 @@ def run_agent(
             )
             wrappers.append(wrapper)
 
+        # Count how often the same (tool, result) pair has been seen.
+        # The fingerprints live on each wrapper, so a turn with several
+        # calls is counted per wrapper rather than for the iteration as a
+        # whole.
         for wrapper in wrappers:
-            this_iteration.tool_call_fingerprint = wrapper.tool_call_fingerprint
             step_fingerprint = (
-                this_iteration.tool_call_fingerprint,
-                this_iteration.result_fingerprint,
+                wrapper.tool_call_fingerprint,
+                wrapper.result_fingerprint,
             )
-            step_counts[step_fingerprint] = step_counts.get(step_fingerprint, -1) + 1
-            wrapper.stagnant_count = step_counts[step_fingerprint]
+            wrapper.stagnant_count = step_counts.get(step_fingerprint, -1) + 1
+            step_counts[step_fingerprint] = wrapper.stagnant_count
 
         for wrapper in wrappers:
             add_tool_event(

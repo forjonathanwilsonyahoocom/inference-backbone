@@ -68,6 +68,14 @@ class Iteration(BaseModel):
     tool_call_results: List[ToolCallResultWrapper] = []
 
 
+def find_tool_call_result(wrappers: List[ToolCallResultWrapper], tool_call_id: str) -> Optional[ToolCallResultWrapper]:
+    """Return the wrapper whose ``tool_call_id`` matches, or None."""
+    for wrapper in wrappers:
+        if wrapper.tool_call_id == tool_call_id:
+            return wrapper
+    return None
+
+
 class Compaction(BaseModel):
     summary: List[dict] = [] #holds the progressive original agent state objects
     summary_deltas: List[DistillationDelta] = [] #holds the list of delta update from the summary_aggregate to the latest summary
