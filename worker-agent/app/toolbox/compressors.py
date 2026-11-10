@@ -63,7 +63,7 @@ def get_tool_call_about(resp: AIMessage):
         about.append(tc.get("args", {}).get("about", ""))
     return " ".join(about).strip() 
     
-def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Iteration, limit: int) -> str | None:
+def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Iteration, limit: int, wrapper: ToolCallResultWrapper) -> str | None:
     if it.tool_name in TRY_SEMANTIC_COMPRESSOR and it.tool_call_result_chunks is None: 
         try:
             # Determine how many chunks to fetch based on tier limit
@@ -74,19 +74,19 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
                     largest_tier_limit = t[1]
                     
             num_chunks = largest_tier_limit // 1000 #match with backbone-api chunk size
-            query = it.tool_call_result_chunk_query or get_tool_call_about(it.model_response)
+            query = wrapper.tool_call_result_chunk_query or get_tool_call_about(it.model_response)
             print(f"semantic compressor query: {query}")
             if(query):
                 raw_chunks = search_history_function("find compression chunks",
                                                      query,
                                                      num_chunks + 1, 
                                                      config.execution_id,
-                                                     it.tool_call_result_instance_number)
+                                                     wrapper.tool_call_result_instance_number)
                 chunks = json.loads(raw_chunks)
                 if len(chunks) > 0:
                     it.tool_call_result_chunks = chunks
                 else:
-                    print(f"semantic compressor found no chunks for instance_number : {it.tool_call_result_instance_number}")
+                    print(f"semantic compressor found no chunks for instance_number : {wrapper.tool_call_result_instance_number}")
                     it.tool_call_result_chunks = None
             
             metrics.emit(metrics.get_counter_message("compression_semantic_compressor_got_chunks", "compression event"))
