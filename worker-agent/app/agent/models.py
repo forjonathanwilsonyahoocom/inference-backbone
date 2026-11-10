@@ -65,6 +65,7 @@ class Iteration(BaseModel):
     model_response: Any = None
     model_response_compressed: Any = None
     model_response_instance_number: int = None
+    compression_limit: Optional[int] = None
     tool_call_results: List[ToolCallResultWrapper] = []
 
 
