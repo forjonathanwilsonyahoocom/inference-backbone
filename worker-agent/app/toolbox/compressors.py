@@ -23,7 +23,7 @@ from toolbox.analyze_workspace import compress_analyze_workspace
 from toolbox.read_file import compress_read_file
 from toolbox.search_info import compress_search_info
 from toolbox.propose_relationship import compress_propose_relationship
-from agent.models import Iteration
+from agent.models import Iteration, ToolCallResultWrapper
 from contracts.inference_contracts.worker_agent_request import AgentRequest
 
 
