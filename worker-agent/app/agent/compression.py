@@ -108,38 +108,43 @@ def compress_history(config: AgentRequest, metrics: MetricsWrapper, history: Lis
 
     age = 0
     for it in reversed(history):
-        if it.is_silenced:
-            continue
         if it.iteration <= upto:
             break
-        
+
+        for wrapper in it.tool_call_results:
+            limit = limit_for_age(config, age)
+            if wrapper.tool_call_result_utility is not None:
+                limit = limit * config.compression_adjust_by_utility * wrapper.tool_call_result_utility
+                print(f"limit adjusted to {limit}")
+
+            if limit is None or wrapper.compression_limit == limit:
+                age = age + 1
+                continue
+                
+            compressed_result = semantic_compressor(config, metrics, limit, wrapper)
+            if compressed_result is None:
+                compressed_result = get_compressor(wrapper.tool_name)(wrapper.tool_call_result, limit)
+
+            #only use compressed tool result if it's worth adding the annotations
+            omitted = len(str(wrapper.tool_call_result)) - len(str(compressed_result))
+            if omitted > 100:
+                metrics.emit(metrics.get_counter_message("compression_compressed_tool_result", "compression event"))
+                metrics.emit(metrics.get_counter_message("compression_amount_tool_result", "reduced by this many chars", value=omitted))
+                compressed_result = f"search_evidence with instance_number={wrapper.tool_call_result_instance_number} for original chunks, compressed: \n{compressed_result}"
+                # Re‑compress from the raw values – never mutate the originals.
+                wrapper.tool_call_result_compressed = compressed_result
+                wrapper.compression_limit = limit
+
         limit = limit_for_age(config, age)
-        if it.tool_call_result_utility is not None:
-            limit = limit * config.compression_adjust_by_utility * it.tool_call_result_utility
-            print(f"limit adjusted to {limit}")
-            
-        if limit is None or it.compression_limit == limit:
+        if limit is None or wrapper.compression_limit == limit:
             age = age + 1
             continue
-        
-        compressed_result = semantic_compressor(config, metrics, it, limit)
-        if compressed_result is None:
-            compressed_result = get_compressor(it.tool_name)(it.tool_call_result, limit)
             
-        #only use compressed tool result if it's worth adding the annotations
-        omitted = len(str(it.tool_call_result)) - len(str(compressed_result))
-        if omitted > 100:
-            metrics.emit(metrics.get_counter_message("compression_compressed_tool_result", "compression event"))
-            metrics.emit(metrics.get_counter_message("compression_amount_tool_result", "reduced by this many chars", value=omitted))
-            compressed_result = f"search_evidence with instance_number={it.tool_call_result_instance_number} for original chunks, compressed: \n{compressed_result}"
-            # Re‑compress from the raw values – never mutate the originals.
-            it.tool_call_result_compressed = compressed_result
-                
         it.model_response_compressed = compress_response(metrics, it.model_response, limit)
         metrics.emit(metrics.get_counter_message("compression_compressed_response", "compression event"))
-            
+
         it.compression_limit = limit
-        
+
         age = age + 1
     return history
 

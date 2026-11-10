@@ -245,7 +245,6 @@ def hacky_make_input_for_episode_extractor(result: TextAnalysis):
     for item in result.summary:
         item_type, _ = item["file"].split("/")
         existing_map = ref_map.get(item_type, {})
-        existing_type_lookup = type_lookup.get(item_type, {}) ##???
         if item_type == "agent_state":
             existing_map[item["to"]] = item
         elif item_type == "agent_state_delta":
@@ -261,23 +260,23 @@ def hacky_make_input_for_episode_extractor(result: TextAnalysis):
         elif item_type == "claim":
             existing_map[item["claim_id"]] = item
         elif item_type == "task":
-            existing_map[1] = item
+            existing_map["task1"] = item
         elif item_type == "final_answer":
-            existing_map[1] = item
+            existing_map["final_answer1"] = item
         else:
             print(f"unexpected item_type {item_type}")
             
         ref_map[item_type] = existing_map
 
-    a_task = ref_map.get("task", [{}])[1].get("clean", "").strip()
+    a_task = ref_map.get("task", {}).get("task1", {}).get("clean", "").strip()
     if a_task:
         report = ["# task"]
         report.append(a_task)
         report.append("# has trace")
         
-    for evidence in ref_map["evidence"]["list"]:
+    for evidence in ref_map.get("evidence",{}).get("list", []):
                
-        support_edges = ref_map["claim_evidence_edge"].get(evidence["evidence_id"], [])
+        support_edges = ref_map.get("claim_evidence_edge",{}).get(evidence["evidence_id"], [])
         if support_edges:
             report.append(f"""## supporting evidence from {evidence["evidence_type"]}, {evidence["summary"]}""")
             report.append("### possible support for claims:")
@@ -296,7 +295,7 @@ def hacky_make_input_for_episode_extractor(result: TextAnalysis):
            report.append("### this summary analyzed as delta against prior summary info")
            report.append(caused_state_delta_record["summary"])
     
-    final_answer= ref_map.get("final_answer", [{}])[1].get("clean","").strip()
+    final_answer= ref_map.get("final_answer", {}).get("final_answer1", {}).get("clean","").strip()
     if final_answer:
         report.append("# agent responded with")
         report.append(final_answer)

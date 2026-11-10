@@ -4,7 +4,7 @@ from typing import Any, List, Optional, Dict
 from pydantic import BaseModel
 from ollama import ResponseError 
 from agent.messages import derive_message_list, final_distillation
-from agent.models import Iteration, Compaction
+from agent.models import Iteration, Compaction, ToolCallResultWrapper
 from contracts.inference_contracts.worker_agent_request import AgentRequest
 from agent.fingerprint import tool_call_fingerprint, result_fingerprint
 from agent.telemetry import ingest_task, ingest_final_answer, ingest_agent_request
@@ -57,7 +57,7 @@ def run_agent(
         if not (te.event_type == "agent_response" and len(te.result) < 5):
             ingest_tool_event(config.execution_id, te)
                 
-    while iteration <= config.max_iterations:
+    while iteration < config.max_iterations:
         iteration = iteration + 1
         this_iteration = Iteration(
             iteration=iteration
@@ -85,7 +85,7 @@ def run_agent(
 
                 metrics.emit(token_gauge(getattr(response, "usage_metadata", {}).get("input_tokens", 0)))
                 
-                if len(tool_calls) == 1 or (not tool_calls and len(content) > 4 and (not looks_like_json)) :
+                if len(tool_calls) > 0 or (not tool_calls and len(content) > 4 and (not looks_like_json)) :
                     break
                 
                 add_tool_event(
@@ -100,10 +100,10 @@ def run_agent(
                 )
                 if looks_like_json:
                     metrics.emit(failure_metric_labeler({"failure": "model response has json content and no tool calls"}))
-                    retry_notes += [response, HumanMessage("Your response shows no tool calls, but the content looks like it might be tool args. Return exactly one tool call, or a final answer as string content only.")]
+                    retry_notes += [response, HumanMessage("Your response shows no tool calls, but the content looks like it might be tool args. Return tool calls, or a final string answer as content only.")]
                 else:
                     metrics.emit(failure_metric_labeler({"failure": "model response was empty or invalid"}))
-                    retry_notes += [response, HumanMessage("Your response was empty or invalid. Return exactly one tool call, or a final answer as content only.")]
+                    retry_notes += [response, HumanMessage("Your response was empty or invalid. Return tool calls, or a final string answer as content only.")]
             except Exception as e:
                 add_tool_event(
                     ToolEvent(
@@ -115,7 +115,7 @@ def run_agent(
                     )
                 )
                 metrics.emit(failure_metric_labeler({"failure": f"model response was unparsible"}))
-                retry_notes.append(HumanMessage(f"Last response failed tool-call parsing: {e}. Return exactly one valid tool call, or a final answer as content only."))
+                retry_notes.append(HumanMessage(f"Last response failed tool-call parsing: {e}. Return tool calls, or a final string answer as content only."))
         else:
             current_compaction, distillation = final_distillation(config, metrics, distillation_llm, current_compaction, full_thread_history)
             
@@ -152,58 +152,79 @@ def run_agent(
             )
         )
         this_iteration.model_response_instance_number = event_counter
-        tool_call = tool_calls[0]
-        #NOTE there will only be one tool call per the current rules
-        tool_name = tool_call["name"]
-        tool_args = tool_call.get("args", {})
 
-        selected_tool = tools.get(tool_name)
+        # A turn can issue several tool calls, so we keep a *list* of
+        # :class:`ToolCallResultWrapper`, one per tool call in this turn.
+        # Each wrapper carries its own instance number, compression state
+        # and utility assessment, and is appended to the thread history
+        # as a whole.
+        wrappers: List[ToolCallResultWrapper] = []
+        for tool_call in tool_calls:
+            tool_name = tool_call["name"]
+            tool_args = tool_call.get("args", {})
 
-        # an unknown tool is unknown regardless of args
-        fp_args = tool_args if selected_tool is not None else {}
-        call_fp = tool_call_fingerprint(tool_name, fp_args)
+            selected_tool = tools.get(tool_name)
 
-        if selected_tool is None:
-            result = f"Unknown tool: {tool_name}. Available: {list(tools)}"
-            metrics.emit(failure_metric_labeler({"failure": f"unknown tool {tool_name}"}))
-        else:
-            if tool_name in SIDE_EFFECT_TOOLS:
-                this_iteration.is_silenced = True
-                
-            this_iteration.tool_name = tool_name
-            try:
-                metrics.emit(tool_call_metric_labeler({"tool_call": tool_name}))
-                result = selected_tool.invoke(tool_args)
-            except Exception as exc:
-                result = f"Tool error: {type(exc).__name__}: {exc}"
-                metrics.emit(failure_metric_labeler({"failure": f"execution failure {tool_name}"}))
+            # an unknown tool is unknown regardless of args
+            fp_args = tool_args if selected_tool is not None else {}
+            call_fp = tool_call_fingerprint(tool_name, fp_args)
+            is_silenced = False
+            if selected_tool is None:
+                result = f"Unknown tool: {tool_name}. Available: {list(tools)}"
+                metrics.emit(failure_metric_labeler({"failure": f"unknown tool {tool_name}"}))
+            else:
+                if tool_name in SIDE_EFFECT_TOOLS:
+                    is_silenced = True                   
+                try:
+                    metrics.emit(tool_call_metric_labeler({"tool_call": tool_name}))
+                    result = selected_tool.invoke(tool_args)
+                except Exception as exc:
+                    result = f"Tool error: {type(exc).__name__}: {exc}"
+                    metrics.emit(failure_metric_labeler({"failure": f"execution failure {tool_name}"}))
 
-        this_iteration.tool_call_result=result
-        this_iteration.result_fingerprint = result_fingerprint(this_iteration.tool_call_result)
-        this_iteration.tool_call_fingerprint = call_fp
-        step_fingerprint = (
-            this_iteration.tool_call_fingerprint,
-            this_iteration.result_fingerprint,
-        )
-        step_counts[step_fingerprint] = step_counts.get(step_fingerprint, -1) + 1
-        this_iteration.stagnant_count=step_counts[step_fingerprint]
-                
-            
-        add_tool_event(
-            ToolEvent(
-                iteration=iteration,
-                event_type="tool_call_result",
-                model_name=config.worker_model,
-                tool=tool_name,
-                args=tool_args,
-                result=this_iteration.tool_call_result,
+            wrapper = ToolCallResultWrapper(
+                tool_call_id=tool_call["id"],
+                tool_call_result=result,
+                tool_call_result_instance_number=event_counter,
+                tool_call_result_chunk_query=tool_args.get("about", ""),
+                tool_call_fingerprint=call_fp,
+                result_fingerprint=result_fingerprint(result),
+                tool_name=tool_name,
+                stagnant_count=0,
+                is_silenced=is_silenced,
             )
-        )
-        
-        this_iteration.tool_call_result_instance_number = event_counter
-        
-        print(f"Executing: {tool_name}({str(tool_args)[:150]})")
 
+            # Count how often the same (tool, result) pair has been seen.
+            # The fingerprints live on each wrapper, so a turn with several
+            # calls is counted per wrapper rather than for the iteration as a
+            # whole.
+            step_fingerprint = (
+                wrapper.tool_call_fingerprint,
+                wrapper.result_fingerprint,
+            )
+            wrapper.stagnant_count = step_counts.get(step_fingerprint, -1) + 1
+            
+            step_counts[step_fingerprint] = wrapper.stagnant_count
+            
+            wrappers.append(wrapper)
+
+            add_tool_event(
+                ToolEvent(
+                    iteration=iteration,
+                    event_type="tool_call_result",
+                    model_name=config.worker_model,
+                    tool=wrapper.tool_name,
+                    args=tool_args,
+                    result=wrapper.tool_call_result,
+                )
+            )
+
+        for wrapper in wrappers:
+            if config.verbose:
+                print(f"Executing: {wrapper.tool_name}({str(wrapper.tool_call_result)[:150]})")
+
+        this_iteration.tool_call_results = wrappers
+        
         full_thread_history.append(this_iteration)
             
 
@@ -215,5 +236,6 @@ def run_agent(
             "iterations": iteration,
             "events": events,
             "distillation" : distillation,
-            "execution_id" : config.execution_id}
+            "execution_id" : config.execution_id,
+            }
 
