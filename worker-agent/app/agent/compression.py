@@ -121,7 +121,7 @@ def compress_history(config: AgentRequest, metrics: MetricsWrapper, history: Lis
                 age = age + 1
                 continue
                 
-            compressed_result = semantic_compressor(config, metrics, it, limit, wrapper)
+            compressed_result = semantic_compressor(config, metrics, limit, wrapper)
             if compressed_result is None:
                 compressed_result = get_compressor(wrapper.tool_name)(wrapper.tool_call_result, limit)
 

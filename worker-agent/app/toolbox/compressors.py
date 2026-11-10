@@ -63,8 +63,8 @@ def get_tool_call_about(resp: AIMessage):
         about.append(tc.get("args", {}).get("about", ""))
     return " ".join(about).strip() 
     
-def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Iteration, limit: int, wrapper: ToolCallResultWrapper) -> str | None:
-    if it.tool_name in TRY_SEMANTIC_COMPRESSOR and wrapper.tool_call_result_chunks is None: 
+def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, limit: int, wrapper: ToolCallResultWrapper) -> str | None:
+    if wrapper.tool_name in TRY_SEMANTIC_COMPRESSOR and wrapper.tool_call_result_chunks is None: 
         try:
             # Determine how many chunks to fetch based on tier limit
             #find largest just in case someone is testing a non linear arrangement
@@ -74,7 +74,7 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
                     largest_tier_limit = t[1]
                     
             num_chunks = largest_tier_limit // 1000 #match with backbone-api chunk size
-            query = wrapper.tool_call_result_chunk_query or get_tool_call_about(it.model_response)
+            query = wrapper.tool_call_result_chunk_query
             print(f"semantic compressor query: {query}")
             if(query):
                 raw_chunks = search_history_function("find compression chunks",
@@ -95,7 +95,7 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, it: Itera
             metrics.emit(metrics.get_counter_message("compression_semantic_compressor_error", "failed to fetch evidence chunks")) 
     
     compressed_result = None
-    if it.tool_call_result_chunks is not None:
+    if wrapper.tool_call_result_chunks is not None:
         try:
             # Build compressed string from chunks up to limit
             compressed_chunks = []
