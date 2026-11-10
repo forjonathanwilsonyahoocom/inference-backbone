@@ -152,57 +152,84 @@ def run_agent(
             )
         )
         this_iteration.model_response_instance_number = event_counter
-        tool_call = tool_calls[0]
-        #NOTE there will only be one tool call per the current rules
-        tool_name = tool_call["name"]
-        tool_args = tool_call.get("args", {})
 
-        selected_tool = tools.get(tool_name)
+        # A turn can issue several tool calls, so we keep a *list* of
+        # :class:`ToolCallResultWrapper`, one per tool call in this turn.
+        # Each wrapper carries its own instance number, compression state
+        # and utility assessment, and is appended to the thread history
+        # as a whole.
+        wrappers: List[ToolCallResultWrapper] = []
+        for tool_call in tool_calls:
+            tool_name = tool_call["name"]
+            tool_args = tool_call.get("args", {})
 
-        # an unknown tool is unknown regardless of args
-        fp_args = tool_args if selected_tool is not None else {}
-        call_fp = tool_call_fingerprint(tool_name, fp_args)
+            selected_tool = tools.get(tool_name)
 
-        if selected_tool is None:
-            result = f"Unknown tool: {tool_name}. Available: {list(tools)}"
-            metrics.emit(failure_metric_labeler({"failure": f"unknown tool {tool_name}"}))
-        else:
-            if tool_name in SIDE_EFFECT_TOOLS:
-                this_iteration.is_silenced = True
-                
-            this_iteration.tool_name = tool_name
-            try:
-                metrics.emit(tool_call_metric_labeler({"tool_call": tool_name}))
-                result = selected_tool.invoke(tool_args)
-            except Exception as exc:
-                result = f"Tool error: {type(exc).__name__}: {exc}"
-                metrics.emit(failure_metric_labeler({"failure": f"execution failure {tool_name}"}))
+            # an unknown tool is unknown regardless of args
+            fp_args = tool_args if selected_tool is not None else {}
+            call_fp = tool_call_fingerprint(tool_name, fp_args)
 
-        this_iteration.tool_call_result=result
-        this_iteration.result_fingerprint = result_fingerprint(this_iteration.tool_call_result)
-        this_iteration.tool_call_fingerprint = call_fp
-        step_fingerprint = (
-            this_iteration.tool_call_fingerprint,
-            this_iteration.result_fingerprint,
-        )
-        step_counts[step_fingerprint] = step_counts.get(step_fingerprint, -1) + 1
-        this_iteration.stagnant_count=step_counts[step_fingerprint]
-                
-            
-        add_tool_event(
-            ToolEvent(
-                iteration=iteration,
-                event_type="tool_call_result",
-                model_name=config.worker_model,
-                tool=tool_name,
-                args=tool_args,
-                result=this_iteration.tool_call_result,
+            if selected_tool is None:
+                result = f"Unknown tool: {tool_name}. Available: {list(tools)}"
+                metrics.emit(failure_metric_labeler({"failure": f"unknown tool {tool_name}"}))
+            else:
+                if tool_name in SIDE_EFFECT_TOOLS:
+                    is_silenced = True
+                else:
+                    is_silenced = False
+
+                this_tool_name = tool_name
+                try:
+                    metrics.emit(tool_call_metric_labeler({"tool_call": tool_name}))
+                    result = selected_tool.invoke(tool_args)
+                except Exception as exc:
+                    result = f"Tool error: {type(exc).__name__}: {exc}"
+                    metrics.emit(failure_metric_labeler({"failure": f"execution failure {tool_name}"}))
+
+                if is_silenced:
+                    this_iteration.is_silenced = True
+
+            wrapper = ToolCallResultWrapper(
+                tool_call_id=tool_call["id"],
+                tool_call_result=result,
+                tool_call_result_instance_number=event_counter,
+                tool_call_result_compressed=None,
+                tool_call_result_chunks=None,
+                tool_call_result_chunk_query=None,
+                tool_call_result_utility=None,
+                tool_call_fingerprint=call_fp,
+                result_fingerprint=result_fingerprint(result),
+                compression_limit=None,
+                tool_name=this_tool_name,
+                stagnant_count=0,
+                is_silenced=is_silenced,
             )
-        )
-        
-        this_iteration.tool_call_result_instance_number = event_counter
-        
-        print(f"Executing: {tool_name}({str(tool_args)[:150]})")
+            wrappers.append(wrapper)
+
+        for wrapper in wrappers:
+            this_iteration.tool_call_fingerprint = wrapper.tool_call_fingerprint
+            step_fingerprint = (
+                this_iteration.tool_call_fingerprint,
+                this_iteration.result_fingerprint,
+            )
+            step_counts[step_fingerprint] = step_counts.get(step_fingerprint, -1) + 1
+            wrapper.stagnant_count = step_counts[step_fingerprint]
+
+        for wrapper in wrappers:
+            add_tool_event(
+                ToolEvent(
+                    iteration=iteration,
+                    event_type="tool_call_result",
+                    model_name=config.worker_model,
+                    tool=wrapper.tool_name,
+                    args=wrapper.tool_call_result,
+                    result=wrapper.tool_call_result,
+                )
+            )
+
+        for wrapper in wrappers:
+            if config.verbose:
+                print(f"Executing: {wrapper.tool_name}({str(wrapper.tool_call_result)[:150]})")
 
         full_thread_history.append(this_iteration)
             
@@ -215,5 +242,6 @@ def run_agent(
             "iterations": iteration,
             "events": events,
             "distillation" : distillation,
-            "execution_id" : config.execution_id}
+            "execution_id" : config.execution_id,
+            "tool_call_results": [w.model_dump() for w in full_thread_history[-1].tool_call_results]}
 

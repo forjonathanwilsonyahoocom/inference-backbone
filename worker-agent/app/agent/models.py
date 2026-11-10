@@ -31,11 +31,21 @@ def materialize_agent_request(scaffold: AgentRequest) -> AgentRequest:
     )
 
     
-class Iteration(BaseModel):
-    iteration: int
-    model_response: Any = None
-    model_response_compressed: Any = None
-    model_response_instance_number: int = None
+class ToolCallResultWrapper(BaseModel):
+    """One captured result of a single tool call made by the agent.
+
+    The loop used to hold a single ``ToolCallResultWrapper`` per turn.
+    It now holds a *list* of them, so one turn can issue several tool
+    calls and every result is preserved independently of the
+    compression tier that applies to it.
+
+    ``tool_call_result`` is the raw payload returned by the tool.
+    ``tool_call_result_compressed`` is the value actually shown back to
+    the LLM, and ``tool_call_result_chunks`` holds the ranked evidence
+    fragments that back that compressed value.
+    """
+
+    tool_call_id: str
     tool_call_result: Any = None
     tool_call_result_instance_number: int = None
     tool_call_result_compressed: Any = None
@@ -48,6 +58,14 @@ class Iteration(BaseModel):
     tool_name: Optional[str] = None
     stagnant_count: int = 0
     is_silenced: bool = False #set to remove from context
+
+
+class Iteration(BaseModel):
+    iteration: int
+    model_response: Any = None
+    model_response_compressed: Any = None
+    model_response_instance_number: int = None
+    tool_call_results: List[ToolCallResultWrapper] = []
 
 
 class Compaction(BaseModel):
