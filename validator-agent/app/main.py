@@ -64,7 +64,7 @@ async def extract_claims(req: ClaimsRequest):
     
     # Assuming the first element contains the required content
     task_content = task_events[0].get("content", "No task content found.") if task_events else "No task content found."
-    final_answer_content = final_answer_events[0].get("content", "No final answer content found.") if final_answer_events else "No final answer content found."
+    final_answer_content = final_answer_events[0].get("content", "No final answer content found.") if final_answer_events else "Might be done, appears to have exhausted turns or crashed."
     
     user_content = f"TASK:\n{task_content}\n\nFINAL RESPONSE:\n{final_answer_content}"
     result = await handle_claims_extraction(

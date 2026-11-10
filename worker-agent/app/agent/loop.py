@@ -57,7 +57,7 @@ def run_agent(
         if not (te.event_type == "agent_response" and len(te.result) < 5):
             ingest_tool_event(config.execution_id, te)
                 
-    while iteration <= config.max_iterations:
+    while iteration < config.max_iterations:
         iteration = iteration + 1
         this_iteration = Iteration(
             iteration=iteration
