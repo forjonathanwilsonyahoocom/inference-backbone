@@ -4,7 +4,7 @@ from typing import Any, List, Optional, Dict
 from pydantic import BaseModel
 from ollama import ResponseError 
 from agent.messages import derive_message_list, final_distillation
-from agent.models import Iteration, Compaction
+from agent.models import Iteration, Compaction, ToolCallResultWrapper
 from contracts.inference_contracts.worker_agent_request import AgentRequest
 from agent.fingerprint import tool_call_fingerprint, result_fingerprint
 from agent.telemetry import ingest_task, ingest_final_answer, ingest_agent_request
@@ -188,7 +188,7 @@ def run_agent(
                 tool_call_result_instance_number=event_counter,
                 tool_call_result_compressed=None,
                 tool_call_result_chunks=None,
-                tool_call_result_chunk_query=None,
+                tool_call_result_chunk_query=tool_args.get("about", None),
                 tool_call_result_utility=None,
                 tool_call_fingerprint=call_fp,
                 result_fingerprint=result_fingerprint(result),
