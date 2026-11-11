@@ -59,11 +59,11 @@ def derive_message_list(config: AgentRequest,
         if iteration.iteration > compact.upto:
             live_total += iter_tokens(iteration)
             layer += 1
-            layer_metric_labeler({"layer" : str(layer)}, live_total)
+            metrics.emit(layer_metric_labeler({"layer" : str(layer)}, live_total))
             for result_wrapper in iteration.tool_call_results:
                 live_total += tool_tokens(result_wrapper)
                 layer += 1
-                layer_metric_labeler({"layer" : str(layer)}, live_total)
+                metrics.emit(layer_metric_labeler({"layer" : str(layer)}, live_total))
 
     token_quota = config.distill_to if live_total > config.distill_at else float("inf")
     
