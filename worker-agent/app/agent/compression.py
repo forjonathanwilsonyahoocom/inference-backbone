@@ -139,7 +139,7 @@ def compress_history(config: AgentRequest, metrics: MetricsWrapper, history: Lis
         if limit is None or wrapper.compression_limit == limit:
             age = age + 1
             continue
-            
+        it.has_compressed_content = True
         it.model_response_compressed = compress_response(metrics, it.model_response, limit)
         metrics.emit(metrics.get_counter_message("compression_compressed_response", "compression event"))
 
