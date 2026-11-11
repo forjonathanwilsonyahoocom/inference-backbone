@@ -45,21 +45,25 @@ def derive_message_list(config: AgentRequest,
     """
     
     stagnation_metric_labeler = metrics.get_counter_message_labeler("stagnation_warning", "the agent calls a tool on repeat")
+    layer_metric_labeler = metrics.get_gauge_labeler_func("stagnation_warning", "the agent calls a tool on repeat")
     seen_fingerprints = set()
     send_to_llm = []
     send_to_distill = []
         
+        
+    history = compress_history(config, metrics, history, compact.upto)
     
     live_total = 0
-    for i in history:
-        if i.iteration > compact.upto:
-            live_total += iter_tokens(i)
-            for w in i.tool_call_results:
-                live_total += tool_tokens(w)
+    layer = 0
+    for iteration in reversed(history):
+        if iteration.iteration > compact.upto:
+            live_total += iter_tokens(iteration)
+            layer_metric_labeler({"layer" : str(layer += 1)}, live_total)
+            for result_wrapper in iteration.tool_call_results:
+                live_total += tool_tokens(result_wrapper)
+                layer_metric_labeler({"layer" : str(layer += 1)}, live_total)
 
     token_quota = config.distill_to if live_total > config.distill_at else float("inf")
-    
-    history = compress_history(config, metrics, history, compact.upto)
     
     upto: int = 0
     list_to_add_to = send_to_llm

@@ -63,7 +63,10 @@ class MetricsWrapper:
                 if c == "missing":
                     c = Gauge(f"{self.service_name}_{ msg['name']}", msg['description'])
 
-                c.set(msg.get('value', 1))
+                if 'labels' in msg:
+                    c.labels(*list(msg.get('labels', {}).values())).set(msg.get('value', 1))
+                else:
+                    c.set(msg.get('value', 1))
 
                 self.gauges[msg['name']] = c
         except Exception as e:
@@ -77,14 +80,6 @@ class MetricsWrapper:
                 "value" : value}
 
 
-    def get_gauge_func(self, name, description):
-        def gauge_takes_value(value):
-            return {"type": "gauge",
-                    "name": name,
-                    "description": description,
-                    "value" : value}
-        return gauge_takes_value
-
 
     def get_counter_message_labeler(self, name, description):
         # call the function with a map of labels.
@@ -97,6 +92,24 @@ class MetricsWrapper:
                     "value" : value}
 
         return labeler
+
+
+    def get_gauge_func(self, name, description):
+        def gauge_takes_value(value):
+            return {"type": "gauge",
+                    "name": name,
+                    "description": description,
+                    "value" : value}
+        return gauge_takes_value
+
+    def get_gauge_labeler_func(self, name, description):
+        def gauge_labeler(labels, value):
+            return {"type": "gauge",
+                    "name": name,
+                    "description": description,
+                    "labels": labels,
+                    "value" : value}
+        return gauge_labeler
 
 
     def get_metric_label(self, location=None, exception=None):
