@@ -45,7 +45,7 @@ def derive_message_list(config: AgentRequest,
     """
     
     stagnation_metric_labeler = metrics.get_counter_message_labeler("stagnation_warning", "the agent calls a tool on repeat")
-    layer_metric_labeler = metrics.get_gauge_labeler_func("stagnation_warning", "the agent calls a tool on repeat")
+    layer_metric_labeler = metrics.get_gauge_labeler_func("estimated_tokens_by_layer", "compressed message layers")
     seen_fingerprints = set()
     send_to_llm = []
     send_to_distill = []
