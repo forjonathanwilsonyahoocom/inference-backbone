@@ -58,10 +58,12 @@ def derive_message_list(config: AgentRequest,
     for iteration in reversed(history):
         if iteration.iteration > compact.upto:
             live_total += iter_tokens(iteration)
-            layer_metric_labeler({"layer" : str(layer += 1)}, live_total)
+            layer += 1
+            layer_metric_labeler({"layer" : str(layer)}, live_total)
             for result_wrapper in iteration.tool_call_results:
                 live_total += tool_tokens(result_wrapper)
-                layer_metric_labeler({"layer" : str(layer += 1)}, live_total)
+                layer += 1
+                layer_metric_labeler({"layer" : str(layer)}, live_total)
 
     token_quota = config.distill_to if live_total > config.distill_at else float("inf")
     
@@ -71,6 +73,17 @@ def derive_message_list(config: AgentRequest,
     primary_result_attribute = "tool_call_result_compressed"
     primary_response_attribute = "model_response_compressed"
     is_first_message = True
+    
+    def add_to_both(message):
+        nonlocal send_to_llm
+        send_to_llm.append(message)
+        nonlocal send_to_distill
+        send_to_distill.append(message)
+    
+    def add_to_llm_only(message):
+        nonlocal send_to_llm
+        send_to_llm.append(message)
+        
     for iteration in reversed(history):
     
         #only send to distill what has not yet been compacted
