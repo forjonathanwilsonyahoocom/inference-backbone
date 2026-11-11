@@ -273,8 +273,20 @@ def hacky_make_input_for_episode_extractor(result: TextAnalysis):
         report = ["# task"]
         report.append(a_task)
         report.append("# has trace")
-        
+    
+    last_iteration = -1
     for evidence in ref_map.get("evidence",{}).get("list", []):
+    
+        if last_iteration != evidence["iteration"]:
+            caused_state_record = ref_map.get("agent_state",{}).get(last_iteration, False)
+            if caused_state_record:
+               report.append(f"## evidence up to iteration {last_iteration} summarized as")
+               report.append(caused_state_record["summary"])
+
+            caused_state_delta_record = ref_map.get("agent_state_delta", {}).get(last_iteration, False)
+            if caused_state_delta_record:
+               report.append("### this summary analyzed as delta against prior summary info")
+               report.append(caused_state_delta_record["summary"])
                
         support_edges = ref_map.get("claim_evidence_edge",{}).get(evidence["evidence_id"], [])
         if support_edges:
@@ -284,17 +296,19 @@ def hacky_make_input_for_episode_extractor(result: TextAnalysis):
                 report.append(f""" * {ref_map.get("claim", {}).get(edge["claim_id"], {}).get("summary", "")}""")
         else:
             report.append(f"""{evidence['iteration']}) additional event {evidence["evidence_type"]}, {evidence["summary"]}""")
-            
-        caused_state_record = ref_map.get("agent_state",{}).get(evidence["iteration"], False)
-        if caused_state_record:
-           report.append(f"## evidence up to iteration {evidence['iteration']} summarized as")
-           report.append(caused_state_record["summary"])
+        
+        last_iteration = evidence["iteration"]
 
-        caused_state_delta_record = ref_map.get("agent_state_delta", {}).get(evidence["iteration"], False)
-        if caused_state_delta_record:
-           report.append("### this summary analyzed as delta against prior summary info")
-           report.append(caused_state_delta_record["summary"])
-    
+    caused_state_record = ref_map.get("agent_state",{}).get(last_iteration, False)
+    if caused_state_record:
+       report.append(f"## evidence up to iteration {last_iteration} summarized as")
+       report.append(caused_state_record["summary"])
+
+    caused_state_delta_record = ref_map.get("agent_state_delta", {}).get(last_iteration, False)
+    if caused_state_delta_record:
+       report.append("### this summary analyzed as delta against prior summary info")
+       report.append(caused_state_delta_record["summary"])
+               
     final_answer= ref_map.get("final_answer", {}).get("final_answer1", {}).get("clean","").strip()
     if final_answer:
         report.append("# agent responded with")
