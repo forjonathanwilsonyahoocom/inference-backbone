@@ -64,7 +64,8 @@ class MetricsWrapper:
                     c = Gauge(f"{self.service_name}_{ msg['name']}", msg['description'])
 
                 if 'labels' in msg:
-                    c.labels(*list(msg.get('labels', {}).values())).set(msg.get('value', 1))
+                    for k, v in msg.get('labels', {}).items():
+                        c.labels(k, v).set(msg.get('value', 1))
                 else:
                     c.set(msg.get('value', 1))
 
