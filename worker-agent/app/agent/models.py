@@ -16,6 +16,7 @@ def materialize_agent_request(scaffold: AgentRequest) -> AgentRequest:
         system_message=scaffold.system_message if scaffold.system_message is not None else DEFAULT_SYSTEM_PROMPT,
         execution_id=scaffold.execution_id if scaffold.execution_id is not None else str(uuid.uuid4()),
         max_iterations=scaffold.max_iterations if scaffold.max_iterations is not None else 150,
+        truncate_at=scaffold.truncate_at if scaffold.truncate_at is not None else 20_000,
         distill_at=scaffold.distill_at if scaffold.distill_at is not None else 15_000,
         distill_to=scaffold.distill_to if scaffold.distill_to is not None else 7_000,
         compression_tiers=scaffold.compression_tiers if scaffold.compression_tiers is not None else [(8, 300), (4, 600), (2, 1000)],
@@ -67,6 +68,7 @@ class Iteration(BaseModel):
     model_response_instance_number: int = None
     compression_limit: Optional[int] = None
     tool_call_results: List[ToolCallResultWrapper] = []
+    is_summarized: bool = False #this iteration is already in the distillation
 
 
 def find_tool_call_result(wrappers: List[ToolCallResultWrapper], tool_call_id: str) -> Optional[ToolCallResultWrapper]:
@@ -82,6 +84,6 @@ class Compaction(BaseModel):
     summary_deltas: List[DistillationDelta] = [] #holds the list of delta update from the summary_aggregate to the latest summary
     summary_aggregate: dict = {} #holds the latest aggregation of the summary list, this is presented to the llm
     fallback: str = ""  # only holds a mechanically extracted string when llm call fails multiple times
-    upto: int = 0       # history[:upto] is folded into summary
+    upto: int = 0       # history[:upto] is truncated
 
 

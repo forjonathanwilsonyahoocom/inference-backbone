@@ -45,21 +45,27 @@ def derive_message_list(config: AgentRequest,
     """
     
     stagnation_metric_labeler = metrics.get_counter_message_labeler("stagnation_warning", "the agent calls a tool on repeat")
+    layer_metric_labeler = metrics.get_gauge_labeler_func("estimated_tokens_by_layer", "compressed message layers")
     seen_fingerprints = set()
     send_to_llm = []
     send_to_distill = []
         
+        
+    history = compress_history(config, metrics, history, compact.upto)
     
     live_total = 0
-    for i in history:
-        if i.iteration > compact.upto:
-            live_total += iter_tokens(i)
-            for w in i.tool_call_results:
-                live_total += tool_tokens(w)
+    layer = 0
+    for iteration in reversed(history):
+        if iteration.iteration > compact.upto:
+            live_total += iter_tokens(iteration)
+            layer += 1
+            metrics.emit(layer_metric_labeler({"layer" : str(layer)}, live_total))
+            for result_wrapper in iteration.tool_call_results:
+                live_total += tool_tokens(result_wrapper)
+                layer += 1
+                metrics.emit(layer_metric_labeler({"layer" : str(layer)}, live_total))
 
     token_quota = config.distill_to if live_total > config.distill_at else float("inf")
-    
-    history = compress_history(config, metrics, history, compact.upto)
     
     upto: int = 0
     list_to_add_to = send_to_llm
@@ -67,6 +73,17 @@ def derive_message_list(config: AgentRequest,
     primary_result_attribute = "tool_call_result_compressed"
     primary_response_attribute = "model_response_compressed"
     is_first_message = True
+    
+    def add_to_both(message):
+        nonlocal send_to_llm
+        send_to_llm.append(message)
+        nonlocal send_to_distill
+        send_to_distill.append(message)
+    
+    def add_to_llm_only(message):
+        nonlocal send_to_llm
+        send_to_llm.append(message)
+        
     for iteration in reversed(history):
     
         #only send to distill what has not yet been compacted

@@ -1,6 +1,6 @@
 httpx
 ddgs>=6.0.0
-playwright
+playwright==1.65.0
 fastapi
 uvicorn
 beautifulsoup4
