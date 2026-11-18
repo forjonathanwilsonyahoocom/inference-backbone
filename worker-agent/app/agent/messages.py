@@ -56,7 +56,7 @@ def deduped_distillation(config: AgentRequest,
     seen_fingerprints = set()
     send_to_distill = []
         
-    token_quota = config.distill_to
+    token_quota = config.distill_at
         
     deduplicated: List[Iteration] = []
     skip_duplicated_result = set()
@@ -82,7 +82,7 @@ def deduped_distillation(config: AgentRequest,
         if token_quota < 0:
             compact = get_distillation(config, metrics, distillation_llm, compact, iteration.iteration, send_to_distill)
             send_to_distill = []
-            token_quota = config.distill_to
+            token_quota = config.distill_at
         
         token_quota -= iter_tokens(iteration, "model_response")
                     

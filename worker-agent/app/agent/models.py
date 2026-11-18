@@ -16,10 +16,9 @@ def materialize_agent_request(scaffold: AgentRequest) -> AgentRequest:
         system_message=scaffold.system_message if scaffold.system_message is not None else DEFAULT_SYSTEM_PROMPT,
         execution_id=scaffold.execution_id if scaffold.execution_id is not None else str(uuid.uuid4()),
         max_iterations=scaffold.max_iterations if scaffold.max_iterations is not None else 150,
-        truncate_at=scaffold.truncate_at if scaffold.truncate_at is not None else 20_000,
-        distill_at=scaffold.distill_at if scaffold.distill_at is not None else 15_000,
-        distill_to=scaffold.distill_to if scaffold.distill_to is not None else 7_000,
-        compression_tiers=scaffold.compression_tiers if scaffold.compression_tiers is not None else [(8, 300), (4, 600), (2, 1000)],
+        truncate_at=scaffold.truncate_at if scaffold.truncate_at is not None else 20_000, #this is a token estimate
+        distill_at=scaffold.distill_at if scaffold.distill_at is not None else 2_000, #this is a token estimate
+        compression_tiers=scaffold.compression_tiers if scaffold.compression_tiers is not None else [(10, 2000), (5, 5000), (3, 10000)], #this is a char count
         compression_adjust_by_utility=scaffold.compression_adjust_by_utility if scaffold.compression_adjust_by_utility is not None else 1.2,
         worker_model=scaffold.worker_model if scaffold.worker_model is not None else "gpt-oss:20b",
         worker_temp=scaffold.worker_temp if scaffold.worker_temp is not None else 0.01,
