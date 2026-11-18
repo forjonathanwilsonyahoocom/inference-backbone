@@ -84,6 +84,6 @@ class Compaction(BaseModel):
     summary_deltas: List[DistillationDelta] = [] #holds the list of delta update from the summary_aggregate to the latest summary
     summary_aggregate: dict = {} #holds the latest aggregation of the summary list, this is presented to the llm
     fallback: str = ""  # only holds a mechanically extracted string when llm call fails multiple times
-    upto: int = 0       # history[:upto] is truncated
+    upto: int = 0       # history[:upto] is in the compaction
 
 

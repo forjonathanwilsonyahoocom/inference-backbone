@@ -58,16 +58,26 @@ class MetricsWrapper:
                     c.inc(msg.get('value', 1))
 
                 self.counters[msg['name']] = c
-            elif msg['type'] == "gauge":
-                c = self.gauges.get(msg['name'], "missing")
-                if c == "missing":
-                    c = Gauge(f"{self.service_name}_{ msg['name']}", msg['description'])
+            elif msg["type"] == "gauge":
+                label_names = list(msg.get("labels", {}).keys())
+                c = self.gauges.get(msg["name"], None)
 
-                if 'labels' in msg:
-                    for k, v in msg.get('labels', {}).items():
-                        c.labels(k, v).set(msg.get('value', 1))
+                if c is None:
+                    c = Gauge(
+                        f"{self.service_name}_{msg['name']}",
+                        msg["description"],
+                        labelnames=label_names,
+                    )
+                    self.gauges[msg["name"]] = c
+                elif label_names != list(c._labelnames):
+                    raise ValueError(f"Inconsistent label names for gauge {msg['name']}")
+
+                if label_names:
+                    c.labels(*[msg["labels"][name] for name in label_names]).set(
+                        msg.get("value", 1)
+                    )
                 else:
-                    c.set(msg.get('value', 1))
+                    c.set(msg.get("value", 1))
 
                 self.gauges[msg['name']] = c
         except Exception as e:
