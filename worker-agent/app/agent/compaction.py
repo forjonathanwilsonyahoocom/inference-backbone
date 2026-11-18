@@ -47,7 +47,7 @@ def make_summary_message(compact: Compaction, is_going_back_to_llm: bool = False
         body = json.dumps(merge_summaries(compact.summary), indent=2)
         
     if is_going_back_to_llm:
-        return f"the initial {compact.upto} iterations have been truncated from history to reduce context, this is a distillation of that truncated info:\n{body}\n{compact.fallback}"
+        return f"the initial {compact.upto} iterations have been compacted into this report:\n{body}\n{compact.fallback}"
     else:
         print(compact.fallback)
         return body

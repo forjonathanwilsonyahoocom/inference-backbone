@@ -43,6 +43,17 @@ class MetricsWrapper:
                 metric.clear()
             except Exception as e:
                 print("expected when counter does not have labels", e)
+        for k, metric in self.gauges.items():
+            try:
+                print(f"resetting {k}")
+                metric.reset()
+            except Exception as e:
+                print("expected when gauge has labels", e)
+            try:
+                print(f"clearing {k}")
+                metric.clear()
+            except Exception as e:
+                print("expected when gauge does not have labels", e)
             
             
     def emit(self, msg: Dict):
