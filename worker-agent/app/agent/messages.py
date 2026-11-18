@@ -52,7 +52,8 @@ def deduped_distillation(config: AgentRequest,
     
     optionally we distill the final remaining messages in the buffer
     """
-    print(f"deduped_distillation, all_the_way_to_end = {all_the_way_to_end} ")
+    if all_the_way_to_end:
+        print(f"final distillation, all_the_way_to_end = {all_the_way_to_end} ")
     seen_fingerprints = set()
     send_to_distill = []
         
