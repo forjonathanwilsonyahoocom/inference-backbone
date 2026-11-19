@@ -20,7 +20,7 @@ The **Text Analysis** service provides a set of NLP utilities that can be invoke
 
 ## Docker plugin
 
-The service can be run as a Docker plugin under `docker-broker/plugin_builds/text_analysis`. The plugin exposes the same endpoints and can be invoked via the broker’s `/on_demand` route.
+The service grew out of the Brokered Docker plugin under `docker-broker/plugin_builds/text_analysis`.
 
 ## Example usage
 
