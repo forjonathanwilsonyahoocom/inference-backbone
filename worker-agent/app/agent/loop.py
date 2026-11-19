@@ -3,7 +3,7 @@ from observability.metrics import MetricsWrapper
 from typing import Any, List, Optional, Dict
 from pydantic import BaseModel
 from ollama import ResponseError 
-from agent.messages import derive_message_list, final_distillation
+from agent.messages import derive_message_list, deduped_distillation
 from agent.models import Iteration, Compaction, ToolCallResultWrapper
 from contracts.inference_contracts.worker_agent_request import AgentRequest
 from agent.fingerprint import tool_call_fingerprint, result_fingerprint
@@ -117,7 +117,7 @@ def run_agent(
                 metrics.emit(failure_metric_labeler({"failure": f"model response was unparsible"}))
                 retry_notes.append(HumanMessage(f"Last response failed tool-call parsing: {e}. Return tool calls, or a final string answer as content only."))
         else:
-            current_compaction, distillation = final_distillation(config, metrics, distillation_llm, current_compaction, full_thread_history)
+            current_compaction, distillation = deduped_distillation(config, metrics, distillation_llm, current_compaction, full_thread_history)
             
             return {"condition": "model failed after 10 retries", 
                     "final_response": getattr(response, "content", "failure after retries"),
@@ -133,7 +133,7 @@ def run_agent(
         # The model is finished when it returns content and no tool calls.
         if len(tool_calls) == 0:
             ingest_final_answer(config.execution_id, response.content, config.worker_model)
-            current_compaction, distillation = final_distillation(config, metrics, distillation_llm, current_compaction, full_thread_history)
+            current_compaction, distillation = deduped_distillation(config, metrics, distillation_llm, current_compaction, full_thread_history)
             metrics.emit(operation_metric_labeler({"operation" : "completed"}))
             return {"condition" : "no tool calls",
                     "final_response": response.content,
@@ -229,7 +229,7 @@ def run_agent(
             
 
     metrics.emit(operation_metric_labeler({"operation" : "ran out of turns"}))
-    current_compaction, distillation = final_distillation(config, metrics, distillation_llm, current_compaction, full_thread_history)
+    current_compaction, distillation = deduped_distillation(config, metrics, distillation_llm, current_compaction, full_thread_history)
            
     return {"condition" : f"Agent stopped after {config.max_iterations} iterations. The workspace may contain partial results.",
             "final_response": response.content,

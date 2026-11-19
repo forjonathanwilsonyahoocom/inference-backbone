@@ -12,8 +12,8 @@ class AgentRequest(BaseModel):
     system_message: Optional[str] = None
     execution_id: Optional[str] = None
     max_iterations: Optional[int] = None
+    truncate_at: Optional[int] = None
     distill_at: Optional[int] = None
-    distill_to: Optional[int] = None
     compression_tiers: Optional[List[Tuple[int, int]]] = None
     compression_adjust_by_utility: Optional[float] = None
     worker_model: Optional[str] = None

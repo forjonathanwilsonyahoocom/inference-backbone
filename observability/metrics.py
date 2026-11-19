@@ -43,6 +43,17 @@ class MetricsWrapper:
                 metric.clear()
             except Exception as e:
                 print("expected when counter does not have labels", e)
+        for k, metric in self.gauges.items():
+            try:
+                print(f"resetting {k}")
+                metric.reset()
+            except Exception as e:
+                print("expected when gauge has labels", e)
+            try:
+                print(f"clearing {k}")
+                metric.clear()
+            except Exception as e:
+                print("expected when gauge does not have labels", e)
             
             
     def emit(self, msg: Dict):
@@ -58,12 +69,26 @@ class MetricsWrapper:
                     c.inc(msg.get('value', 1))
 
                 self.counters[msg['name']] = c
-            elif msg['type'] == "gauge":
-                c = self.gauges.get(msg['name'], "missing")
-                if c == "missing":
-                    c = Gauge(f"{self.service_name}_{ msg['name']}", msg['description'])
+            elif msg["type"] == "gauge":
+                label_names = list(msg.get("labels", {}).keys())
+                c = self.gauges.get(msg["name"], None)
 
-                c.set(msg.get('value', 1))
+                if c is None:
+                    c = Gauge(
+                        f"{self.service_name}_{msg['name']}",
+                        msg["description"],
+                        labelnames=label_names,
+                    )
+                    self.gauges[msg["name"]] = c
+                elif label_names != list(c._labelnames):
+                    raise ValueError(f"Inconsistent label names for gauge {msg['name']}")
+
+                if label_names:
+                    c.labels(*[msg["labels"][name] for name in label_names]).set(
+                        msg.get("value", 1)
+                    )
+                else:
+                    c.set(msg.get("value", 1))
 
                 self.gauges[msg['name']] = c
         except Exception as e:
@@ -77,14 +102,6 @@ class MetricsWrapper:
                 "value" : value}
 
 
-    def get_gauge_func(self, name, description):
-        def gauge_takes_value(value):
-            return {"type": "gauge",
-                    "name": name,
-                    "description": description,
-                    "value" : value}
-        return gauge_takes_value
-
 
     def get_counter_message_labeler(self, name, description):
         # call the function with a map of labels.
@@ -97,6 +114,24 @@ class MetricsWrapper:
                     "value" : value}
 
         return labeler
+
+
+    def get_gauge_func(self, name, description):
+        def gauge_takes_value(value):
+            return {"type": "gauge",
+                    "name": name,
+                    "description": description,
+                    "value" : value}
+        return gauge_takes_value
+
+    def get_gauge_labeler_func(self, name, description):
+        def gauge_labeler(labels, value):
+            return {"type": "gauge",
+                    "name": name,
+                    "description": description,
+                    "labels": labels,
+                    "value" : value}
+        return gauge_labeler
 
 
     def get_metric_label(self, location=None, exception=None):

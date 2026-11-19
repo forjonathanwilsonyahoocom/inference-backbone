@@ -3,12 +3,17 @@ FROM python:3.12-slim AS compiler
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app/
 
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libatomic1 \
+    && rm -rf /var/lib/apt/lists/*
+    
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Install just playwright first — rarely changes, so this layer (and the slow
 # browser download below) stays cached across normal requirements.txt edits
-RUN pip install --upgrade pip && pip install playwright
+RUN pip install --upgrade pip && pip install playwright==1.65.0
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 RUN python -m playwright install chromium
 
@@ -26,6 +31,10 @@ COPY --from=compiler /opt/ms-playwright /opt/ms-playwright
 ENV PATH="/opt/venv/bin:$PATH"
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libatomic1 \
+    && rm -rf /var/lib/apt/lists/*
+    
 RUN python -m playwright install-deps chromium
 
 COPY ./web-tools/app/ .

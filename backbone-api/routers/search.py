@@ -25,7 +25,7 @@ def build_where_filter(payload: SearchRequest) -> Optional[List[Filter]]:
         
     if payload.source_type:
         filters.append(
-            Filter.by_property("source_type").equal(payload.info_type)
+            Filter.by_property("source_type").equal(payload.source_type)
         )
 
     if payload.instance_number:

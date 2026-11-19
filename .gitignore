@@ -1,6 +1,7 @@
 .ipynb_checkpoints/
 .env
 .venv/
+tome.sh
 init.lock
 __pycache__/
 worker-agent-workspace/

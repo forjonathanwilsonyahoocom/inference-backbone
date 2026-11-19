@@ -75,7 +75,7 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, limit: in
                     
             num_chunks = largest_tier_limit // 1000 #match with backbone-api chunk size
             query = wrapper.tool_call_result_chunk_query
-            print(f"semantic compressor query: {query}")
+            #print(f"semantic compressor query: {query}")
             if(query):
                 raw_chunks = search_history_function("find compression chunks",
                                                      query,
@@ -86,7 +86,7 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, limit: in
                 if len(chunks) > 0:
                     wrapper.tool_call_result_chunks = chunks
                 else:
-                    print(f"semantic compressor found no chunks for instance_number : {wrapper.tool_call_result_instance_number}")
+                    #print(f"semantic compressor found no chunks for instance_number : {wrapper.tool_call_result_instance_number}")
                     wrapper.tool_call_result_chunks = None
 
                 metrics.emit(metrics.get_counter_message("compression_semantic_compressor_got_chunks", "compression event"))
@@ -157,7 +157,7 @@ def semantic_compressor(config: AgentRequest, metrics: MetricsWrapper, limit: in
             compressed_result = "\n".join(compressed_chunks).strip()
             
             metrics.emit(metrics.get_counter_message("compression_semantic_compressor_compressed", "compression event"))
-            print(f"semantic compressed to { len(compressed_result)}")
+            #print(f"semantic compressed to { len(compressed_result)}")
             if len(compressed_result) == 0:
                 compressed_result = None
         except Exception as e:
