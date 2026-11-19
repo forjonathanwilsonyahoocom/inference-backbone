@@ -10,9 +10,7 @@ The **Worker Agent** is the runtime that executes LLM‑driven agent runs. It ex
 | Responsibility | How it is implemented |
 |----------------|-----------------------|
 | **LLM orchestration** | Two `ChatOllama` instances are created – one for the main agent and one for distillation. The main LLM is bound with a set of tools (search, file I/O, Docker, etc.) via LangChain’s `bind_tools`.
-| **Toolchain construction** | `get_toolchain` builds a dictionary of tool names to tool objects. The tools include:
-  * `analyze_workspace`, `list_files`, `read_file`, `write_file`, `edit_file`, `search_file`, `search_history`, `run_command`, `web_search`, `web_fetch`, `run_in_workspace`.
-  * `assess_result` and `search_history` wrappers provide structured output.
+| **Toolchain construction** | `get_toolchain` builds a dictionary of tool names to tool objects. The tools include:   * `analyze_workspace`, `list_files`, `read_file`, `write_file`, `edit_file`, `search_file`, `search_history`, `run_command`, `web_search`, `web_fetch`, `run_in_workspace`.   * `assess_result` and `search_history` wrappers curry needed  system context to tool calls.
 | **Metrics** | A global `MetricsWrapper` is initialised on startup and passed to the agent loop. Prometheus metrics are exposed on port 8080.
 | **Distillation** | The agent’s final output is passed to a second LLM (`distill_llm`) with structured output (`AgentState`).
 
