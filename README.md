@@ -1,3 +1,43 @@
+# Inference Backbone Overview
+
+This file consolidates the key findings from the AST analysis of the entire `inference-backbone` repository. It serves as a quick reference for developers and stakeholders to understand the responsibilities of each service and how they interact.
+
+## Service Summary
+
+| Service | Primary Role | Key Endpoints | Notable Tools |
+|---------|--------------|---------------|---------------|
+| **Worker Agent** | Executes LLM runs and orchestrates tool calls. | `/run`, `/health` | LangChain tools (search, file I/O, Docker, web fetch), `AssessResultWrapper`, `SearchHistoryWrapper` |
+| **Validator Agent** | Extracts claims, validates them, and builds episodes. | `/extract_claims`, `/validate`, `/make_episode`, `/make_episode_from_report`, `/health` | LLM (Ollama), telemetry helpers, `Episode` extraction |
+| **Backbone API** | Persists artifacts to GraphDB and Weaviate. | `/ingest_*` routes, `/search`, `/health` | GraphDB Turtle client, Weaviate client, projection helpers |
+| **Text Analysis** | NLP utilities for summarization, sentiment, IDF, etc. | `/analyze`, `/prep_report`, `/health` | spaCy, VADER, custom summarizer |
+| **Docker Broker** | Runs arbitrary Docker jobs on demand. | `/on_demand`, `/jobs`, `/health` | Docker SDK, runtime image mapping |
+| **Contracts** | Shared Pydantic models across services. | N/A | N/A |
+
+## Interaction Flow
+
+1. **Client** submits an `AgentRequest` to the **Worker Agent**.
+2. The worker runs the agent, producing a structured `AgentState` and metrics.
+3. The **Validator Agent** consumes the agent’s final answer via `/extract_claims` and `/validate` endpoints, building an `Episode`.
+4. The **Backbone API** ingests the episode and related artifacts into GraphDB and Weaviate.
+5. The **Docker Broker** is used by the worker to execute Docker‑based tools (e.g., the text‑analysis plugin).
+
+## Observability
+
+* Prometheus metrics are exposed by the worker and validator on port 8080.
+* Grafana dashboards are provided under `grafana/`.
+* The `observability/metrics.py` module centralises metric definitions.
+
+## Next Steps
+
+* Integrate the worker’s `/run` endpoint with the Docker broker to enable on‑demand tool execution.
+* Expand the validator’s claim extraction to support more complex evidence types.
+* Add automated tests for the ingestion pipelines.
+
+---
+
+For detailed code‑level documentation, refer to the individual `README.md` files in each service directory.
+
+
 ![Sweet image from https://freegen.app/ after having duck.ai cinematize a prompt made by local agent system using gpt-oss:20b](./readme/freegen_inference_backbone.jpg)
 # inference-backbone
 
