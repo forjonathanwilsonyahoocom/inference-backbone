@@ -6,7 +6,7 @@ class InfoChunk(BaseModel):
     source_id: str #the id of the source this was derived from
     item_id: str | None = None #id assigned to derived item 
     info_type: str #the source object type
-    instance_number_start: int | None = None #only used as lower bound when range of iterations results in this
+    instance_number_start: int = 0 #only used as lower bound when range of iterations results in this
     instance_number: int # source object numbering within the execution
     
     content: str
