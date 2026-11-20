@@ -85,7 +85,7 @@ async def episode_ingest(payload: InfoContainer[Episode]) -> Dict:
 
             for section in ["significant_events","findings","lessons","unresolved_questions","evidence_refs"]:
                 section_id = str(uuid.uuid4())
-                for i, section_item in enumerate(getattr(payload, section, [])):
+                for i, section_item in enumerate(getattr(payload.contains, section, [])):
                     chunk_ids = await vector_store_episode_part(embedding_provider, info_chunk_collection, chunk_ids, payload, section, section_id, i, section_item)
             
         await write_object_to_graphdb(payload, "episode",  payload.info.id)
