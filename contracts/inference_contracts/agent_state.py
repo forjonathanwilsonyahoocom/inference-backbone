@@ -169,13 +169,13 @@ def test_state_object():
          ],
          understandings=[{"concept": "Python function",
                           "detail": "Simple function definition.",
-                          "confidence": 0.95}}],
+                          "confidence": 0.95}],
          hypotheses=[{"hypothesis": "The function does something",
                        "status": "pending",
                        "confidence": 0.5}],
          completed_steps=[{"step": "Load file",
                            "result": "Read a1 successfully.",
-                           "confidence": 0.95}}]
+                           "confidence": 0.95}]
      )
      print(state.json(indent=2))
 
