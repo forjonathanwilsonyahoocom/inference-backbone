@@ -49,7 +49,7 @@ async def agent_state_ingest(payload: InfoContainer[AgentState]) -> Dict:
             chunk_ids = []
             for section in ["artifacts", "observations", "understandings", "hypotheses", "completed_steps"]:
                 section_id = str(uuid.uuid4())
-                for i, section_item in enumerate(getattr(payload, section, [])):
+                for i, section_item in enumerate(getattr(payload.contains, section, [])):
                     section_item_id = f"{section_id}-{i}"
                     section_item_text = ""
                     for field, field_info in type(section_item).model_fields.items():
