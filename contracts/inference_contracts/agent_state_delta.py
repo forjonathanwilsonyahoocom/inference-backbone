@@ -23,5 +23,5 @@ class DistillationDelta(BaseModel):
     hypotheses: List[ElementDelta] = Field(default_factory=list)
     completed_steps: List[ElementDelta] = Field(default_factory=list)
     artifacts: List[ElementDelta] = Field(default_factory=list)
-    obsolete_context: List[ElementDelta] = Field(default_factory=list)
+    # obsolete_context removed
     
