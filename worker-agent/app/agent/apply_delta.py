@@ -99,14 +99,14 @@ def apply_delta(
                     metrics.emit(metrics.get_counter_message(f"distillation_delta_{section}_added_unmentioned", "distillation delta agent did not mention item"))
                     summary_aggregate[section].append(item)
                     
-        remove_index = -1
-        if deltas.obsolete_context:
-            for identifier in deltas.obsolete_context:
-                for index, item in enumerate(summary_aggregate[section]):
-                    if item["id"] == identifier:
-                        metrics.emit(metrics.get_counter_message(f"distillation_delta_{section}_cleaned_obsolete", "distillation delta agent cleaned up context"))
-                        remove_index = index
-                        break
+        
+        for delta in getattr(deltas, "obsolete_context", []):
+            remove_index = -1
+            for index, item in enumerate(summary_aggregate[section]):
+                if item["id"] == delta["modifies_id"] or item["id"] == delta["latest_id"]:
+                    metrics.emit(metrics.get_counter_message(f"distillation_delta_{section}_cleaned_obsolete", "distillation delta agent cleaned up context"))
+                    remove_index = index
+                    break
             if remove_index >= 0:
                 del summary_aggregate[section][remove_index]
                 

@@ -54,8 +54,21 @@ class Observation(BaseModel):
 class Understanding(BaseModel):
     concept: str
     detail: str
+    confidence: float
 
+    @field_validator("concept", "detail")
+    @classmethod
+    def not_empty(cls, v: str) -> str:
+        if not v:
+            raise ValueError("must not be empty")
+        return v
 
+    @field_validator("confidence")
+    @classmethod
+    def in_range(cls, v: float) -> float:
+        if not 0 <= v <= 1:
+            raise ValueError("confidence must be between 0 and 1")
+        return v
 # --------------------------------------------------------------------------- #
 # 4️⃣  Hypothesis
 # --------------------------------------------------------------------------- #
@@ -91,7 +104,21 @@ class Hypothesis(BaseModel):
 class CompletedStep(BaseModel):
     step: str
     result: str
+    confidence: float
 
+    @field_validator("step", "result")
+    @classmethod
+    def not_empty(cls, v: str) -> str:
+        if not v:
+            raise ValueError("must not be empty")
+        return v
+
+    @field_validator("confidence")
+    @classmethod
+    def in_range(cls, v: float) -> float:
+        if not 0 <= v <= 1:
+            raise ValueError("confidence must be between 0 and 1")
+        return v
 
 # --------------------------------------------------------------------------- #
 # 6️⃣  Root Model – the overall “state” container
@@ -141,12 +168,14 @@ def test_state_object():
               "confidence": 0.95}
          ],
          understandings=[{"concept": "Python function",
-                          "detail": "Simple function definition."}],
+                          "detail": "Simple function definition.",
+                          "confidence": 0.95}}],
          hypotheses=[{"hypothesis": "The function does something",
                        "status": "pending",
                        "confidence": 0.5}],
          completed_steps=[{"step": "Load file",
-                           "result": "Read a1 successfully."}]
+                           "result": "Read a1 successfully.",
+                           "confidence": 0.95}}]
      )
      print(state.json(indent=2))
 
