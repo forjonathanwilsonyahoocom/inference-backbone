@@ -64,7 +64,7 @@ def _normalize_completed_steps(content: Dict[str, List[Dict[str, Any]]]) -> None
             normalized.append(item)
     content["completed_steps"] = normalized
 
-def apply_delta_v2(
+def apply_delta(
     metrics: MetricsWrapper,
     extended: AgentStateExtended,
     new_summary: Dict[str, List[Dict[str, Any]]],
