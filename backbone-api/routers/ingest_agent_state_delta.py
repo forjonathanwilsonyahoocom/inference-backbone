@@ -18,7 +18,7 @@ from projections.graphdb.turtle import write_object_to_graphdb
 ingest_agent_state_delta_router = APIRouter()
 
 @ingest_agent_state_delta_router.post("/ingest/agent_state_delta")
-async def agent_state_ingest(payload: InfoContainer[DistillationDelta]) -> Dict:
+async def agent_state_delta_ingest(payload: InfoContainer[DistillationDelta]) -> Dict:
     """
     /ingest/agent_state_delta endpoint takes the distillation delta object from the distillation delta agent
     and chunks into weaviate and saves the state delta object
@@ -64,7 +64,7 @@ async def agent_state_ingest(payload: InfoContainer[DistillationDelta]) -> Dict:
                             source_id=payload.info.id,
                             item_id=section_item_id,
                             info_type=F"AgentStateDelta.{section}",
-                            instance_number_start=payload.info.instance_number_start,
+                            instance_number=payload.info.instance_number_start,
                             content=raw_chunk,
                             chunk_index=idx,
                             chunk_count=len(raw_chunks),

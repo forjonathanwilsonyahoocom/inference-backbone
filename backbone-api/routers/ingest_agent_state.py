@@ -102,7 +102,7 @@ async def agent_state_ingest(payload: InfoContainer[AgentState]) -> Dict:
         }
 
     except Exception as e:
-        print("ingest_agent_state FAILURE", e)
+        print("ingest_agent_state_delta FAILURE", e)
         raise
     finally:
         # ---- 2️⃣  Close the Weaviate client ----
