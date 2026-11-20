@@ -103,7 +103,7 @@ def apply_delta(
         for delta in getattr(deltas, "obsolete_context", []):
             remove_index = -1
             for index, item in enumerate(summary_aggregate[section]):
-                if item["id"] == delta["modifies_id"] or item["id"] == delta["latest_id"]:
+                if item["id"] == delta.modifies_id or item["id"] == delta.latest_id:
                     metrics.emit(metrics.get_counter_message(f"distillation_delta_{section}_cleaned_obsolete", "distillation delta agent cleaned up context"))
                     remove_index = index
                     break
