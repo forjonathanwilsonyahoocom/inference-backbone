@@ -47,7 +47,7 @@ async def agent_state_delta_ingest(payload: InfoContainer[DistillationDelta]) ->
         async with OllamaEmbeddingProvider() as embedding_provider:
             total_chunk_count = 0
             chunk_ids = []
-            for section in ["artifacts", "observations", "understandings", "hypotheses", "completed_steps"]:
+            for section in ["artifacts", "observations", "understandings", "hypotheses", "completed_steps", "obsolete_context"]:
                 section_id = str(uuid.uuid4())
                 for i, section_item in enumerate(getattr(payload.contains, section, [])):
                     section_item_id = f"{section_id}-{i}"

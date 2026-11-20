@@ -124,7 +124,8 @@ def derive_message_list(config: AgentRequest,
     """
     
     stagnation_metric_labeler = metrics.get_counter_message_labeler("stagnation_warning", "the agent calls a tool on repeat")
-    layer_metric_labeler = metrics.get_gauge_labeler_func("estimated_tokens_by_layer", "compressed message layers")
+    layer_metric_labeler_message = metrics.get_gauge_labeler_func("estimated_message_tokens_by_layer", "compressed message layers")
+    layer_metric_labeler_result = metrics.get_gauge_labeler_func("estimated_result_tokens_by_layer", "compressed result layers")
     seen_fingerprints = set()
     send_to_llm = []
     
@@ -139,11 +140,11 @@ def derive_message_list(config: AgentRequest,
         if live_total < config.truncate_at:
             live_total += iter_tokens(iteration)
             layer += 1
-            metrics.emit(layer_metric_labeler({"layer" : str(layer)}, live_total))
+            metrics.emit(layer_metric_labeler_message({"layer" : str(layer)}, live_total))
             for result_wrapper in iteration.tool_call_results:
                 live_total += tool_tokens(result_wrapper)
                 layer += 1
-                metrics.emit(layer_metric_labeler({"layer" : str(layer)}, live_total))
+                metrics.emit(layer_metric_labeler_result({"layer" : str(layer)}, live_total))
         else:
             #stop counting
             break
