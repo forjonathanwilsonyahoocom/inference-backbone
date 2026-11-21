@@ -20,7 +20,8 @@ ALLOWED_DOC_TYPES = {"claim",
                      "task", 
                      "agent_state_delta",
                      "episode",
-                     "agent_request"
+                     "agent_request",
+                     "agent_state_aggregate",
                      }
 
 retrieval_router = APIRouter()

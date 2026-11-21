@@ -119,7 +119,7 @@ services:
     container_name: validator_agent
     environment:
       OLLAMA_URL: http://10.42.0.192:11434
-      GEN_MODEL: gpt-oss:20b
+      GEN_MODEL: nemotron-3.5-bolt:e4b
     restart: unless-stopped
     networks:
       - validator-api

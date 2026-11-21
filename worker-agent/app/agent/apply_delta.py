@@ -3,12 +3,21 @@ from contracts.inference_contracts.agent_state_delta import ElementDelta, DeltaA
 from observability.metrics import MetricsWrapper
 
 # Helper to find an item by ID within a specific section list
-def find_item_by_id(state_representation: Dict[str, List[Dict[str, Any]]], section: str, item_id: str) -> Optional[Dict[str, Any]]:
-    if section in state_representation and item_id:
+def _find_item_by_id(state_representation: Dict[str, List[Dict[str, Any]]], section: str, item_id: str) -> Optional[Dict[str, Any]]:
+    if section in state_representation and item_id is not None:
         for item in state_representation[section]:
             if item.get("id") == item_id:
                 return item
     return None
+def _remove_by_id(metrics: MetricsWrapper, state_representation: Dict[str, List[Dict[str, Any]]], section: str, item_id: str):
+    remove_index = -1
+    for index, item in enumerate(state_representation.get(section, [])):
+        if item["id"] == item_id:
+            remove_index = index
+            break
+    if remove_index >= 0:
+        del state_representation[section][remove_index]
+        metrics.emit(metrics.get_counter_message(f"distillation_delta_{section}_cleaned_obsolete", "distillation delta agent cleaned up context"))
         
 def apply_delta(
     metrics: MetricsWrapper,
@@ -32,40 +41,43 @@ def apply_delta(
         # Process each delta
         handled_ids = set()
         for delta in getattr(deltas, section, []):
-            try:                
+            try:               
+                if delta.action == DeltaAction.RETIRE:
+                    continue  # handle last
                 # 1. Identify the target item in the current state
-                target_item = find_item_by_id(summary_aggregate, section, delta.modifies_id)
-                source_item = find_item_by_id(new_summary, section, delta.latest_id)
-                if delta.latest_id:
-                    handled_ids.add(delta.latest_id)
+                target_item = _find_item_by_id(summary_aggregate, section, delta.modifies_id)
+                source_item = _find_item_by_id(new_summary, section, delta.latest_id)
                 # 2. Apply reconciliation logic based on DeltaAction
                 if delta.action == DeltaAction.APPEND:
                     # New observation/understanding/artifact -> Append
-                    metrics.emit(metrics.get_counter_message("distillation_delta_appends", "distillation delta agent updates context"))
-                    if source_item is None:
-                        # Note: We need to construct the full item based on delta.text/data
-                        # For simplicity here, we assume delta.text contains the necessary data for a new item
-                        source_item = {"id": delta.latest_id, "text": delta.text, "confidence": delta.confidence}
+                    if source_item is not None:
+                        metrics.emit(metrics.get_counter_message("distillation_delta_appends", "distillation delta agent updates context"))
+                        summary_aggregate[section].append(source_item)    
+                        handled_ids.add(delta.latest_id)
                     else:
-                        summary_aggregate[section].append(source_item)
+                        metrics.emit(metrics.get_counter_message("distillation_delta_hallucinated_appends", "distillation delta agent made up context"))
+                        
                 
                 elif delta.action == DeltaAction.REFINE:
                     # Existing understanding refined -> Update status, retain history
                     metrics.emit(metrics.get_counter_message(f"distillation_delta_refined_{section}", "distillation delta agent updates context"))
                     if target_item:
                         target_item.update({"refinement": delta.text, "refinement_confidence": delta.confidence})
-                    if source_item:
+                    elif source_item:
                         summary_aggregate[section].append(source_item)
+                        handled_ids.add(delta.latest_id)
                 
                 elif delta.action == DeltaAction.REPLACE:
                     # New info supersedes old info entirely
                     metrics.emit(metrics.get_counter_message(f"distillation_delta_replaced_{section}", "distillation delta agent updates context"))
                     if target_item and source_item:
-                        for k,v in source_item.items():
-                            target_item.update({k : v})
-                    if target_item and delta.text:
+                        for k, v in source_item.items():
+                            target_item.update({k: v})
+                        handled_ids.add(delta.latest_id)
+                    elif target_item and delta.text:
+                        #then there is no source item, just update the target item
                         target_item.update({"note": delta.text, "note_confidence": delta.confidence})
-                
+ 
                 elif delta.action == DeltaAction.RESOLVE:
                     # Hypothesis confirmed/rejected -> Update status, retain history
                     metrics.emit(metrics.get_counter_message(f"distillation_delta_resolved_{section}", "distillation delta agent updates context"))
@@ -75,6 +87,8 @@ def apply_delta(
                         target_item['confidence'] = delta.confidence
                     if source_item:
                         summary_aggregate[section].append(source_item)
+                    if delta.latest_id:
+                        handled_ids.add(delta.latest_id)
                         
                 elif delta.action == DeltaAction.FLAG_CONFLICT:
                     # Contradictory observation -> Preserve both, flag conflict
@@ -89,6 +103,8 @@ def apply_delta(
                         summary_aggregate[section].append({"id": f"{delta.latest_id}_conflict{s}", "text": f"Conflict detected {t}", "confidence": delta.confidence})
                     if source_item:
                         summary_aggregate[section].append(source_item)
+                    if delta.latest_id:
+                        handled_ids.add(delta.latest_id)
             except Exception as e:
                 print(f"Error applying delta {delta}: {e}")
                 # Log error but continue processing other deltas
@@ -99,17 +115,19 @@ def apply_delta(
                     metrics.emit(metrics.get_counter_message(f"distillation_delta_{section}_added_unmentioned", "distillation delta agent did not mention item"))
                     summary_aggregate[section].append(item)
                     
-        
-        for delta in getattr(deltas, "obsolete_context", []):
-            remove_index = -1
-            for index, item in enumerate(summary_aggregate[section]):
-                if item["id"] == delta.modifies_id or item["id"] == delta.latest_id:
-                    metrics.emit(metrics.get_counter_message(f"distillation_delta_{section}_cleaned_obsolete", "distillation delta agent cleaned up context"))
-                    remove_index = index
-                    break
-            if remove_index >= 0:
-                del summary_aggregate[section][remove_index]
+        retire_deltas = [d for d in getattr(deltas, section, []) if d.action == DeltaAction.RETIRE]
+        for d in retire_deltas:
+            try:
+                target_item = _find_item_by_id(summary_aggregate, section, d.modifies_id)
+                source_item = _find_item_by_id(new_summary, section, d.latest_id)
+                metrics.emit(metrics.get_counter_message("distillation_delta_retired", "distillation delta agent retires context"))
+                if target_item:
+                    _remove_by_id(metrics, summary_aggregate, section, d.modifies_id)
+                if source_item:
+                    _remove_by_id(metrics, summary_aggregate, section, d.latest_id)
                 
-    print(summary_aggregate)
+            except Exception as e:
+                print(f"Error applying retire delta {d}: {e}")
+                
     return summary_aggregate
 

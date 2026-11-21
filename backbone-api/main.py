@@ -15,6 +15,7 @@ from routers.ingest_final_answer import ingest_final_answer_router
 from routers.ingest_task import ingest_task_router
 from routers.ingest_episode import ingest_episode_router
 from routers.ingest_agent_request import ingest_agent_request_router
+from routers.ingest_agent_state_aggregate import ingest_agent_state_aggregate_router
 
 app = FastAPI()
 
@@ -30,3 +31,4 @@ app.include_router(ingest_task_router)
 app.include_router(ingest_agent_state_delta_router)
 app.include_router(ingest_episode_router)
 app.include_router(ingest_agent_request_router)
+app.include_router(ingest_agent_state_aggregate_router)

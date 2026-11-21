@@ -12,10 +12,11 @@ Apply these rules strictly when determining the 'action' for an ElementDelta:
 - SUPERSEDED: If new info proves a previous understanding was incorrect $\rightarrow$ action: REPLACE.
 - HYPOTHESIS: If a hypothesis is confirmed or rejected $\rightarrow$ action: RESOLVE.
 - CONFLICT: If an observation in LATEST_SUMMARY directly contradicts PRIOR_AGGREGATION $\rightarrow$ action: FLAG_CONFLICT.
+- NO LONGER RELEVANT: if an element from the PRIOR_AGGREGATION or LATEST_SUMMARY should be removed from working memory $\rightarrow$  action: RETIRE.
 
 ### OUTPUT REQUIREMENTS
 - Every item in LATEST_SUMMARY must be accounted for.
-- If an item is a duplicate of something already in PRIOR_AGGREGATION, do not include it in the delta.
+- If an item is a duplicate of something already in PRIOR_AGGREGATION, RETIRE the new one from working memory.
 - For 'REFINE' actions, the 'text' field must contain the combined, polished synthesis of the old and new information.
 - For 'RESOLVE' actions, clearly state the outcome (e.g., "Confirmed" or "Rejected") in the text.
 

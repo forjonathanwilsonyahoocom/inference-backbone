@@ -66,6 +66,20 @@ def ingest_agent_state(state: AgentState, info: InfoNode) -> None:
         if resp and resp.text():
             print(resp.text())
             
+def ingest_agent_state_aggregate(state: Dict, info: InfoNode) -> None:
+    resp = None
+    try:
+        payload = InfoContainer[AgentState](info=info,
+                                            contains=state)
+   
+        resp = requests.post("http://backbone-api:8000/ingest/agent_state_aggregate", json=payload.model_dump(mode="json"), timeout=10)
+        resp.raise_for_status()
+    except Exception as e:
+        # Log but do not raise – evidence is observational
+        print(f"[AgentState Aggregate ingestion] failed for state {state}: {e}")
+        if resp and resp.text():
+            print(resp.text())
+            
 def ingest_agent_request(payload: AgentRequest) -> str:
     resp = None
     try:   
