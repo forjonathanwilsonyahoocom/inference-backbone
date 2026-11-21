@@ -6,7 +6,7 @@ from agent.state import get_delta
 from prompts.distillation import DISTILLATION_PROMPT
 from contracts.inference_contracts.agent_state import AgentState
 from contracts.inference_contracts.info import InfoNode
-from agent.telemetry import ingest_agent_state
+from agent.telemetry import ingest_agent_state, ingest_agent_state_aggregate
 from agent.apply_delta import apply_delta
 from langchain_ollama import ChatOllama
 import json
@@ -94,6 +94,7 @@ def get_distillation(config: AgentRequest,
         HumanMessage(content=conv_text),
     ]
     facts = None
+    info = None
     for _ in range(3):
         agent_state_facts = None
         try:
@@ -136,6 +137,7 @@ def get_distillation(config: AgentRequest,
                                                         compact.summary_aggregate,
                                                         facts,
                                                         compact.summary_deltas[-1])
+                ingest_agent_state_aggregate(compact.summary_aggregate, info)
         else:
             #set the initial state of summary_aggregate
             compact.summary_aggregate = facts

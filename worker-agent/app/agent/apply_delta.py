@@ -11,13 +11,13 @@ def _find_item_by_id(state_representation: Dict[str, List[Dict[str, Any]]], sect
     return None
 def _remove_by_id(metrics: MetricsWrapper, state_representation: Dict[str, List[Dict[str, Any]]], section: str, item_id: str):
     remove_index = -1
-    for index, item in enumerate(state_representation[section]):
+    for index, item in enumerate(state_representation.get(section, [])):
         if item["id"] == item_id:
-            metrics.emit(metrics.get_counter_message(f"distillation_delta_{section}_cleaned_obsolete", "distillation delta agent cleaned up context"))
             remove_index = index
             break
     if remove_index >= 0:
         del state_representation[section][remove_index]
+        metrics.emit(metrics.get_counter_message(f"distillation_delta_{section}_cleaned_obsolete", "distillation delta agent cleaned up context"))
         
 def apply_delta(
     metrics: MetricsWrapper,
@@ -125,14 +125,12 @@ def apply_delta(
                 source_item = _find_item_by_id(new_summary, section, d.latest_id)
                 metrics.emit(metrics.get_counter_message("distillation_delta_retired", "distillation delta agent retires context"))
                 if target_item:
-                    _remove_by_id(metrics, summary_aggregate, section, delta.modifies_id)
+                    _remove_by_id(metrics, summary_aggregate, section, d.modifies_id)
                 if source_item:
-                    _remove_by_id(metrics, summary_aggregate, section, delta.latest_id)
+                    _remove_by_id(metrics, summary_aggregate, section, d.latest_id)
                 
             except Exception as e:
                 print(f"Error applying retire delta {d}: {e}")
                 
-                
-    print(summary_aggregate)
     return summary_aggregate
 
