@@ -50,24 +50,21 @@ def apply_delta(
                 # 2. Apply reconciliation logic based on DeltaAction
                 if delta.action == DeltaAction.APPEND:
                     # New observation/understanding/artifact -> Append
-                    metrics.emit(metrics.get_counter_message("distillation_delta_appends", "distillation delta agent updates context"))
-                    if source_item is None:
-                        # Note: We need to construct the full item based on delta.text/data
-                        # For simplicity here, we assume delta.text contains the necessary data for a new item
-                        source_item = {"id": delta.latest_id, "text": delta.text, "confidence": delta.confidence}
-                    else:
-                        summary_aggregate[section].append(source_item)                        
-                    if delta.latest_id:
+                    if source_item is not None:
+                        metrics.emit(metrics.get_counter_message("distillation_delta_appends", "distillation delta agent updates context"))
+                        summary_aggregate[section].append(source_item)    
                         handled_ids.add(delta.latest_id)
+                    else:
+                        metrics.emit(metrics.get_counter_message("distillation_delta_hallucinated_appends", "distillation delta agent made up context"))
+                        
                 
                 elif delta.action == DeltaAction.REFINE:
                     # Existing understanding refined -> Update status, retain history
                     metrics.emit(metrics.get_counter_message(f"distillation_delta_refined_{section}", "distillation delta agent updates context"))
                     if target_item:
                         target_item.update({"refinement": delta.text, "refinement_confidence": delta.confidence})
-                    if source_item:
+                    elif source_item:
                         summary_aggregate[section].append(source_item)
-                    if delta.latest_id:
                         handled_ids.add(delta.latest_id)
                 
                 elif delta.action == DeltaAction.REPLACE:
@@ -76,11 +73,11 @@ def apply_delta(
                     if target_item and source_item:
                         for k, v in source_item.items():
                             target_item.update({k: v})
-                    if target_item and delta.text:
-                        target_item.update({"note": delta.text, "note_confidence": delta.confidence})
-                    if delta.latest_id:
                         handled_ids.add(delta.latest_id)
-                
+                    elif target_item and delta.text:
+                        #then there is no source item, just update the target item
+                        target_item.update({"note": delta.text, "note_confidence": delta.confidence})
+ 
                 elif delta.action == DeltaAction.RESOLVE:
                     # Hypothesis confirmed/rejected -> Update status, retain history
                     metrics.emit(metrics.get_counter_message(f"distillation_delta_resolved_{section}", "distillation delta agent updates context"))
