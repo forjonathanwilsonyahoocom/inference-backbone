@@ -88,7 +88,7 @@ def get_distillation(config: AgentRequest,
     print(f"Starting distill from {compact.upto} to {upto}")
     
     conv_text = distillation_assembly(distill_these)
-    
+    input_len = len(conv_text)
     distillation_messages = [
         SystemMessage(content=DISTILLATION_PROMPT),
         HumanMessage(content=conv_text),
@@ -101,15 +101,20 @@ def get_distillation(config: AgentRequest,
             if not isinstance(agent_state_facts, AgentState):
                 raise ValueError(f"expected a AgentState object, got {type(agent_state_facts).__name__}")
                 
+            facts_dict = agent_state_facts.model_dump()
+            if not isinstance(facts_dict, dict):
+                raise ValueError(f"expected a dict from AgentState.model_dump(), got {type(facts_dict).__name__}")
+            output_len = len(str(facts_dict))
+            if output_len > input_len:
+                raise ValueError(f"size of resulting distillation too large {output_len} compared to input {input_len}")
+                
             info = InfoNode(id = f"{config.execution_id}-{upto}",
                             execution_id=config.execution_id,
                             instance_number_start=compact.upto,
                             instance_number_end=upto,
                             )
             ingest_agent_state(agent_state_facts, info)
-            facts_dict = agent_state_facts.model_dump()
-            if not isinstance(facts_dict, dict):
-                raise ValueError(f"expected a dict from AgentState.model_dump(), got {type(facts_dict).__name__}")
+
             
             facts = stamp_ids(upto, facts_dict)
             metrics.emit(metrics.get_counter_message("distillation_success", "distillation agent worked"))
