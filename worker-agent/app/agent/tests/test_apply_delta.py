@@ -58,7 +58,7 @@ def get_delta_1():
 
 
 def test_apply_delta():
-    metrics = MetricsWrapper("test-worker-agent")
+    metrics = MetricsWrapper("test-worker-agent", is_mock=True)
 
     updated = apply_delta(metrics, get_aggregate_1(), get_state_1(), get_delta_1())
 
@@ -68,5 +68,5 @@ def test_apply_delta():
 
     assert len(updated["artifacts"]) == 1
 
-    pprint(updated)
+   # pprint(updated)
 

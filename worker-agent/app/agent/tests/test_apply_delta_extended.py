@@ -2,7 +2,7 @@ import pytest
 from ..apply_delta import apply_delta
 from contracts.inference_contracts.agent_state_delta import ElementDelta, DeltaAction, DistillationDelta
 from observability.metrics import MetricsWrapper
-
+from pprint import pprint
 
 def get_aggregate():
     return {
@@ -65,7 +65,8 @@ def get_deltas():
 
 
 def test_apply_delta_extended():
-    metrics = MetricsWrapper("test-worker-agent")
+    metrics = MetricsWrapper("test-worker-agent", is_mock=True)
+    
     agg = get_aggregate()
     new = get_new_summary()
     # add an unmentioned artifact to new summary
@@ -114,3 +115,4 @@ def test_apply_delta_extended():
 
     # ensure no errors were printed (metrics may print but that's fine)
     print("test_apply_delta_extended passed")
+    #pprint(updated)

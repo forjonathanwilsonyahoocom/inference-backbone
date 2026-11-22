@@ -22,16 +22,19 @@ example_message = {"type": "counter",
 
 
 class MetricsWrapper:
-    def __init__(self, service_name: str):
+    def __init__(self, service_name: str, is_mock: bool=False):
         self.counters = {}
         self.service_name = service_name
         self.gauges = {}
+        self.is_mock = is_mock
         
     def clear_counters(self):
         """
             this is to get clean metrics on each run, when we end up with multiple 
             overlapping runs we will move to another idea
         """
+        if self.is_mock:
+            return
         for k, metric in self.counters.items():
             try:
                 print(f"resetting {k}")
@@ -57,6 +60,8 @@ class MetricsWrapper:
             
             
     def emit(self, msg: Dict):
+        if self.is_mock:
+            return
         try:
             if msg['type'] == "counter":
                 c = self.counters.get(msg['name'], "missing")
