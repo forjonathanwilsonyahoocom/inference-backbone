@@ -19,9 +19,9 @@ class ExtendedAgentStateItem(BaseModel, Generic[T]):
         Observation,
         Hypothesis,
         etc...
-        with the list of ElementDelta targeting it
-        we will use the contained type as a hint to the 
-        report projection code
+    with the list of ElementDelta targeting it
+    we will use the contained type as a hint to the 
+    report projection code
 
     """
     deltas: List[ElementDelta] = Field(default_factory=list)
