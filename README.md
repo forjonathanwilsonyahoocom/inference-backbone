@@ -1,5 +1,7 @@
 # Inference Backbone Overview
 
+Each FastAPI service exposes interactive Swagger UI documentation at /docs and its OpenAPI specification at /openapi.json.
+
 This file consolidates the key findings from the AST analysis of the entire `inference-backbone` repository. It serves as a quick reference for developers and stakeholders to understand the responsibilities of each service and how they interact.
 
 ## Service Summary
