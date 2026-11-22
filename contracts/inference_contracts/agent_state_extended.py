@@ -1,31 +1,43 @@
-from typing import Dict, Generic, List, TypeVar
+from typing import Dict, List, TypeVar, Generic
 from pydantic import BaseModel, Field
 from contracts.inference_contracts.agent_state_delta import ElementDelta
 
+T = TypeVar('T', bound=BaseModel)
 
-T = TypeVar('T')
+class ExtendedAgentStateItem(BaseModel, Generic[T]):
+    """
+    One element of AgentState (Observation, Hypothesis, etc.) plus the
+    deltas that have targeted it.
+
+    This is the unit of history. The full item lives in ExtendedAgentState
+    and is never mutated. Projections build a NEW squished copy of this
+    item for the LLM that needs it, leaving this original untouched.
+
+    Use as ExtendedAgentStateItem[Observation], ExtendedAgentStateItem[Hypothesis], etc.
+    The type of `contains` is what the projection code dispatches on.
+    """
+
+    deltas: List[ElementDelta] = Field(default_factory=list)
+    contains: T
 
 class ExtendedAgentState(BaseModel):
     """
-    this class will represent the aggregated AgentState structure along with the AgentStateDelta applied to it
-    we will keep this class as general as possible so that it does not become 
-    a coupled maintenance hazard, we will project this class to a markdown report visible to
-    the main worker agent llm
-    
-    we will show this to the delta extraction llm
-    """
-    state_parts: Dict[str, List[ExtendedAgentStateItem]]
-    
-class ExtendedAgentStateItem(BaseModel, Generic[T]):
-    """
-    this class will hold an AgentState element
-        Observation,
-        Hypothesis,
-        etc...
-    with the list of ElementDelta targeting it
-    we will use the contained type as a hint to the 
-    report projection code
+    The aggregated AgentState, with delta history attached to each element.
 
+    This is NOT generic. One ExtendedAgentState holds many different
+    element types at once — observations, hypotheses, completed steps, etc.
+    Each list in state_parts is homogeneous in practice (one type per list),
+    enforced by how the list is assembled, not by the type system.
+
+    Assembly: build one list at a time from a List[T] (e.g. List[Observation]),
+    wrapping each element in ExtendedAgentStateItem[T]. The type is taken
+    from the item being handled.
+
+    Traversal: projection code dispatches on type(item.contains) to pick
+    the per-type projection function for that item.
+
+    This object is the source of truth for apply_delta and for projections.
+    Projections return new objects. This object is never mutated in place.
     """
-    deltas: List[ElementDelta] = Field(default_factory=list)
-    contains: T
+
+    state_parts: Dict[str, List[ExtendedAgentStateItem]] = Field(default_factory=dict)
