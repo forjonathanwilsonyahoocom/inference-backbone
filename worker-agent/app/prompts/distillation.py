@@ -23,9 +23,9 @@ the front matter of ToolMessage result content may contain a line starting with 
         The new focus query
 when present, use these values to guide how much and what detail you preserve, if these fields are missing, assume they are of average utility
  
-output **only** a single JSON object per the AgentState schema
-
 your total response should be shorter than the content you are distilling
+
+output **only** a single JSON object per the AgentState schema
 
 Make sure the JSON is syntactically valid (no trailing commas, proper quoting).
 
