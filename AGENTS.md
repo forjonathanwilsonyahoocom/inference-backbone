@@ -24,15 +24,12 @@ This document provides a high‑level overview of the three core agents in the *
 * **Claim** – A discrete, checkable statement extracted from an agent’s final answer.
 * **Evidence** – Any artifact (e.g., a file, a web search result) that can support or refute a claim.
 
-## How to run the system
-
-1. **Start the Docker broker** – `docker compose up -d broker`.
-2. **Start the worker agent** – `docker compose up -d worker`.
-3. **Start the validator agent** – `docker compose up -d validator`.
-4. **Start the backbone API** – `docker compose up -d api`.
-
-All services expose a `/health` endpoint for liveness checks.
-
----
-
 For detailed API contracts, see the `contracts/` package.
+
+## Testing
+
+there is a pattern established in the worker-agent service,
+run the ./worker-agent/test.sh to execute tests in the worker-agent service
+
+the script will install the worker-agent so that the paths expressed in the
+worker agent service will import correctly

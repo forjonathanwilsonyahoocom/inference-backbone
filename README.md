@@ -356,6 +356,7 @@ relies on http callable LLM that handles tool calls, all tests have been done wi
 * web_search
 * web_fetch
 * search_evidence
+* assess_result
 
 ### worker-agent context management
 as the workers context reaches a threshold, it is distilled and truncated to compress the context
