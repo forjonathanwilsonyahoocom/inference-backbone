@@ -26,7 +26,7 @@ def stamp_ids(iteration_id: int, on_agent_state: dict) -> dict:
         for i, item in enumerate(v):
             item["id"] = f"{k_preface}_{iteration_id}_{i}"
             
-    print(on_agent_state)
+    #print(on_agent_state)
     return on_agent_state
     
 def merge_summaries(entries: List[dict]) -> dict:

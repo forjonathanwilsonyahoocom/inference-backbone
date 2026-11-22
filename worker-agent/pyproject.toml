@@ -17,5 +17,3 @@ package-dir = {"" = "app"}
 [tool.setuptools.packages.find]
 where = ["app"]
 
-[tool.pytest.ini_options]
-testpaths = ["app/agent/tests"]
