@@ -1,6 +1,7 @@
+from typing import Dict, Generic, List, TypeVar
+from pydantic import BaseModel, Field
+T = TypeVar('T')
 from contracts.inference_contracts.agent_state_delta import ElementDelta
-from typing import List
-from pydantic import BaseModel
 
 class ExtendedAgentState(BaseModel):
     """

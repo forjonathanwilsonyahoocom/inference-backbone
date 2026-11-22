@@ -7,7 +7,7 @@ from prompts.distillation import DISTILLATION_PROMPT
 from contracts.inference_contracts.agent_state import AgentState
 from contracts.inference_contracts.info import InfoNode
 from agent.telemetry import ingest_agent_state, ingest_agent_state_aggregate
-from agent.apply_delta import apply_delta
+from .apply_delta_extended import apply_delta_extended
 from langchain_ollama import ChatOllama
 import json
 
@@ -135,7 +135,7 @@ def get_distillation(config: AgentRequest,
         compact = get_delta(config, metrics, compact)
         if compact.summary_aggregate:
             if len(compact.summary_deltas) > 0:
-                compact.summary_aggregate = apply_delta(metrics,
+                compact.summary_aggregate = apply_delta_extended(metrics,
                                                         compact.summary_aggregate,
                                                         facts,
                                                         compact.summary_deltas[-1])
