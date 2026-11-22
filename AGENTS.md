@@ -12,9 +12,9 @@ This document provides a high‑level overview of the three core agents in the *
 +----------------+      +----------------+      +----------------+
 | Worker Agent   | ---> | Validator Agent| ---> | Backbone API   |
 +----------------+      +----------------+      +----------------+
-        |                        |                    |
-        |                        |                    |
-        +----> Docker Broker <----+                    |
+        |                         
+        |                        
+        +----> Docker Broker 
 ```
 
 ## Key concepts
