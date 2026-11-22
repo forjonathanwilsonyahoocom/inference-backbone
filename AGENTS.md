@@ -23,7 +23,8 @@ The repository is an evolving research and engineering project. Avoid treating a
 ```mermaid
 flowchart TB
     Client["Client / caller"] -->|AgentRequest: POST /run| Worker["Worker Agent"]
-    Client["Client / caller"] -->| see fastAPI docs | Validator["Validator Agent"]
+    Client["Client / caller"] -->| API requests | Validator["Validator Agent"]
+    Client -->| API reference | Docs["Published OpenAPI Docs"]
 
     subgraph WorkerService["worker-agent"]
         Loop["Agent loop"]
