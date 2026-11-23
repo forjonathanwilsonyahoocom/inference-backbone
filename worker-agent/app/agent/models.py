@@ -80,11 +80,12 @@ def find_tool_call_result(wrappers: List[ToolCallResultWrapper], tool_call_id: s
 
 
 class Compaction(BaseModel):
-    summary: List[dict] = [] #holds the progressive original agent state objects
-    aggregation: ExtendedAgentState = None #holds the new aggregate source, to be projected for the llm
+    summary: List[dict] = [] #holds the progressive original agent state objects TODO: Clean this out
+    states: List[ExtendedAgentState] = [] #holds the progressive original agent state objects with attached ids
+    aggregation: ExtendedAgentState = None #holds the aggregate state, with delta lists, to be projected for the llm
     summary_deltas: List[DistillationDelta] = [] #holds the list of delta update from the summary_aggregate to the latest summary
-    summary_aggregate: dict = {} #holds the latest aggregation of the summary list, this is presented to the llm
-    fallback: str = ""  # only holds a mechanically extracted string when llm call fails multiple times
+    summary_aggregate: dict = {} #holds the latest aggregation of the summary list, this is presented to the llm TODO: Clean this out
+    fallback: str = ""  # only holds a mechanically extracted string when llm call fails multiple times TODO: Clean this out
     upto: int = 0       # history[:upto] is in the compaction
 
 

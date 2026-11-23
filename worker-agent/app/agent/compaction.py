@@ -7,7 +7,8 @@ from prompts.distillation import DISTILLATION_PROMPT
 from contracts.inference_contracts.agent_state import AgentState
 from contracts.inference_contracts.info import InfoNode
 from agent.telemetry import ingest_agent_state, ingest_agent_state_aggregate
-from agent.apply_delta import apply_delta
+from agent.apply_delta import apply_delta, apply_delta_to_aggregate #TODO: clean this apply_delta up
+from agent.extend_agent_state import extend_state
 from langchain_ollama import ChatOllama
 import json
 
@@ -19,39 +20,21 @@ from langchain_core.messages import (
     BaseMessage
 )
 
-
-def stamp_ids(iteration_id: int, on_agent_state: dict) -> dict:
-    for k, v in on_agent_state.items():
-        k_preface = k[:3]
-        for i, item in enumerate(v):
-            item["id"] = f"{k_preface}_{iteration_id}_{i}"
-            
-    #print(on_agent_state)
-    return on_agent_state
-    
-def merge_summaries(entries: List[dict]) -> dict:
-    merged: Dict[str, list] = {}
-    for entry in entries:
-        for k, v in entry.items():
-            bucket = merged.setdefault(k, [])
-            bucket.extend(x for x in (v if isinstance(v, list) else [v]) if x not in bucket)
-    return merged
-    
+#clean this up after we switch to ExtendedAgentState projections
 def make_summary_message(compact: Compaction, is_going_back_to_llm: bool = False) -> str:
-    if not compact.summary and not compact.fallback:
+    if not compact.aggregate:
         return ""
     body = ""
-    if compact.summary_aggregate:
+    if compact.aggregate:
         body = json.dumps(compact.summary_aggregate, indent=2)
-    elif compact.summary:
-        body = json.dumps(merge_summaries(compact.summary), indent=2)
         
     if is_going_back_to_llm:
         return f"the initial {compact.upto} iterations have been compacted into this report:\n{body}\n{compact.fallback}"
     else:
-        print(compact.fallback)
-        return body
-    
+        return  f"{body}\n{compact.fallback}"
+
+
+#clean this up after we switch to ExtendedAgentState projections
 def fallback_mechanical_summary(msgs: List[BaseMessage]) -> str:
     lines = []
     for m in msgs:
@@ -96,6 +79,8 @@ def get_distillation(config: AgentRequest,
     facts = None
     info = None
     retry_notes: list[BaseMessage] = []
+    
+    agent_state_facts = None
     for _ in range(3):
         agent_state_facts = None
         try:
@@ -128,23 +113,19 @@ def get_distillation(config: AgentRequest,
             print(f"Raw model output (truncated): {raw_content[:300]}")
             retry_notes.append(HumanMessage(f"Last response failed validation: {exc}. Please try again."))
 
-    if facts is not None:
-        compact.upto = upto
-        compact.summary.append(facts)
-        compact.fallback = ""
-        compact = get_delta(config, metrics, compact)
-        if compact.summary_aggregate:
-            if len(compact.summary_deltas) > 0:
-                compact.summary_aggregate = apply_delta(metrics,
-                                                        compact.summary_aggregate,
-                                                        facts,
-                                                        compact.summary_deltas[-1])
-                ingest_agent_state_aggregate(compact.summary_aggregate, info)
+
+    if agent_state_facts is not None:
+        extended = extend_state(upto, agent_state_facts)
+        compact.states.append(extended)
+        if compact.aggregation is None:
+            compact.aggregation = extended
         else:
-            #set the initial state of summary_aggregate
-            compact.summary_aggregate = facts
-        
-        print(f"Distilled upto {upto}:{facts}")
+            new_delta = get_delta(config, metrics, compact)
+            compact.summary_deltas.append(new_delta)
+            new_aggregate = apply_delta_to_aggregate(config, metrics, compact, latest_extended_state, new_delta)
+            compact.aggregate = new_aggregate
+            ingest_agent_state_aggregate(compact.aggregate, info)
+
     else:
         metrics.emit(metrics.get_counter_message("distillation_fallback", "distillation mechanical fallback"))
         compact.fallback = fallback_mechanical_summary(distill_these)
