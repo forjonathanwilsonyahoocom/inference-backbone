@@ -22,11 +22,11 @@ from langchain_core.messages import (
 
 #clean this up after we switch to ExtendedAgentState projections
 def make_summary_message(compact: Compaction, is_going_back_to_llm: bool = False) -> str:
-    if not compact.aggregate and not compact.fallback:
+    if not compact.aggregation and not compact.fallback:
         return ""
     body = ""
-    if compact.aggregate:
-        body = json.dumps(compact.aggregate, indent=2)
+    if compact.aggregation:
+        body = json.dumps(compact.aggregation, indent=2)
         #this is where we would use the llm projection
         
     if is_going_back_to_llm:
