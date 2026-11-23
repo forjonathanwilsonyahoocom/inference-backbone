@@ -7,7 +7,7 @@ from prompts.distillation import DISTILLATION_PROMPT
 from contracts.inference_contracts.agent_state import AgentState
 from contracts.inference_contracts.info import InfoNode
 from agent.telemetry import ingest_agent_state, ingest_agent_state_aggregate
-from agent.apply_delta import apply_delta, apply_delta_to_aggregate #TODO: clean this apply_delta up
+from agent.apply_delta import apply_delta_to_aggregate
 from agent.extend_agent_state import extend_state
 from langchain_ollama import ChatOllama
 import json
@@ -26,7 +26,8 @@ def make_summary_message(compact: Compaction, is_going_back_to_llm: bool = False
         return ""
     body = ""
     if compact.aggregate:
-        body = json.dumps(compact.summary_aggregate, indent=2)
+        body = json.dumps(compact.aggregate, indent=2)
+        #this is where we would use the llm projection
         
     if is_going_back_to_llm:
         return f"the initial {compact.upto} iterations have been compacted into this report:\n{body}\n{compact.fallback}"
@@ -34,7 +35,7 @@ def make_summary_message(compact: Compaction, is_going_back_to_llm: bool = False
         return  f"{body}\n{compact.fallback}"
 
 
-#clean this up after we switch to ExtendedAgentState projections
+#maybe clean this up after we switch to ExtendedAgentState projections
 def fallback_mechanical_summary(msgs: List[BaseMessage]) -> str:
     lines = []
     for m in msgs:
@@ -71,13 +72,14 @@ def get_distillation(config: AgentRequest,
     print(f"Starting distill from {compact.upto} to {upto}")
     
     conv_text = distillation_assembly(distill_these)
+    
     input_len = len(conv_text)
+    
     distillation_messages = [
         SystemMessage(content=DISTILLATION_PROMPT),
         HumanMessage(content=conv_text),
     ]
-    facts = None
-    info = None
+
     retry_notes: list[BaseMessage] = []
     
     agent_state_facts = None
@@ -88,22 +90,9 @@ def get_distillation(config: AgentRequest,
             if not isinstance(agent_state_facts, AgentState):
                 raise ValueError(f"expected a AgentState object, got {type(agent_state_facts).__name__}")
                 
-            facts_dict = agent_state_facts.model_dump()
-            if not isinstance(facts_dict, dict):
-                raise ValueError(f"expected a dict from AgentState.model_dump(), got {type(facts_dict).__name__}")
-            output_len = len(str(facts_dict))
             if output_len > input_len * 1.2:
-                raise ValueError(f"size of resulting distillation too large {output_len} compared to input {input_len}")
+                raise ValueError(f"size of resulting distillation too large {output_len} compared to input {input_len}, it should be the same size or smaller")
                 
-            info = InfoNode(id = f"{config.execution_id}-{upto}",
-                            execution_id=config.execution_id,
-                            instance_number_start=compact.upto,
-                            instance_number_end=upto,
-                            )
-            ingest_agent_state(agent_state_facts, info)
-
-            
-            facts = stamp_ids(upto, facts_dict)
             metrics.emit(metrics.get_counter_message("distillation_success", "distillation agent worked"))
             break
         except Exception as exc:
@@ -115,14 +104,22 @@ def get_distillation(config: AgentRequest,
 
 
     if agent_state_facts is not None:
+        info = InfoNode(id = f"{config.execution_id}-{upto}",
+                    execution_id=config.execution_id,
+                    instance_number_start=compact.upto,
+                    instance_number_end=upto,
+                    )
+        ingest_agent_state(agent_state_facts, info)
+            
         extended = extend_state(upto, agent_state_facts)
+        compact.fallback = ""
         compact.states.append(extended)
         if compact.aggregation is None:
             compact.aggregation = extended
         else:
             new_delta = get_delta(config, metrics, info, compact)
             compact.summary_deltas.append(new_delta)
-            new_aggregate = apply_delta_to_aggregate(config, metrics, compact, latest_extended_state, new_delta)
+            new_aggregate = apply_delta_to_aggregate(config, metrics, compact, extended, new_delta)
             compact.aggregate = new_aggregate
             ingest_agent_state_aggregate(compact.aggregate, info)
 
