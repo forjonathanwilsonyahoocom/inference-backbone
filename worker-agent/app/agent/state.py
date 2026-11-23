@@ -31,11 +31,11 @@ def create_delta_llm(config: AgentRequest) -> ChatOllama:
     
     return delta_llm
 
-def get_delta(config: AgentRequest, metrics: MetricsWrapper, info: InfoNode, compaction: Compaction) -> DistillationDelta:
+def get_delta(config: AgentRequest, metrics: MetricsWrapper, info: InfoNode, compact: Compaction) -> DistillationDelta:
 
     delta_llm = create_delta_llm(config)
     
-    conv_text = f"PRIOR_AGGREGATION:{compaction.aggregate.model_dump()}\nLATEST_SUMMARY:{compaction.states[-1].model_dump()}"
+    conv_text = f"PRIOR_AGGREGATION:{json.dumps(compact.aggregation.model_dump(), indent=2)}\nLATEST_SUMMARY:{json.dumps(compact.states[-1].model_dump(), indent=2)}"
     #replace model dumps with projection calls
     
     delta_messages = [

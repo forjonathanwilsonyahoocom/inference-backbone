@@ -26,7 +26,7 @@ def make_summary_message(compact: Compaction, is_going_back_to_llm: bool = False
         return ""
     body = ""
     if compact.aggregation:
-        body = json.dumps(compact.aggregation, indent=2)
+        body = json.dumps(compact.aggregation.model_dump(), indent=2)
         #this is where we would use the llm projection
         
     if is_going_back_to_llm:
