@@ -120,7 +120,7 @@ def get_distillation(config: AgentRequest,
         if compact.aggregation is None:
             compact.aggregation = extended
         else:
-            new_delta = get_delta(config, metrics, compact)
+            new_delta = get_delta(config, metrics, info, compact)
             compact.summary_deltas.append(new_delta)
             new_aggregate = apply_delta_to_aggregate(config, metrics, compact, latest_extended_state, new_delta)
             compact.aggregate = new_aggregate

@@ -18,6 +18,7 @@ class ExtendedAgentStateItem(BaseModel, Generic[T]):
     """
 
     deltas: List[ElementDelta] = Field(default_factory=list)
+    id: str = None #holds the generated id of the T
     contains: T
 
 class ExtendedAgentState(BaseModel):

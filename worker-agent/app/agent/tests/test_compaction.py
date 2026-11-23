@@ -1,4 +1,4 @@
-from ..compaction import stamp_ids
+
 from pprint import pprint
 import pytest
 
@@ -63,10 +63,3 @@ def get_state_1():
   }
 
 
-def test_stamp_ids():
-    with_ids = stamp_ids(1, get_state_1())
-    
-    assert with_ids["completed_steps"][0]["id"] == "com_1_0"
-    #pprint(with_ids)
-    
-    

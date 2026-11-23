@@ -31,7 +31,7 @@ def create_delta_llm(config: AgentRequest) -> ChatOllama:
     
     return delta_llm
 
-def get_delta(config: AgentRequest, metrics: MetricsWrapper,  compaction: Compaction) -> DistillationDelta:
+def get_delta(config: AgentRequest, metrics: MetricsWrapper, info: InfoNode, compaction: Compaction) -> DistillationDelta:
 
     delta_llm = create_delta_llm(config)
     
@@ -52,11 +52,6 @@ def get_delta(config: AgentRequest, metrics: MetricsWrapper,  compaction: Compac
             if not isinstance(agent_state_delta, DistillationDelta):
                 raise ValueError(f"expected a DistillationDelta object, got {type(agent_state_delta).__name__}")
                 
-            info = InfoNode(id = f"{config.execution_id}-{compaction.upto}",
-                            execution_id=config.execution_id,
-                            instance_number_start=compaction.upto,
-                            instance_number_end=compaction.upto,
-                            )
             ingest_agent_state_delta(agent_state_delta, info)
             
             metrics.emit(metrics.get_counter_message("distillation_delta_success", "distillation delta agent worked"))
