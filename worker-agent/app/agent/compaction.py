@@ -23,14 +23,12 @@ from langchain_core.messages import (
 
 #clean this up after we switch to ExtendedAgentState projections
 def make_summary_message(compact: Compaction, is_going_back_to_llm: bool = False) -> str:
-    if not compact.aggregation and not compact.fallback:
+    if not compact.aggregation_worker_projection and not compact.fallback:
         return ""
     body = ""
-    if compact.aggregation:
+    if compact.aggregation_worker_projection:
         # Use the worker projection to generate the squished view for the LLM
-        worker_projection_markdown = project_for_worker(compact.aggregation)
-        if worker_projection_markdown:
-            body = worker_projection_markdown
+        body = aggregation_worker_projection
         
     if is_going_back_to_llm:
         return f"the initial {compact.upto} iterations have been compacted into this report:\n{body}\n{compact.fallback}"
@@ -127,6 +125,8 @@ def get_distillation(config: AgentRequest,
             compact.summary_deltas.append(new_delta)
             compact.aggregation = apply_delta_to_aggregate(metrics, compact.aggregation, extended, new_delta)
             ingest_agent_state_aggregate(compact.aggregation, info)
+
+        compact.aggregation_worker_projection = project_for_worker(compact.aggregation)
 
     else:
         metrics.emit(metrics.get_counter_message("distillation_fallback", "distillation mechanical fallback"))

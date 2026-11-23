@@ -45,6 +45,9 @@ def get_delta(config: AgentRequest, metrics: MetricsWrapper, info: InfoNode, com
     
     conv_text = f"PRIOR_AGGREGATION:{json.dumps(prior_projection, indent=2)}\nLATEST_SUMMARY:{json.dumps(latest_projection, indent=2)}"
     
+    if config.verbose:
+        print(conv_text)
+        
     delta_messages = [
         SystemMessage(content=DELTA_ANALYSIS_PROMPT),
         HumanMessage(content=conv_text),
