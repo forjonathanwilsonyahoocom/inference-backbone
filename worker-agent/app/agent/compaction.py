@@ -9,6 +9,7 @@ from contracts.inference_contracts.info import InfoNode
 from agent.telemetry import ingest_agent_state, ingest_agent_state_aggregate
 from agent.apply_delta import apply_delta_to_aggregate
 from agent.extend_agent_state import extend_state
+from agent.state_projection.projection_dispatcher import project_for_worker
 from langchain_ollama import ChatOllama
 import json
 

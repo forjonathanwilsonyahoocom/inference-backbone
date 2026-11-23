@@ -19,6 +19,7 @@ from contracts.inference_contracts.info import InfoNode
 from observability.metrics import MetricsWrapper
 from agent.telemetry import ingest_agent_state_delta
 import json
+from agent.state_projection.projection_dispatcher import project_for_delta
 from langchain_core.messages import HumanMessage, SystemMessage, BaseMessage
 
 def create_delta_llm(config: AgentRequest) -> ChatOllama:
