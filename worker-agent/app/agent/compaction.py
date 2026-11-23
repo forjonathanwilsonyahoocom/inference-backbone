@@ -89,7 +89,8 @@ def get_distillation(config: AgentRequest,
             agent_state_facts = distillation_llm.invoke(distillation_messages + retry_notes)
             if not isinstance(agent_state_facts, AgentState):
                 raise ValueError(f"expected a AgentState object, got {type(agent_state_facts).__name__}")
-                
+            
+            output_len = len(json.dumps(agent_state_facts.model_dump()))
             if output_len > input_len * 1.2:
                 raise ValueError(f"size of resulting distillation too large {output_len} compared to input {input_len}, it should be the same size or smaller")
                 
