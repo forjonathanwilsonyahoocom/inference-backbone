@@ -2,6 +2,7 @@ from contracts.inference_contracts.agent_state_extended import (
     ExtendedAgentState,
     ExtendedAgentStateItem,
 )
+from typing import Any
 from contracts.inference_contracts.agent_state import AgentState
 
 def extend_item(iteration_id: int, 
