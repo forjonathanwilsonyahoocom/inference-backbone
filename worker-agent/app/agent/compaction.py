@@ -119,9 +119,8 @@ def get_distillation(config: AgentRequest,
         else:
             new_delta = get_delta(config, metrics, info, compact)
             compact.summary_deltas.append(new_delta)
-            new_aggregate = apply_delta_to_aggregate(config, metrics, compact, extended, new_delta)
-            compact.aggregate = new_aggregate
-            ingest_agent_state_aggregate(compact.aggregate, info)
+            compact.aggregation = apply_delta_to_aggregate(metrics, compact.aggregation, extended, new_delta)
+            ingest_agent_state_aggregate(compact.aggregation, info)
 
     else:
         metrics.emit(metrics.get_counter_message("distillation_fallback", "distillation mechanical fallback"))

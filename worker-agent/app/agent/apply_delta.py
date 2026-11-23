@@ -18,13 +18,13 @@ def _find_extended_item_by_id(aggregate: ExtendedAgentState, item_id: str) -> Op
                         return item
     return None
     
-def apply_delta_to_aggregate(config: AgentRequest, 
-                             metrics: MetricsWrapper,  
-                             compact: Compaction, 
+def apply_delta_to_aggregate(metrics: MetricsWrapper,  
+                             last_aggregate: ExtendedAgentState, 
                              latest_extended_state: ExtendedAgentState, 
                              new_delta: DistillationDelta) -> ExtendedAgentState:
     #first lets add all items from the latest_extended_state to the aggregate
-    aggregate = compact.aggregate
+    aggregate = last_aggregate.model_copy(deep=True)
+
     for name, state_parts in latest_extended_state.state_parts.items():
         aggregated_parts = aggregate.state_parts.get(name, [])
         for item in state_parts:
