@@ -26,8 +26,10 @@ def make_summary_message(compact: Compaction, is_going_back_to_llm: bool = False
         return ""
     body = ""
     if compact.aggregation:
-        body = json.dumps(compact.aggregation.model_dump(), indent=2)
-        #this is where we would use the llm projection
+        # Use the worker projection to generate the squished view for the LLM
+        worker_projection_markdown = project_for_worker(compact.aggregation)
+        if worker_projection_markdown:
+            body = worker_projection_markdown
         
     if is_going_back_to_llm:
         return f"the initial {compact.upto} iterations have been compacted into this report:\n{body}\n{compact.fallback}"

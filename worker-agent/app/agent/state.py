@@ -35,8 +35,14 @@ def get_delta(config: AgentRequest, metrics: MetricsWrapper, info: InfoNode, com
 
     delta_llm = create_delta_llm(config)
     
-    conv_text = f"PRIOR_AGGREGATION:{json.dumps(compact.aggregation.model_dump(), indent=2)}\nLATEST_SUMMARY:{json.dumps(compact.states[-1].model_dump(), indent=2)}"
-    #replace model dumps with projection calls
+    # Use projection functions to generate squished views instead of full model dumps
+    # We need to ensure project_for_delta is imported/accessible here.
+    # Assuming necessary imports from agent.state_projection are available in state.py
+    
+    prior_projection = project_for_delta(compact.aggregation)
+    latest_projection = project_for_delta(compact.states[-1])
+    
+    conv_text = f"PRIOR_AGGREGATION:{json.dumps(prior_projection, indent=2)}\nLATEST_SUMMARY:{json.dumps(latest_projection, indent=2)}"
     
     delta_messages = [
         SystemMessage(content=DELTA_ANALYSIS_PROMPT),
