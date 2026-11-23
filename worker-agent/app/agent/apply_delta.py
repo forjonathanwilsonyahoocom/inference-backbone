@@ -9,8 +9,8 @@ from contracts.inference_contracts.agent_state_extended import (
 # Helper to find an item by ID within a specific section list
 #use the item id prefix as a section name match
 def _find_extended_item_by_id(aggregate: ExtendedAgentState, item_id: str) -> Optional[ExtendedAgentStateItem]:
-    section_starts_with = item_id.split("_")[0]
     if item_id is not None:
+        section_starts_with = item_id.split("_")[0]
         for section, items in aggregate.state_parts.items():
             if section.startswith(section_starts_with):
                 for item in items:
