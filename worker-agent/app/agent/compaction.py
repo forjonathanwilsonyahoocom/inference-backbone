@@ -126,7 +126,7 @@ def get_distillation(config: AgentRequest,
             metrics.emit(metrics.get_counter_message("distillation_failure", "distillation agent crashes"))
             raw_content = str(agent_state_facts) if agent_state_facts else "(no response)"
             print(f"Raw model output (truncated): {raw_content[:300]}")
-            retry_notes.append(HumanMessage(f"Last response failed validation: {e}. Please try again."))
+            retry_notes.append(HumanMessage(f"Last response failed validation: {exc}. Please try again."))
 
     if facts is not None:
         compact.upto = upto
