@@ -2,6 +2,13 @@ from typing import Dict, List, TypeVar, Callable, Optional
 from contracts.inference_contracts.agent_state_extended import ExtendedAgentState, ExtendedAgentStateItem
 from contracts.inference_contracts.agent_state_delta import ElementDelta, DeltaAction
 from pydantic import BaseModel
+from contracts.inference_contracts.agent_state import (
+    Artifact,
+    Observation,
+    Understanding,
+    Hypothesis,
+    CompletedStep
+)
 import json
 
 T = TypeVar('T', bound=BaseModel)
@@ -86,11 +93,11 @@ def project_for_delta(state: ExtendedAgentState) -> Dict:
             
     return delta_projections
 
-from .Observation import project_for_worker as worker_proj_obs, project_for_delta as delta_proj_obs
-from .Understanding import project_for_worker as worker_proj_und, project_for_delta as delta_proj_und
-from .Hypothesis import project_for_worker as worker_proj_hyp, project_for_delta as delta_proj_hyp
-from .CompletedStep import project_for_worker as worker_proj_completed_step, project_for_delta as delta_proj_completed_step
-from .Artifact import project_for_worker as worker_proj_artifact, project_for_delta as delta_proj_artifact
+from agent.state_projection.Observation import project_for_worker as worker_proj_obs, project_for_delta as delta_proj_obs
+from agent.state_projection.Understanding import project_for_worker as worker_proj_und, project_for_delta as delta_proj_und
+from agent.state_projection.Hypothesis import project_for_worker as worker_proj_hyp, project_for_delta as delta_proj_hyp
+from agent.state_projection.CompletedStep import project_for_worker as worker_proj_completed_step, project_for_delta as delta_proj_completed_step
+from agent.state_projection.Artifact import project_for_worker as worker_proj_artifact, project_for_delta as delta_proj_artifact
 
 # Register types
 register_projection(type(Observation), worker_proj_obs, delta_proj_obs)
