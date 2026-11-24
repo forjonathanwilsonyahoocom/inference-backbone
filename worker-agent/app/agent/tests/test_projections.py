@@ -2,10 +2,8 @@ from typing import Dict, List
 from unittest.mock import Mock
 
 from contracts.inference_contracts.agent_state_delta import ElementDelta, DeltaAction
-from contracts.inference_contracts.agent_state_extended import ExtendedAgentStateItem
-from contracts.inference_contracts.agent_state import Artifact, CompletedStep
-from agent.state_projection.Artifact import project_for_worker as proj_worker_artifact, project_for_delta as proj_delta_artifact
-from agent.state_projection.CompletedStep import project_for_worker as proj_worker_completed, project_for_delta as proj_delta_completed
+from contracts.inference_contracts.agent_state_extended import ExtendedAgentStateItem, ExtendedAgentState
+from contracts.inference_contracts.agent_state import Artifact, CompletedStep, Observation, Understanding, Hypothesis
 
 def create_mock_item(contains, deltas: List[Mock], item_id: str) -> ExtendedAgentStateItem:
     """Helper to create a mock ExtendedAgentStateItem."""
@@ -14,6 +12,8 @@ def create_mock_item(contains, deltas: List[Mock], item_id: str) -> ExtendedAgen
         id=item_id,
         contains=contains
     )
+
+from agent.state_projection.Artifact import project_for_worker as proj_worker_artifact, project_for_delta as proj_delta_artifact
 
 def test_artifact_projection():
     """Test worker and delta projections for Artifact."""
@@ -44,6 +44,8 @@ def test_artifact_projection():
     delta_output = proj_delta_artifact(item_safe)
     assert isinstance(delta_output, dict)
 
+from agent.state_projection.CompletedStep import project_for_worker as proj_worker_completed, project_for_delta as proj_delta_completed
+
 def test_completed_step_projection():
     """Test worker and delta projections for CompletedStep."""
     # Setup mock types
@@ -73,9 +75,7 @@ def test_completed_step_projection():
     delta_output = proj_delta_completed(item_safe)
     assert isinstance(delta_output, dict)
 
-from contracts.inference_contracts.agent_state import Understanding, Hypothesis
 from agent.state_projection.Understanding import project_for_worker as proj_worker_understanding, project_for_delta as proj_delta_understanding
-from agent.state_projection.Hypothesis import project_for_worker as proj_worker_hypothesis, project_for_delta as proj_delta_hypothesis
 
 def test_understanding_projection():
     """Test worker and delta projections for Understanding."""
@@ -106,6 +106,9 @@ def test_understanding_projection():
     delta_output = proj_delta_understanding(item_safe)
     assert isinstance(delta_output, dict)
 
+
+from agent.state_projection.Hypothesis import project_for_worker as proj_worker_hypothesis, project_for_delta as proj_delta_hypothesis
+
 def test_hypothesis_projection():
     """Test worker and delta projections for Hypothesis."""
     # Setup mock types
@@ -135,3 +138,4 @@ def test_hypothesis_projection():
     # Test delta projection (scaffolding)
     delta_output = proj_delta_hypothesis(item_safe)
     assert isinstance(delta_output, dict)
+    
