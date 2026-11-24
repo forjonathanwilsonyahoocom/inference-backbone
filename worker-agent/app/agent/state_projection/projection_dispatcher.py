@@ -100,8 +100,8 @@ from agent.state_projection.CompletedStep import project_for_worker as worker_pr
 from agent.state_projection.Artifact import project_for_worker as worker_proj_artifact, project_for_delta as delta_proj_artifact
 
 # Register types
-register_projection(type(Observation), worker_proj_obs, delta_proj_obs)
-register_projection(type(Understanding), worker_proj_und, delta_proj_und)
-register_projection(type(Hypothesis), worker_proj_hyp, delta_proj_hyp)
-register_projection(type(CompletedStep), worker_proj_completed_step, delta_proj_completed_step)
-register_projection(type(Artifact), worker_proj_artifact, delta_proj_artifact)
+register_projection(Observation, worker_proj_obs, delta_proj_obs)
+register_projection(Understanding, worker_proj_und, delta_proj_und)
+register_projection(Hypothesis, worker_proj_hyp, delta_proj_hyp)
+register_projection(CompletedStep, worker_proj_completed_step, delta_proj_completed_step)
+register_projection(Artifact, worker_proj_artifact, delta_proj_artifact)

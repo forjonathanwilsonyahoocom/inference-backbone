@@ -27,8 +27,9 @@ def make_summary_message(compact: Compaction, is_going_back_to_llm: bool = False
         return ""
     body = ""
     if compact.aggregation_worker_projection:
+    
         # Use the worker projection to generate the squished view for the LLM
-        body = aggregation_worker_projection
+        body = compact.aggregation_worker_projection
         
     if is_going_back_to_llm:
         return f"the initial {compact.upto} iterations have been compacted into this report:\n{body}\n{compact.fallback}"
@@ -127,6 +128,9 @@ def get_distillation(config: AgentRequest,
             ingest_agent_state_aggregate(compact.aggregation, info)
 
         compact.aggregation_worker_projection = project_for_worker(compact.aggregation)
+        
+        if config.verbose:
+            print(compact.aggregation_worker_projection)
 
     else:
         metrics.emit(metrics.get_counter_message("distillation_fallback", "distillation mechanical fallback"))

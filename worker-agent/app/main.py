@@ -91,7 +91,10 @@ async def run_agent_endpoint(config: AgentRequest):
         tools, llm_with_tools, iteration_list = get_knowledge_toolchain(config, llm)
     else:
         raise Exception(f"unexpected config.mode {config.mode }")
-    print(f"enabled tools: {tools}")
+        
+    if config.verbose:
+        print(f"enabled tools: {tools}")
+        
     METRICS.clear_counters()
     result = run_agent(
         metrics=METRICS,

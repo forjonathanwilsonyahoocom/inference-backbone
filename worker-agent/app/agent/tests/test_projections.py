@@ -1,18 +1,18 @@
 from typing import Dict, List
 
 from contracts.inference_contracts.agent_state_delta import ElementDelta, DeltaAction
-from contracts.inference_contracts.agent_state_extended import ExtendedAgentStateItem
-from contracts.inference_contracts.agent_state import Artifact, CompletedStep
-from agent.state_projection.Artifact import project_for_worker as proj_worker_artifact, project_for_delta as proj_delta_artifact
-from agent.state_projection.CompletedStep import project_for_worker as proj_worker_completed, project_for_delta as proj_delta_completed
+from contracts.inference_contracts.agent_state_extended import ExtendedAgentStateItem, ExtendedAgentState
+from contracts.inference_contracts.agent_state import Artifact, CompletedStep, Observation, Understanding, Hypothesis
 
-def create_mock_item(contains, deltas: List[Mock], item_id: str) -> ExtendedAgentStateItem:
+def create_mock_item(contains, deltas: List[ElementDelta], item_id: str) -> ExtendedAgentStateItem:
     """Helper to create a mock ExtendedAgentStateItem."""
     return ExtendedAgentStateItem(
         deltas=deltas,
         id=item_id,
         contains=contains
     )
+
+from agent.state_projection.Artifact import project_for_worker as proj_worker_artifact, project_for_delta as proj_delta_artifact
 
 def test_artifact_projection():
     """Test worker and delta projections for Artifact."""
@@ -43,6 +43,8 @@ def test_artifact_projection():
     delta_output = proj_delta_artifact(item_safe)
     assert isinstance(delta_output, dict)
 
+from agent.state_projection.CompletedStep import project_for_worker as proj_worker_completed, project_for_delta as proj_delta_completed
+
 def test_completed_step_projection():
     """Test worker and delta projections for CompletedStep."""
     # Setup mock types
@@ -72,5 +74,67 @@ def test_completed_step_projection():
     delta_output = proj_delta_completed(item_safe)
     assert isinstance(delta_output, dict)
 
-# Note: To run these tests, the imports must resolve correctly within the workspace.
-# We assume the project structure allows for these relative imports.
+from agent.state_projection.Understanding import project_for_worker as proj_worker_understanding, project_for_delta as proj_delta_understanding
+
+def test_understanding_projection():
+    """Test worker and delta projections for Understanding."""
+    # Setup mock types
+    mock_understanding = Understanding(concept = "test concept",
+                                       detail = "test detail snippet",
+                                       confidence = 0.95)
+
+    # Setup mock deltas
+    mock_delta_no_retire = ElementDelta(action = DeltaAction.REFINE,
+                                        confidence = 0.9)
+
+    mock_delta_retire = ElementDelta(action = DeltaAction.RETIRE,
+                                     confidence = 0.9)
+
+    # Test case 1: No RETIRE -> Should return markdown
+    item_safe = create_mock_item(mock_understanding, [mock_delta_no_retire], "und_1_1")
+    worker_output_safe = proj_worker_understanding(item_safe)
+    assert worker_output_safe is not None
+    assert "- Understanding (ID: und_1_1): 'test concept'\n  - Action: REFINE, Latest ID: N/A, Text: N/A..." in worker_output_safe
+
+    # Test case 2: Contains RETIRE -> Should return None
+    item_retired = create_mock_item(mock_understanding, [mock_delta_retire], "und_1_2")
+    worker_output_retired = proj_worker_understanding(item_retired)
+    assert worker_output_retired is None
+
+    # Test delta projection (scaffolding)
+    delta_output = proj_delta_understanding(item_safe)
+    assert isinstance(delta_output, dict)
+
+
+from agent.state_projection.Hypothesis import project_for_worker as proj_worker_hypothesis, project_for_delta as proj_delta_hypothesis
+
+def test_hypothesis_projection():
+    """Test worker and delta projections for Hypothesis."""
+    # Setup mock types
+    mock_hypothesis = Hypothesis(hypothesis = "test hypothesis",
+                                  source = "test source",
+                                  status = "pending",
+                                  confidence = 0.9)
+
+    # Setup mock deltas
+    mock_delta_no_retire = ElementDelta(action = DeltaAction.REFINE,
+                                        confidence = 0.9)
+
+    mock_delta_retire = ElementDelta(action = DeltaAction.RETIRE,
+                                     confidence = 0.9)
+
+    # Test case 1: No RETIRE -> Should return markdown
+    item_safe = create_mock_item(mock_hypothesis, [mock_delta_no_retire], "hyp_1_1")
+    worker_output_safe = proj_worker_hypothesis(item_safe)
+    assert worker_output_safe is not None
+    assert "- Hypothesis (ID: hyp_1_1): 'test hypothesis'" in worker_output_safe
+
+    # Test case 2: Contains RETIRE -> Should return None
+    item_retired = create_mock_item(mock_hypothesis, [mock_delta_retire], "hyp_1_2")
+    worker_output_retired = proj_worker_hypothesis(item_retired)
+    assert worker_output_retired is None
+
+    # Test delta projection (scaffolding)
+    delta_output = proj_delta_hypothesis(item_safe)
+    assert isinstance(delta_output, dict)
+    
