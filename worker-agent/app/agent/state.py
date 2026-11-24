@@ -18,8 +18,9 @@ from langchain_ollama import ChatOllama
 from contracts.inference_contracts.info import InfoNode
 from observability.metrics import MetricsWrapper
 from agent.telemetry import ingest_agent_state_delta
-
-from langchain_core.messages import HumanMessage, SystemMessage
+import json
+from agent.state_projection.projection_dispatcher import project_for_delta
+from langchain_core.messages import HumanMessage, SystemMessage, BaseMessage
 
 def create_delta_llm(config: AgentRequest) -> ChatOllama:
     delta_llm = ChatOllama(
@@ -31,42 +32,49 @@ def create_delta_llm(config: AgentRequest) -> ChatOllama:
     
     return delta_llm
 
-def get_delta(config: AgentRequest, metrics: MetricsWrapper,  compaction: Compaction) -> Compaction:
+def get_delta(config: AgentRequest, metrics: MetricsWrapper, info: InfoNode, compact: Compaction) -> DistillationDelta:
 
     delta_llm = create_delta_llm(config)
     
-    if len(compaction.summary) > 1:
-        prior = getattr(compaction, "summary_aggregate", compaction.summary[-2])
-        conv_text = f"PRIOR_AGGREGATION:{prior}\nLATEST_SUMMARY:{compaction.summary[-1]}"
-        delta_messages = [
-            SystemMessage(content=DELTA_ANALYSIS_PROMPT),
-            HumanMessage(content=conv_text),
-        ]
-        facts_delta = None
-        for _ in range(3):
-            agent_state_delta = None
-            try:
-                agent_state_delta = delta_llm.invoke(delta_messages)
-                if not isinstance(agent_state_delta, DistillationDelta):
-                    raise ValueError(f"expected a DistillationDelta object, got {type(agent_state_delta).__name__}")
-                    
-                info = InfoNode(id = f"{config.execution_id}-{compaction.upto}",
-                                execution_id=config.execution_id,
-                                instance_number_start=compaction.upto,
-                                instance_number_end=compaction.upto,
-                                )
-                ingest_agent_state_delta(agent_state_delta, info)
-
-                facts_delta = agent_state_delta
+    # Use projection functions to generate squished views instead of full model dumps
+    # We need to ensure project_for_delta is imported/accessible here.
+    # Assuming necessary imports from agent.state_projection are available in state.py
+    
+    prior_projection = project_for_delta(compact.aggregation)
+    latest_projection = project_for_delta(compact.states[-1])
+    
+    conv_text = f"PRIOR_AGGREGATION:{json.dumps(prior_projection, indent=2)}\nLATEST_SUMMARY:{json.dumps(latest_projection, indent=2)}"
+    
+    if config.verbose:
+        print(conv_text)
+        
+    delta_messages = [
+        SystemMessage(content=DELTA_ANALYSIS_PROMPT),
+        HumanMessage(content=conv_text),
+    ]
+    agent_state_delta = None
+    
+    retry_notes: list[BaseMessage] = []
+    for _ in range(3):
+        agent_state_delta = None
+        try:
+            agent_state_delta = delta_llm.invoke(delta_messages)
+            if not isinstance(agent_state_delta, DistillationDelta):
+                raise ValueError(f"expected a DistillationDelta object, got {type(agent_state_delta).__name__}")
                 
-                metrics.emit(metrics.get_counter_message("distillation_delta_success", "distillation delta agent worked"))
-                compaction.summary_deltas.append(facts_delta)
-                break
-            except Exception as exc:
-                print(f"Distillation delta failed: {exc}")
-                metrics.emit(metrics.get_counter_message("distillation_delta_failure", "distillation delta agent crashes"))
-                raw_content = str(agent_state_delta) if agent_state_delta else "(no response)"
-                print(f"Raw model output (truncated): {raw_content[:300]}")
+            ingest_agent_state_delta(agent_state_delta, info)
+            
+            metrics.emit(metrics.get_counter_message("distillation_delta_success", "distillation delta agent worked"))
+            break
+        except Exception as exc:
+            print(f"Distillation delta failed: {exc}")
+            metrics.emit(metrics.get_counter_message("distillation_delta_failure", "distillation delta agent crashes"))
+            raw_content = str(agent_state_delta) if agent_state_delta else "(no response)"
+            print(f"Raw model output (truncated): {raw_content[:300]}")
+            retry_notes.append(HumanMessage(f"Last response failed validation: {exc}. Please try again."))
 
-    return compaction
+    if agent_state_delta is None:
+        raise ValueError("delta extraction failed")
+        
+    return agent_state_delta
 

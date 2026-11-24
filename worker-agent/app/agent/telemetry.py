@@ -10,6 +10,7 @@ from contracts.inference_contracts.task import Task
 from contracts.inference_contracts.worker_agent_request import AgentRequest
 from contracts.inference_contracts.final_answer import FinalAnswer
 from contracts.inference_contracts.info import InfoContainer, InfoNode
+from contracts.inference_contracts.agent_state_extended import ExtendedAgentState
 
 class ToolEvent(BaseModel):
     iteration: int
@@ -66,17 +67,17 @@ def ingest_agent_state(state: AgentState, info: InfoNode) -> None:
         if resp and resp.text():
             print(resp.text())
             
-def ingest_agent_state_aggregate(state: Dict, info: InfoNode) -> None:
+def ingest_agent_state_aggregate(state: ExtendedAgentState, info: InfoNode) -> None:
     resp = None
     try:
-        payload = InfoContainer[AgentState](info=info,
-                                            contains=state)
+        payload = InfoContainer[ExtendedAgentState](info=info,
+                                                    contains=state)
    
         resp = requests.post("http://backbone-api:8000/ingest/agent_state_aggregate", json=payload.model_dump(mode="json"), timeout=10)
         resp.raise_for_status()
     except Exception as e:
         # Log but do not raise – evidence is observational
-        print(f"[AgentState Aggregate ingestion] failed for state {state}: {e}")
+        print(f"[AgentState Aggregate ingestion] failed for aggregate {state}: {e}")
         if resp and resp.text():
             print(resp.text())
             

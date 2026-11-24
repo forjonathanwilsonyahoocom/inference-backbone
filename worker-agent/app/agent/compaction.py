@@ -7,7 +7,9 @@ from prompts.distillation import DISTILLATION_PROMPT
 from contracts.inference_contracts.agent_state import AgentState
 from contracts.inference_contracts.info import InfoNode
 from agent.telemetry import ingest_agent_state, ingest_agent_state_aggregate
-from agent.apply_delta import apply_delta
+from agent.apply_delta import apply_delta_to_aggregate
+from agent.extend_agent_state import extend_state
+from agent.state_projection.projection_dispatcher import project_for_worker
 from langchain_ollama import ChatOllama
 import json
 
@@ -19,39 +21,22 @@ from langchain_core.messages import (
     BaseMessage
 )
 
-
-def stamp_ids(iteration_id: int, on_agent_state: dict) -> dict:
-    for k, v in on_agent_state.items():
-        k_preface = k[:3]
-        for i, item in enumerate(v):
-            item["id"] = f"{k_preface}_{iteration_id}_{i}"
-            
-    #print(on_agent_state)
-    return on_agent_state
-    
-def merge_summaries(entries: List[dict]) -> dict:
-    merged: Dict[str, list] = {}
-    for entry in entries:
-        for k, v in entry.items():
-            bucket = merged.setdefault(k, [])
-            bucket.extend(x for x in (v if isinstance(v, list) else [v]) if x not in bucket)
-    return merged
-    
+#clean this up after we switch to ExtendedAgentState projections
 def make_summary_message(compact: Compaction, is_going_back_to_llm: bool = False) -> str:
-    if not compact.summary and not compact.fallback:
+    if not compact.aggregation_worker_projection and not compact.fallback:
         return ""
     body = ""
-    if compact.summary_aggregate:
-        body = json.dumps(compact.summary_aggregate, indent=2)
-    elif compact.summary:
-        body = json.dumps(merge_summaries(compact.summary), indent=2)
+    if compact.aggregation_worker_projection:
+        # Use the worker projection to generate the squished view for the LLM
+        body = aggregation_worker_projection
         
     if is_going_back_to_llm:
         return f"the initial {compact.upto} iterations have been compacted into this report:\n{body}\n{compact.fallback}"
     else:
-        print(compact.fallback)
-        return body
-    
+        return  f"{body}\n{compact.fallback}"
+
+
+#maybe clean this up after we switch to ExtendedAgentState projections
 def fallback_mechanical_summary(msgs: List[BaseMessage]) -> str:
     lines = []
     for m in msgs:
@@ -88,37 +73,28 @@ def get_distillation(config: AgentRequest,
     print(f"Starting distill from {compact.upto} to {upto}")
     
     conv_text = distillation_assembly(distill_these)
+    
     input_len = len(conv_text)
+    
     distillation_messages = [
         SystemMessage(content=DISTILLATION_PROMPT),
         HumanMessage(content=conv_text),
     ]
-    facts = None
-    info = None
+
     retry_notes: list[BaseMessage] = []
+    
+    agent_state_facts = None
     for _ in range(3):
         agent_state_facts = None
         try:
             agent_state_facts = distillation_llm.invoke(distillation_messages + retry_notes)
             if not isinstance(agent_state_facts, AgentState):
                 raise ValueError(f"expected a AgentState object, got {type(agent_state_facts).__name__}")
-                
-            facts_dict = agent_state_facts.model_dump()
-            if not isinstance(facts_dict, dict):
-                raise ValueError(f"expected a dict from AgentState.model_dump(), got {type(facts_dict).__name__}")
-            output_len = len(str(facts_dict))
-            if output_len > input_len * 1.2:
-                raise ValueError(f"size of resulting distillation too large {output_len} compared to input {input_len}")
-                
-            info = InfoNode(id = f"{config.execution_id}-{upto}",
-                            execution_id=config.execution_id,
-                            instance_number_start=compact.upto,
-                            instance_number_end=upto,
-                            )
-            ingest_agent_state(agent_state_facts, info)
-
             
-            facts = stamp_ids(upto, facts_dict)
+            output_len = len(json.dumps(agent_state_facts.model_dump()))
+            if output_len > input_len * 1.2:
+                raise ValueError(f"size of resulting distillation too large {output_len} compared to input {input_len}, it should be the same size or smaller")
+                
             metrics.emit(metrics.get_counter_message("distillation_success", "distillation agent worked"))
             break
         except Exception as exc:
@@ -126,25 +102,32 @@ def get_distillation(config: AgentRequest,
             metrics.emit(metrics.get_counter_message("distillation_failure", "distillation agent crashes"))
             raw_content = str(agent_state_facts) if agent_state_facts else "(no response)"
             print(f"Raw model output (truncated): {raw_content[:300]}")
-            retry_notes.append(HumanMessage(f"Last response failed validation: {e}. Please try again."))
+            retry_notes.append(HumanMessage(f"Last response failed validation: {exc}. Please try again."))
 
-    if facts is not None:
-        compact.upto = upto
-        compact.summary.append(facts)
-        compact.fallback = ""
-        compact = get_delta(config, metrics, compact)
-        if compact.summary_aggregate:
-            if len(compact.summary_deltas) > 0:
-                compact.summary_aggregate = apply_delta(metrics,
-                                                        compact.summary_aggregate,
-                                                        facts,
-                                                        compact.summary_deltas[-1])
-                ingest_agent_state_aggregate(compact.summary_aggregate, info)
-        else:
-            #set the initial state of summary_aggregate
-            compact.summary_aggregate = facts
+
+    if agent_state_facts is not None:
+        info = InfoNode(id = f"{config.execution_id}-{upto}",
+                    execution_id=config.execution_id,
+                    instance_number_start=compact.upto,
+                    instance_number_end=upto,
+                    )
+        ingest_agent_state(agent_state_facts, info)
+            
+        extended = extend_state(upto, agent_state_facts)
         
-        print(f"Distilled upto {upto}:{facts}")
+        compact.upto = upto
+        compact.fallback = ""
+        compact.states.append(extended)
+        if compact.aggregation is None:
+            compact.aggregation = extended
+        else:
+            new_delta = get_delta(config, metrics, info, compact)
+            compact.summary_deltas.append(new_delta)
+            compact.aggregation = apply_delta_to_aggregate(metrics, compact.aggregation, extended, new_delta)
+            ingest_agent_state_aggregate(compact.aggregation, info)
+
+        compact.aggregation_worker_projection = project_for_worker(compact.aggregation)
+
     else:
         metrics.emit(metrics.get_counter_message("distillation_fallback", "distillation mechanical fallback"))
         compact.fallback = fallback_mechanical_summary(distill_these)

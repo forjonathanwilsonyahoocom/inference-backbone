@@ -2,7 +2,6 @@
 routers/ingest_agent_state.py
 """
 from fastapi import APIRouter
-from contracts.inference_contracts.agent_state import AgentState
 from contracts.inference_contracts.info import InfoContainer, InfoNode
 from contracts.inference_contracts.info_chunk import InfoChunk
 from contracts.inference_contracts.validations import validate_artifact_id
