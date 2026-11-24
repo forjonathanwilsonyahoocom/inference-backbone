@@ -1,5 +1,4 @@
 from typing import Dict, List
-from unittest.mock import Mock
 
 from contracts.inference_contracts.agent_state_delta import ElementDelta, DeltaAction
 from contracts.inference_contracts.agent_state_extended import ExtendedAgentStateItem, ExtendedAgentState
@@ -7,7 +6,7 @@ from contracts.inference_contracts.agent_state_extended import ExtendedAgentStat
 from agent.state_projection.projection_dispatcher import project_for_worker, project_for_delta
 from contracts.inference_contracts.agent_state import Artifact, CompletedStep, Observation, Understanding, Hypothesis
 
-def create_mock_item(contains, deltas: List[Mock], item_id: str) -> ExtendedAgentStateItem:
+def create_mock_item(contains, deltas: List[ElementDelta], item_id: str) -> ExtendedAgentStateItem:
     """Helper to create a mock ExtendedAgentStateItem."""
     return ExtendedAgentStateItem(
         deltas=deltas,
