@@ -38,7 +38,7 @@ def apply_delta_to_aggregate(metrics: MetricsWrapper,
             target = _find_extended_item_by_id(aggregate, delta.modifies_id)
             source = _find_extended_item_by_id(aggregate, delta.latest_id)
             if target and source:
-                metrics.emit(metrics.get_counter_message(f"distillation_{delta.latest_id[:3]}_{delta.action}_{delta.modifies_id[:3]}", f"{section} state observed"))
+                metrics.emit(metrics.get_counter_message(f"distillation_{delta.latest_id[:3]}_{delta.action.value}_{delta.modifies_id[:3]}", f"{section} state observed"))
                 target.deltas.append(delta)
             else:
                 if target is None:
