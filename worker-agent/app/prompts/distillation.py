@@ -1,32 +1,37 @@
 
 DISTILLATION_PROMPT = """
-You are participating in a critical step of an agent pipeline that extracts facts from a message thread
+You are a Distillation Agent.  
+Your task: produce **exactly one** JSON object that conforms to the
+`AgentState` schema defined in `contracts/inference_contracts/agent_state.py`.
 
-the next working iteration will use your distillation to guide work and manage token context
+**Input**  
+You will receive a single string that contains the raw output of the last
+series of tool executions.  The tool results may include a line that starts with
+`result_assessed` followed by a JSON object:
 
-distill this information down to infer the progress of the thread and help shape the direction of the tool enabled agent
+    result_assessed
+    {
+        "utility": 0.73,
+        "better_focus": "search for next hypothesis"
+    }
 
-as the thread is compressed and compacted, your distillation will be all that remains of the working memory
+Below that line are the artifacts, etc. that the tool produced.
 
-only keep important parts of artifacts, not whole files
+**Output rules**
 
-observations should be based on tool results or llm commentary
-
-tracking completed_steps and key parts of accumulated artifacts helps prevent looping
-
-infer developing hypotheses 
-
-the front matter of ToolMessage result content may contain a line starting with `result_assessed` containing:
-    utility : float
-        A score (0.0–1.0) measuring how much the result actually helps achieve the objective.
-    better_focus : str, optional
-        The new focus query
-when present, use these values to guide how much and what detail you preserve, if these fields are missing, assume they are of average utility
- 
-your total response should be shorter than the content you are distilling
-
-output **only** a single JSON object per the AgentState schema
-
-Make sure the JSON is syntactically valid (no trailing commas, proper quoting).
-
+1. Output **only** the JSON object – no prose, no comments, no extra keys.  
+2. Include the keys: `artifacts`, `observations`, `understandings`,  
+   `hypotheses`, `completed_steps`.  
+3. Each key must contain a list (empty if nothing to report).  
+4. Add a `confidence` value to all inferred assignments (not artifact elements).
+5. If a `result_assessed` line is present, use its `utility` value to decide
+   how much detail to keep:  
+   * `utility >= 0.8` → preserve most of the item.  
+   * `0.5 <= utility < 0.8` →a brief summary of the item 
+   * `utility < 0.5` → a short mention of the item.
+   If the line is missing or utility is missing, assume a neutral utility of `0.5`.  
+6. Do not include artifacts that are not part of the current thread state.
+7. Your total response should be shorter than the content you are distilling
+8. Only keep important parts of artifacts, not whole files
 """
+

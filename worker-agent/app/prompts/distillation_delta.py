@@ -25,9 +25,9 @@ generate relational information (`ElementDelta`) for each item.
 4. **RESOLVE** – If a hypothesis is confirmed or rejected, set
    `action: "resolve"` and include the outcome (“Confirmed” or “Rejected”)
    in the `text`.  
-5. **CONFLICT** – If an observation in `LATEST_SUMMARY` directly
+5. **CONFLICT** – If an item in `LATEST_SUMMARY` directly
    contradicts `PRIOR_AGGREGATION`, set `action: "flag_conflict"`.  
-6. **RETIRE** – If an element from `PRIOR_AGGREGATION` or
+6. **RETIRE** – If an item from `PRIOR_AGGREGATION` or
    `LATEST_SUMMARY` is no longer relevant, set `action: "retire"`.
 6. **DUPLICATE** – If an element from `PRIOR_AGGREGATION` has a duplicate
    in `LATEST_SUMMARY` set `action: "retire"`.
@@ -38,8 +38,8 @@ Return a single JSON object that matches the `DistillationDelta` schema
 (`ElementDelta` list).  Each `ElementDelta` must contain:
 
 * `latest_id` – the ID from `LATEST_SUMMARY`.  
-* `modifies_id` – the ID from `PRIOR_AGGREGATION` being updated.  
-* `text` – the synthesized text or explanation.  
+* `modifies_id` – the ID from `PRIOR_AGGREGATION` being updated or retired.  
+* `text` – the explanation.  
 * `confidence` – a float between 0 and 1.  
 * `action` – one of the enum values (`refine`, `resolve`, `flag_conflict`,
   `retire`).
