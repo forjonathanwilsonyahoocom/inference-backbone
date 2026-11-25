@@ -11,6 +11,7 @@ from agent.models import materialize_agent_request, Iteration
 from contracts.inference_contracts.worker_agent_request import AgentRequest
 from observability.metrics import MetricsWrapper
 
+from toolbox.util import init_workspace
 from toolbox.web_search import web_search
 from toolbox.web_fetch import web_fetch
 from toolbox.search_file import search_file
@@ -73,6 +74,7 @@ app = FastAPI()
 def startup_event():
     global METRICS
     METRICS = init_metrics()
+    init_workspace()
     operation_metric_labeler = METRICS.get_counter_message_labeler(
         "operation", "agent general activity"
     )

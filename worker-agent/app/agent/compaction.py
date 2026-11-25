@@ -114,7 +114,7 @@ def get_distillation(config: AgentRequest,
                     )
         ingest_agent_state(agent_state_facts, info)
             
-        extended = extend_state(upto, agent_state_facts)
+        extended = extend_state(metrics, upto, agent_state_facts)
         
         compact.upto = upto
         compact.fallback = ""

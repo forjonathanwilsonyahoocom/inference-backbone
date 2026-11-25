@@ -12,10 +12,12 @@ WORKSPACE_PATH = os.getenv(
 )
 WORKSPACE = Path(WORKSPACE_PATH)
 
-WORKSPACE.mkdir(parents=True, exist_ok=True)
+def init_workspace() -> Path:
+    global WORKSPACE
+    WORKSPACE.mkdir(parents=True, exist_ok=True)
 
-WORKSPACE = WORKSPACE.resolve()
-print(WORKSPACE)
+    WORKSPACE = WORKSPACE.resolve()
+    return WORKSPACE
 
 def middle_slice(text: str, limit: int) -> str:
     """

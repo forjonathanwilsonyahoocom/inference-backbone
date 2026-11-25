@@ -2,6 +2,7 @@ from contracts.inference_contracts.agent_state_extended import (
     ExtendedAgentState,
     ExtendedAgentStateItem,
 )
+from observability.metrics import MetricsWrapper
 from typing import Any
 from contracts.inference_contracts.agent_state import AgentState
 
@@ -15,12 +16,14 @@ def extend_item(iteration_id: int,
     )
 
 
-def extend_state(iteration_id: int, 
+def extend_state(metrics: MetricsWrapper, 
+                 iteration_id: int, 
                  agent_state: AgentState) -> ExtendedAgentState:
     extended = ExtendedAgentState()
     for name, value in agent_state:
         extended.state_parts[name] = []
         for i, item in enumerate(value):
+            metrics.emit(metrics.get_counter_message(f"distillation_{name}", f"{name} state observed"))
             extended.state_parts[name].append(extend_item(iteration_id, i, item))
 
     return extended

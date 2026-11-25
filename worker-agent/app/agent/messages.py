@@ -7,7 +7,7 @@ from agent.models import Iteration, Compaction, ToolCallResultWrapper
 from contracts.inference_contracts.worker_agent_request import AgentRequest
 from agent.compaction import make_summary_message, get_distillation
 from agent.compression import compress_history
-
+import json
 
 def estimate_tokens(content: Any) -> int:
     return max(1, len(str(content)) // 4)
@@ -133,40 +133,28 @@ def derive_message_list(config: AgentRequest,
     
     history = compress_history(config, metrics, history, compact.upto)
     
-    compact, summary = deduped_distillation(config, metrics, distillation_llm, compact, history, False)
-    
-    live_total = 0
-    layer = 0
-    for iteration in reversed(history):
-        
-        if live_total < config.truncate_at:
-            live_total += iter_tokens(iteration)
-            layer += 1
-            metrics.emit(layer_metric_labeler_message({"layer" : str(layer)}, live_total))
-            for result_wrapper in iteration.tool_call_results:
-                live_total += tool_tokens(result_wrapper)
-                layer += 1
-                metrics.emit(layer_metric_labeler_result({"layer" : str(layer)}, live_total))
-        else:
-            #stop counting
-            break
-        
-    metrics.emit(summary_gauge(live_total + estimate_tokens(summary)))    
-    
-    token_quota = config.truncate_at
-
-    is_first_message = True
+    live_total = 0 #used for metrics emit
+    layer = 0 #used for metrics emit
+    token_quota = config.truncate_at #when we stop building the message history
+    is_first_message = True #used to flag for turns remaining
         
     for iteration in reversed(history):
             
         if token_quota < 0:
             #we are at the truncate boundary
             break
+            
+        live_total += iter_tokens(iteration)
+        layer += 1
+        metrics.emit(layer_metric_labeler_message({"layer" : str(layer)}, live_total))
 
         token_quota -= iter_tokens(iteration)
         
         try:
             for wrapper in reversed(iteration.tool_call_results):
+                live_total += tool_tokens(wrapper)
+                layer += 1
+                metrics.emit(layer_metric_labeler_result({"layer" : str(layer)}, live_total))
                 
                 fp = (wrapper.tool_call_fingerprint, wrapper.result_fingerprint)
                 if fp in seen_fingerprints:
@@ -185,26 +173,28 @@ def derive_message_list(config: AgentRequest,
     
                 preface = f"instance_number={wrapper.tool_call_result_instance_number}\n"
                 if is_first_message:
+                    is_first_message = False
                     preface += f"turn {iteration.iteration} of max {config.max_iterations}, {config.max_iterations - iteration.iteration} turns remaining\n"
                     if config.max_iterations - iteration.iteration <=2:
                         preface += "# use remaining turns to wrap up this execution sequence and respond\n"
-                    is_first_message = False
 
                 if wrapper.stagnant_count >= 2:
                     metrics.emit(stagnation_metric_labeler({"tool_call" : wrapper.tool_name}))
                     preface += f"""**NOTE**
 this call has been used for the same result {wrapper.stagnant_count + 1} times,
-*history is de-duplicated**
+**history is de-duplicated**
 do you need to continue calling this?
 tool result follows:\n"""
                
-                tool_content = f"{preface}{tool_content}"
-                    
+                result_assessed = {}
                 if wrapper.tool_call_result_utility is not None :
-                     preface += f"result_assessed: utility={wrapper.tool_call_result_utility} \n"
+                     result_assessed["utility"] = wrapper.tool_call_result_utility
                 if wrapper.tool_call_result_chunk_query is not None:
-                     preface += f"result_assessed: better_focus={wrapper.tool_call_result_chunk_query}\n"
-                    
+                    result_assessed["better_focus"] = wrapper.tool_call_result_chunk_query
+                if result_assessed:
+                     preface += f"result_assessed\n {json.dumps(result_assessed, indent=2)} \n"
+
+                tool_content = f"{preface}{tool_content}"
                 send_to_llm.append(
                     ToolMessage(
                         content=tool_content,
@@ -220,6 +210,9 @@ tool result follows:\n"""
             
     send_to_llm.reverse()
     
+    compact, summary = deduped_distillation(config, metrics, distillation_llm, compact, history, False)
+    metrics.emit(summary_gauge(live_total + estimate_tokens(summary)))    
+
     permanent = [
         SystemMessage(content=config.system_message),
         HumanMessage(content=f"{config.request}\n{summary}"),
