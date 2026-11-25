@@ -38,11 +38,14 @@ def apply_delta_to_aggregate(metrics: MetricsWrapper,
             target = _find_extended_item_by_id(aggregate, delta.modifies_id)
             source = _find_extended_item_by_id(aggregate, delta.latest_id)
             if target and source:
-                metrics.emit(metrics.get_counter_message(f"distillation_{section}_{delta.action}", f"{section} state observed"))
+                metrics.emit(metrics.get_counter_message(f"distillation_{delta.latest_id[:3]}_{delta.action}_{delta.modifies_id[:3]}", f"{section} state observed"))
                 target.deltas.append(delta)
             else:
-                metrics.emit(metrics.get_counter_message(f"distillation_{section}_hallucination", f"{section} hallucination observed"))
-                print(delta)
+                if target is None:
+                    metrics.emit(metrics.get_counter_message(f"distillation_{delta.modifies_id[:3]}_hallucination", f"{delta.modifies_id[:3]} hallucination observed"))
+                if source is None:
+                    metrics.emit(metrics.get_counter_message(f"distillation_{delta.latest_id[:3]}_hallucination", f"{delta.latest_id[:3]} hallucination observed"))
+                print("delta contains hallucination", delta)
     
     return aggregate
         
