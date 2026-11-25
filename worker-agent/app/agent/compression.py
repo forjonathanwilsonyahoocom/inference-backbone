@@ -113,7 +113,7 @@ def compress_history(config: AgentRequest, metrics: MetricsWrapper, history: Lis
 
         for wrapper in it.tool_call_results:
             limit = limit_for_age(config, age)
-            if wrapper.tool_call_result_utility is not None:
+            if wrapper.tool_call_result_utility is not None and limit is not None:
                 limit = limit * config.compression_adjust_by_utility * wrapper.tool_call_result_utility
                 print(f"limit adjusted to {limit}")
 
