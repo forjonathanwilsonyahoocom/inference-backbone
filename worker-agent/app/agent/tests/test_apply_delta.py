@@ -17,8 +17,8 @@ def create_item(item_id: str, contains: MockT, deltas: list = None) -> ExtendedA
 def create_state(state_parts: dict) -> ExtendedAgentState:
     return ExtendedAgentState(state_parts=state_parts)
 
-def create_delta(modifies_id: str, action: DeltaAction, text: str = None) -> ElementDelta:
-    return ElementDelta(modifies_id=modifies_id, text=text, confidence=0.9, action=action)
+def create_delta(modifies_id: str, latest_id: str, action: DeltaAction, text: str = None) -> ElementDelta:
+    return ElementDelta(modifies_id=modifies_id, latest_id=latest_id, text=text, confidence=0.9, action=action)
 
 @pytest.fixture
 def metrics():
@@ -54,7 +54,7 @@ def test_apply_delta_to_aggregate_success(metrics: MetricsWrapper):
 
     # 3. Setup new delta
     # Delta targets Item A
-    delta_a = create_delta(item_a_id, DeltaAction.REFINE, text="Refined A text")
+    delta_a = create_delta(item_a_id, item_c_id, DeltaAction.REFINE, text="Refined A text")
     new_delta = DistillationDelta(
         relations= [delta_a]
     )
@@ -93,10 +93,12 @@ def test_apply_delta_resolve_action(metrics):
     item = create_item(item_id, MockT(value="old"))
     agg = create_state({"observations": [item]})
 
+    item_id2 = "art_2_1"
+    item2 = create_item(item_id2, MockT(value="new"))
     # No new items in latest state
-    latest = create_state({})
+    latest = create_state({"artifacts": [item2]})
 
-    delta = create_delta(item_id, DeltaAction.RESOLVE, text="resolved text")
+    delta = create_delta(item_id, item_id2, DeltaAction.RESOLVE, text="resolved text")
     new_delta = DistillationDelta(relations=[delta])
 
     new_agg = apply_delta_to_aggregate(metrics, agg, latest, new_delta)
@@ -110,8 +112,13 @@ def test_apply_delta_flag_conflict_action(metrics):
     item_id = "hyp_2_1"
     item = create_item(item_id, MockT(value="hyp"))
     agg = create_state({"hypotheses": [item]})
-    latest = create_state({})
-    delta = create_delta(item_id, DeltaAction.FLAG_CONFLICT, text="conflict text")
+    
+    item_id2 = "art_2_1"
+    item2 = create_item(item_id2, MockT(value="new"))
+    # No new items in latest state
+    latest = create_state({"artifacts": [item2]})
+
+    delta = create_delta(item_id, item_id2, DeltaAction.FLAG_CONFLICT, text="conflict text")
     new_delta = DistillationDelta(relations=[delta])
     new_agg = apply_delta_to_aggregate(metrics, agg, latest, new_delta)
     target = next(i for i in new_agg.state_parts["hypotheses"] if i.id == item_id)
@@ -124,8 +131,13 @@ def test_apply_delta_retire_action(metrics):
     item_id = "art_1_1"
     item = create_item(item_id, MockT(value="artifact"))
     agg = create_state({"artifacts": [item]})
-    latest = create_state({})
-    delta = create_delta(item_id, DeltaAction.RETIRE, text="retire note")
+
+    item_id2 = "art_2_1"
+    item2 = create_item(item_id2, MockT(value="new"))
+    # No new items in latest state
+    latest = create_state({"artifacts": [item2]})
+    
+    delta = create_delta(item_id,item_id2,  DeltaAction.RETIRE, text="retire note")
     new_delta = DistillationDelta(relations=[delta])
     new_agg = apply_delta_to_aggregate(metrics, agg, latest, new_delta)
     target = next(i for i in new_agg.state_parts["artifacts"] if i.id == item_id)
@@ -146,8 +158,13 @@ def test_apply_delta_adds_new_items(metrics):
 
 def test_apply_delta_immutability(metrics):
     agg = create_state({"observations": [create_item("obs_1", MockT(value="a"))]})
-    latest = create_state({})
-    delta = create_delta("obs_1", DeltaAction.REFINE, text="refine")
+   
+    item_id2 = "art_2_1"
+    item2 = create_item(item_id2, MockT(value="new"))
+    # No new items in latest state
+    latest = create_state({"artifacts": [item2]})
+    
+    delta = create_delta("obs_1", item_id2, DeltaAction.REFINE, text="refine")
     new_delta = DistillationDelta(relations=[delta])
     new_agg = apply_delta_to_aggregate(metrics, agg, latest, new_delta)
     # Original aggregate unchanged
@@ -158,18 +175,23 @@ def test_apply_delta_immutability(metrics):
 
 def test_apply_delta_ignore_unknown_id(metrics):
     agg = create_state({"observations": [create_item("obs_1", MockT(value="a"))]})
-    latest = create_state({})
-    delta = create_delta("nonexistent", DeltaAction.REFINE, text="x")
+    
+    item_id2 = "art_2_1"
+    item2 = create_item(item_id2, MockT(value="new"))
+    # No new items in latest state
+    latest = create_state({"artifacts": [item2]})
+    
+    delta = create_delta("nonexistent", item_id2, DeltaAction.REFINE, text="x")
     new_delta = DistillationDelta(relations=[delta])
     new_agg = apply_delta_to_aggregate(metrics, agg, latest, new_delta)
     # No delta should be added
     assert len(new_agg.state_parts["observations"][0].deltas) == 0
 
 
-def test_apply_delta_ignore_none_modifies_id(metrics):
+def test_apply_delta_both_ids_must_exist(metrics):
     agg = create_state({"observations": [create_item("obs_1", MockT(value="a"))]})
     latest = create_state({})
-    delta = ElementDelta(modifies_id=None, text="x", confidence=0.9, action=DeltaAction.REFINE)
+    delta = ElementDelta(modifies_id="obs_not_there", latest_id="obs_1", text="x", confidence=0.9, action=DeltaAction.REFINE)
     new_delta = DistillationDelta(relations=[delta])
     new_agg = apply_delta_to_aggregate(metrics, agg, latest, new_delta)
     assert len(new_agg.state_parts["observations"][0].deltas) == 0
@@ -177,9 +199,12 @@ def test_apply_delta_ignore_none_modifies_id(metrics):
 
 def test_apply_delta_multiple_deltas_same_item(metrics):
     agg = create_state({"observations": [create_item("obs_1", MockT(value="a"))]})
-    latest = create_state({})
-    delta1 = create_delta("obs_1", DeltaAction.REFINE, text="t1")
-    delta2 = create_delta("obs_1", DeltaAction.RESOLVE, text="t2")
+    item_id2 = "art_2_1"
+    item2 = create_item(item_id2, MockT(value="new"))
+    # No new items in latest state
+    latest = create_state({"artifacts": [item2]})
+    delta1 = create_delta("obs_1", item_id2, DeltaAction.REFINE, text="t1")
+    delta2 = create_delta("obs_1", item_id2, DeltaAction.RESOLVE, text="t2")
     new_delta = DistillationDelta(relations=[delta1, delta2])
     new_agg = apply_delta_to_aggregate(metrics, agg, latest, new_delta)
     target = new_agg.state_parts["observations"][0]
