@@ -1,6 +1,6 @@
 from typing import Tuple, Any, Optional, List, Dict
 import uuid
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from contracts.inference_contracts.agent_state_delta import DistillationDelta
 from contracts.inference_contracts.agent_state_extended import ExtendedAgentState
 from contracts.inference_contracts.worker_agent_request import AgentRequest
@@ -49,7 +49,7 @@ class ToolCallResultWrapper(BaseModel):
     tool_call_id: str
     tool_call_result: Any = None
     tool_call_result_instance_number: int = None
-    tool_call_result_compressed: Any = None
+    tool_call_result_compressed: Optional[str] = Field(None, description="Compressed string representation of the tool result")
     tool_call_result_chunks: List[Dict] = None
     tool_call_result_chunk_query: str = None
     tool_call_result_utility: float = None

@@ -44,11 +44,24 @@ def clip_mid(metrics: MetricsWrapper, value: Any, limit: int) -> str:
     s = value if isinstance(value, str) else str(value)
     if len(s) <= limit:
         return s
-    head = int(limit * 0.7)
-    tail = max(1, limit - head)
     omitted = len(s) - limit
+    marker_str = f"...[{omitted} chars omitted]..."
+    marker_length = len(marker_str)
+    
+    # Target head based on 70%
+    head_target = int(limit * 0.7)
+    
+    # Calculate required head to ensure tail >= 1
+    head_required = limit - marker_length - 1
+    
+    # Use the smallest head that satisfies both 70% preference and minimum tail requirement
+    head = min(head_target, head_required)
+    
+    # Calculate tail based on final head
+    tail = limit - head - marker_length
+    
     metrics.emit(metrics.get_counter_message("compression_amount_tool_call", "reduced by this many chars", value=omitted))
-    return f"{s[:head]}...[{omitted} chars omitted]...{s[-tail:]}"
+    return f"{s[:head]}{marker_str}{s[-tail:]}"
 
 # ---------------------------------------------------------------------------
 # Compress an AIMessage – content and tool‑call arguments.
